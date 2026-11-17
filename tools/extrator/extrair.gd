@@ -165,6 +165,7 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 		if au.has("por"): OS.set_environment("AUDIO_POR", str(int(au.por)))   # amostras por quadro (padrão 735/736)
 	OS.set_environment("NORAM", "1"); OS.set_environment("DUMPDIR", dir)
 	if r.has("spu"): OS.set_environment("SPUDUMP", str(int(r.spu)))   # RAM do SPU (sons) fotografada neste quadro
+	if r.has("spudbg"): OS.set_environment("SPUDBG", str(r.spudbg))   # vozes/CD do SPU ("ffffff:1:0" = sem a música do CD)
 	var quadros := fotos.keys()
 	for sp in r.get("sprites", []):
 		if not str(int(sp.quadro)) in quadros: quadros.append(str(int(sp.quadro)))
@@ -819,8 +820,8 @@ const GRUPOS := {
 	"musica_x5": {"discos": ["x5"], "captura": true},
 	"menus_x4": {"discos": ["x4"], "captura": true}, "intro_x4": {"discos": ["x4"], "captura": true},
 	"musica_x4": {"discos": ["x4"], "captura": true}, "musica_x6": {"discos": ["x6"], "captura": true},
-	"musica_titulo": {"discos": ["x5"], "captura": true}, "sons_x4": {"discos": ["x4"], "captura": true},
-	"sons_x5": {"discos": ["x5"], "roteiros": ["sons_x5_x", "sons_x5_a2", "sons_x5_a3"]},
+	"musica_titulo": {"discos": ["x5"], "captura": true}, "sons_x4": {"discos": ["x4"], "roteiros": ["sons_x4", "sons_x4_tele"]},
+	"sons_x5": {"discos": ["x5"], "roteiros": ["sons_x5_x", "sons_x5_a2", "sons_x5_a3", "sons_x5_nova"]},
 	"sons_x6": {"discos": ["x6"], "roteiros": ["sons_x6_x", "sons_x6_zero", "sons_x6_a1", "sons_x6_a2", "sons_x6_a3"]},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
 	"codigo_x4": {"discos": []}, "codigo_psx": {"discos": []}, "ferramentas": {"discos": []},

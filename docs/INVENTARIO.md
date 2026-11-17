@@ -20,14 +20,14 @@ Alvo: deixar a pasta `godot/` do jogador igual à do PC do dono (lista de refer�
 | Grupo | Arquivos | MB | Como foi feito no PC do dono | Situação |
 |---|---:|---:|---|---|
 | `x4c_disc_arc.sec` | 1 | 26,5 | 12947 primeiros setores do disco do X4 | **pronto, idêntico byte a byte** |
-| `movies` (vídeos) | 15 | 115,5 | .STR do disco → ffmpeg (Theora q8 / Vorbis q5, 44,1 kHz) | **pronto, mesma imagem** (o .ogv muda alguns bytes a cada conversão: número de série do Ogg; tamanhos ±0,11%) |
-| `menus` (telas de seleção, títulos, botões) | 36 | 1,8 | capturas do nosso núcleo de PS1 (`psxcore`) + `render_dump.gd` | falta no extrator. **Teste: as 8 telas do X5 (`x5_1`…`x5_8`) saem idênticas byte a byte** numa captura de 30 s (ver abaixo) |
-| `menus/intro` | 317 | 7,1 | capturas (quadros das aberturas) | falta |
-| `menus/mini`, `donos`, `loading` | 76 | 0,2 | recortes das capturas | falta |
-| `musica` | 4 | 4,1 | som capturado do núcleo + laço (`tools/loop.py`) → Vorbis | falta |
-| `sfx` (sons dos jogos) | ~52 | 3,5 | som capturado do núcleo | falta |
-| `x/parts`, `x/fx`, `x` | 314 | 13,2 | capturas de sprites (`fusion/grab*.py`) | falta |
-| `zero` (+ x5, x6, sabre, giga…) | 31 | 2,5 | capturas de sprites | falta |
+| `movies` (vídeos) | 15 | 115,5 | .STR do disco → FFmpeg 4.4 **de Windows** (Theora q8 / Vorbis q5, 44,1 kHz) | **pronto, idênticos byte a byte** no Windows com o nosso `ffmpeg.exe` (`tools/ffmpeg`: 4.4.2 + libtheora 1.1.1 + libvorbis 1.3.7, números de série do dono). No Linux os quadros saem um pouco diferentes (a libtheora do Linux decide diferente) |
+| `menus` (telas de seleção, títulos, botões) | 36 | 1,8 | capturas do nosso núcleo de PS1 (`psxcore`) + `render_dump.gd` | **pronto** (iguais), menos `titulo_x6.png` (aproximado: cores 1 a 3 diferentes; a do dono tem cores de 8 bits contínuas, não é da captura) |
+| `menus/intro` | 317 | 7,1 | capturas → Pillow/libwebp 1.6.0 (qualidade 88, método 6) | **pronto, idênticos byte a byte** com o nosso `webpenc` (`tools/webp`) |
+| `menus/mini`, `donos`, `loading` | 76 | 0,2 | recortes das capturas | **pronto** (mesmos pontos) |
+| `musica` | 4 | 4,1 | som capturado do núcleo + laço → Vorbis (FFmpeg 6.1 do Linux) | **pronto**: título, X4 e X5 com o mesmo som (byte a byte com o nosso `ffmpeg.exe` + número de série/textos do dono); `x6_selecao` aproximada (a gravação do dono é outra) |
+| `sfx` (sons dos jogos) | ~52 | 3,5 | som capturado do núcleo | **pronto** 45 com o mesmo som; `menu_move`, `menu_ok`, `fg_tele_in` aproximados (diferença de até 4 em 32768, inaudível); `x5_nova` (igual do quadro 66 em diante: no começo a gravação do dono tem o fim de outro som) e `fg_tele_out` (mesmo som do X4, correlação 0,91) aproximados; `fg_swap_on/off` não são usados pelo jogo |
+| `x/parts`, `x/fx`, `x` | 314 | 13,2 | capturas de sprites (`fusion/grab*.py`) | **pronto** (mesmos pontos): pacotes dos discos (`pecas.gd`), capturas do psxcore (`efeitos.gd`) e o dash da Blade pela recompilação do X6 (`dash.gd` + `captura_rc`) |
+| `zero` (+ x5, x6, sabre, giga…) | 31 | 2,5 | capturas de sprites | **pronto** (mesmos pontos), menos `zero/x6/giga/atlas.png` + `frames.json` (corte do Zero Nightmare: a luta não foi achada na captura) |
 | `x4c` | 3 | 3,7 | só reserva do X4 (o jogo usa o `.sec`) | falta (baixa prioridade) |
 | `stages`, `enemy`, `retratos`, `x4_*.json` | 1258 | 42,5 | versão antiga do projeto | **não precisa** (o jogo de agora não abre) |
 
