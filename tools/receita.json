@@ -1,5 +1,5 @@
 {
- "versao_receita": 22,
+ "versao_receita": 23,
  "nota": "Etapas que o launcher roda no PC do jogador, a partir dos discos dele. Cada etapa só roda de novo se mudar o disco, os arquivos dela ou uma etapa de antes.",
  "etapas": [
   {
@@ -987,6 +987,33 @@
    ]
   },
   {
+   "id": "corte_nz_x6",
+   "nome": "Corte do Zero Nightmare (X6)",
+   "discos": [
+    "x6"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "corte_nz_x6",
+    "disco_x6={disco_x6}",
+    "captura_rc={captura_rc}"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{captura_rc}"
+   ],
+   "depois_de": [
+    "recomp_x6"
+   ]
+  },
+  {
    "id": "importar",
    "nome": "Preparar no Godot",
    "cmd": [
@@ -1031,7 +1058,8 @@
     "sons_x4",
     "pecas_x",
     "efeitos_x",
-    "dash_x6"
+    "dash_x6",
+    "corte_nz_x6"
    ]
   }
  ]

@@ -141,8 +141,14 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
   recompilação faziam o launcher refazer tudo).
 - **Sons**: `x5_nova` pela captura sem a música do CD (`SPUDBG ffffff:1:0`): igual do quadro 66 em diante;
   `fg_tele_out` pelo comando do x4core que toca um som do X4 (0xFFFFFF13 = 0x10B): mesmo som, outro volume.
-- **Falta**: `zero/x6/giga` (corte do Zero Nightmare: a luta não aparece nas fases 19-22 pela captura; sem esse atlas
-  o Giga do Nightmare Zero não desenha o corte), `titulo_x6.png` e `x6_selecao.ogg` aproximados.
+- **Corte do Zero Nightmare** (`zero/x6/giga`): a luta fica na área secreta da fase 22 (área 0; as fases 19-22 têm
+  2 áreas cada, as 8 áreas secretas). `corte_nz.gd` + `pecas/corte_nz.json`: a recompilação do X6 atravessa a área
+  voando com a vida cheia (`captura_rc` ganhou opções: fase/área, paletas escondidas, escritas por quadro e voo), entra na
+  sala, passa a conversa e espera o corte; o X pula no quadro 2499 (a onda mira o jogador: assim ela sobe meio ponto por
+  quadro como na foto do dono). Cada quadro = pedaço ligado (8 vizinhos) dos pontos que mudam sem a paleta 0x794B, acima
+  de y 200; 1x numa grade 91x91 e Scale3x do atlas inteiro (bordas repetidas). Os 25 quadros saem com os mesmos pontos
+  do PC do dono (Linux e Windows iguais).
+- **Falta**: `titulo_x6.png` e `x6_selecao.ogg` aproximados.
 
 ## Ordem de trabalho
 

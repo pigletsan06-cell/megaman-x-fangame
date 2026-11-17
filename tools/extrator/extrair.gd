@@ -827,6 +827,7 @@ const GRUPOS := {
 	"codigo_x4": {"discos": []}, "codigo_psx": {"discos": []}, "ferramentas": {"discos": []},
 	"recomp_x5": {"discos": ["x5"]}, "recomp_x6": {"discos": ["x6"]},
 	"pecas_x": {"discos": ["x4", "x5", "x6"]}, "efeitos_x": {"discos": ["x5", "x6"]}, "dash_x6": {"discos": ["x6"]},
+	"corte_nz_x6": {"discos": ["x6"]},
 }
 func roda_grupo(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> int:
 	if GRUPOS.get(nm, {}).get("captura", false): return captura(nm, jogo, discos, prog)
@@ -846,6 +847,7 @@ func roda_grupo(nm: String, jogo: String, discos: Dictionary, prog: Callable) ->
 	if nm.begins_with("recomp_"): return codigo_recomp(nm.substr(7), jogo, discos, prog)
 	if nm == "pecas_x": return load("res://pecas.gd").new(discos).roda(jogo, ProjectSettings.globalize_path("res://pecas"), prog)
 	if nm == "dash_x6": return load("res://dash.gd").new(opcoes).roda(jogo, ProjectSettings.globalize_path("res://pecas"), prog)
+	if nm == "corte_nz_x6": return load("res://corte_nz.gd").new(opcoes).roda(jogo, ProjectSettings.globalize_path("res://pecas"), prog)
 	if nm == "efeitos_x":
 		var pc = load("res://pecas.gd").new(discos)
 		return load("res://efeitos.gd").new(opcoes, discos, pc).roda(jogo, ProjectSettings.globalize_path("res://pecas"), prog)

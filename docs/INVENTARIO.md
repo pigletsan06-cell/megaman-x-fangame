@@ -27,7 +27,7 @@ Alvo: deixar a pasta `godot/` do jogador igual à do PC do dono (lista de refer�
 | `musica` | 4 | 4,1 | som capturado do núcleo + laço → Vorbis (FFmpeg 6.1 do Linux) | **pronto**: título, X4 e X5 com o mesmo som (byte a byte com o nosso `ffmpeg.exe` + número de série/textos do dono); `x6_selecao` aproximada (a gravação do dono é outra) |
 | `sfx` (sons dos jogos) | ~52 | 3,5 | som capturado do núcleo | **pronto** 45 com o mesmo som; `menu_move`, `menu_ok`, `fg_tele_in` aproximados (diferença de até 4 em 32768, inaudível); `x5_nova` (igual do quadro 66 em diante: no começo a gravação do dono tem o fim de outro som) e `fg_tele_out` (mesmo som do X4, correlação 0,91) aproximados; `fg_swap_on/off` não são usados pelo jogo |
 | `x/parts`, `x/fx`, `x` | 314 | 13,2 | capturas de sprites (`fusion/grab*.py`) | **pronto** (mesmos pontos): pacotes dos discos (`pecas.gd`), capturas do psxcore (`efeitos.gd`) e o dash da Blade pela recompilação do X6 (`dash.gd` + `captura_rc`) |
-| `zero` (+ x5, x6, sabre, giga…) | 31 | 2,5 | capturas de sprites | **pronto** (mesmos pontos), menos `zero/x6/giga/atlas.png` + `frames.json` (corte do Zero Nightmare: a luta não foi achada na captura) |
+| `zero` (+ x5, x6, sabre, giga…) | 31 | 2,5 | capturas de sprites | **pronto** (mesmos pontos); `zero/x6/giga` (corte do Zero Nightmare) pela luta na área secreta da fase 22 (`corte_nz.gd`) |
 | `x4c` | 3 | 3,7 | só reserva do X4 (o jogo usa o `.sec`) | falta (baixa prioridade) |
 | `stages`, `enemy`, `retratos`, `x4_*.json` | 1258 | 42,5 | versão antiga do projeto | **não precisa** (o jogo de agora não abre) |
 
