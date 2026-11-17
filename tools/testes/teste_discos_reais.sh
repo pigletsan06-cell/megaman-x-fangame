@@ -5,7 +5,7 @@ G=/home/claude/godot/Godot_v4.7.2-stable_linux.x86_64; REPO=/home/claude/megaman
 rm -rf /tmp/amigo; mkdir -p "$P/discos"
 cd $REPO && git archive HEAD godot | tar -x -C "$P"
 cp -r $REPO/launcher "$P/launcher"; rm -rf "$P/launcher/.godot"
-mkdir -p "$P/tools"; cp -r $REPO/tools/extrator "$P/tools/"; cp $REPO/tools/receita.json "$P/tools/"
+mkdir -p "$P/tools"; cp -r $REPO/tools/extrator "$P/tools/"; rm -rf "$P/tools/extrator/.godot"; cp $REPO/tools/receita.json "$P/tools/"
 echo '{"versao": 54}' > "$P/versao.json"
 ln -s "/home/claude/x4/Mega Man X4 (USA).bin" "$P/discos/"; ln -s "/home/claude/x5/Mega Man X5 (USA).bin" "$P/discos/"; ln -s "/home/claude/ext/MegaManX6Recomp/mmx6/Mega Man X6 (USA) (v1.1).bin" "$P/discos/"
 rm -f /tmp/real_*.png; T0=$(date +%s)

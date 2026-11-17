@@ -1,0 +1,8 @@
+; Extrator (roda dentro do Godot: godot --headless --path tools/extrator --script res://extrair.gd -- ...)
+
+config_version=5
+
+[application]
+
+config/name="Mega Man X Fusion - Extrator"
+config/features=PackedStringArray("4.7")
