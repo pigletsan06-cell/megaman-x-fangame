@@ -1,0 +1,53 @@
+{
+ "nota": "Textos do menu do X5 (PRESS START, GAME START, CONTINUE, OPTION acesos e apagados): sprites 16x16 da VRAM (página 384,0 de 4 bits, CLUT 0x7800 apagado / 0x7801 aceso), cores 5 bits << 3, recortados nos pontos opacos. Conferido: iguais aos do PC do dono.",
+ "jogo": "x5",
+ "disco": "x5",
+ "quadros": 877,
+ "botoes": "start:700-710,down:830-835,down:870-875",
+ "poke": "",
+ "fotos": {},
+ "sprites": [
+  {
+   "quadro": 348,
+   "linha": 152,
+   "clut": 30721,
+   "saida": "assets/menus/press_start.png"
+  },
+  {
+   "quadro": 780,
+   "linha": 126,
+   "clut": 30721,
+   "saida": "assets/menus/menu_game_start_on.png"
+  },
+  {
+   "quadro": 834,
+   "linha": 126,
+   "clut": 30720,
+   "saida": "assets/menus/menu_game_start_off.png"
+  },
+  {
+   "quadro": 834,
+   "linha": 142,
+   "clut": 30721,
+   "saida": "assets/menus/menu_continue_on.png"
+  },
+  {
+   "quadro": 780,
+   "linha": 142,
+   "clut": 30720,
+   "saida": "assets/menus/menu_continue_off.png"
+  },
+  {
+   "quadro": 876,
+   "linha": 158,
+   "clut": 30721,
+   "saida": "assets/menus/menu_option_on.png"
+  },
+  {
+   "quadro": 780,
+   "linha": 158,
+   "clut": 30720,
+   "saida": "assets/menus/menu_option_off.png"
+  }
+ ]
+}

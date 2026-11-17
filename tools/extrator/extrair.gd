@@ -146,13 +146,24 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	var fotos: Dictionary = r.fotos
 	for k in ["DUMP", "DUMP_FROM", "OBJLOG", "AUDIO", "SPUDBG", "SPUDUMP", "RWATCH"]: OS.unset_environment(k)
 	OS.set_environment("NORAM", "1"); OS.set_environment("DUMPDIR", dir)
-	OS.set_environment("DUMP_LIST", ",".join(fotos.keys())); OS.set_environment("POKE", str(r.get("poke", "")))
+	var quadros := fotos.keys()
+	for sp in r.get("sprites", []):
+		if not str(int(sp.quadro)) in quadros: quadros.append(str(int(sp.quadro)))
+	OS.set_environment("DUMP_LIST", ",".join(quadros)); OS.set_environment("POKE", str(r.get("poke", "")))
 	prog.call(0, 3, "rodando o %s" % str(r.jogo).to_upper())
 	var out := []
 	var code := OS.execute(cap, ["x", bios, "DISC=" + d.caminho, str(int(r.quadros)), str(r.botoes)], out, true)
-	for k in fotos:
+	for k in quadros:
 		if not FileAccess.file_exists(dir.path_join("v_%s.bin" % k)):
 			printerr("a captura não fotografou o quadro %s (saída %d): %s" % [k, code, str(out).right(400)]); return -1
+	var n := 0
+	for sp in r.get("sprites", []):
+		if not sprite_da_vram(dir, int(sp.quadro), int(sp.linha), int(sp.clut), jogo.path_join(str(sp.saida))): return -1
+		n += 1
+	if fotos.is_empty():
+		for f in DirAccess.get_files_at(dir): DirAccess.remove_absolute(dir.path_join(f))
+		DirAccess.remove_absolute(dir); DirAccess.remove_absolute(jogo.path_join(".captura"))
+		return n
 	prog.call(1, 3, "desenhando %d telas" % fotos.size())
 	var bases := []
 	for k in fotos: bases.append(dir.path_join(k))
@@ -160,7 +171,6 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	out = []
 	code = OS.execute(render, ["--path", jogo, "--rendering-method", "gl_compatibility", "--rendering-driver", "opengl3",
 		"-s", "res://tests/render_dump.gd"], out, true)
-	var n := 0
 	for k in fotos:
 		var t := dir.path_join("tela_%s.png" % k)
 		if not FileAccess.file_exists(t): printerr("não desenhou o quadro %s (saída %d): %s" % [k, code, str(out).right(400)]); return -1
@@ -388,12 +398,52 @@ func codigo_x4(jogo: String, prog: Callable) -> int:
 	prog.call(10, 10, "pronto")
 	return 1
 
+## sprites 16x16 de uma linha da tela, direto da VRAM fotografada (sem desenhar): página de 4 bits, uma CLUT,
+## cor 0 = transparente, cores 5 bits << 3; recorta nos pontos opacos
+func sprite_da_vram(dir: String, q: int, linha: int, clut_alvo: int, saida: String) -> bool:
+	var vb := FileAccess.get_file_as_bytes(dir.path_join("v_%d.bin" % q))
+	var w := FileAccess.get_file_as_bytes(dir.path_join("p_%d.bin" % q)).to_int32_array()
+	if vb.size() != 1024 * 512 * 2: printerr("VRAM do quadro %d faltando" % q); return false
+	var v := vb.to_int32_array()   # 2 pontos de 16 bits por inteiro
+	var vram := func(x: int, y: int) -> int:
+		var k := (y & 511) * 1024 + (x & 1023)
+		return (v[k >> 1] >> ((k & 1) * 16)) & 0xFFFF
+	var img := PackedByteArray(); img.resize(320 * 240 * 4)
+	var ip := 0; var tpx := 0; var tpy := 0; var tdep := 0
+	var x0 := 320; var y0 := 240; var x1 := -1; var y1 := -1
+	while ip < w.size():
+		var ws: int = w[ip]; var o := ip + 1; ip += ws + 1
+		if ws <= 0: break
+		var w0: int = w[o]; var cmd := (w0 >> 24) & 0xFF
+		if cmd == 0xE1: tpx = (w0 & 15) * 64; tpy = ((w0 >> 4) & 1) * 256; tdep = (w0 >> 7) & 3; continue
+		if cmd < 0x7C or cmd > 0x7F: continue
+		var xy: int = w[o + 1]; var x := xy & 0x7FF; var y := (xy >> 16) & 0x7FF
+		var uv: int = w[o + 2]; var clut := (uv >> 16) & 0xFFFF
+		if y != linha or clut != clut_alvo or tdep != 0: continue
+		var u := uv & 0xFF; var vv := (uv >> 8) & 0xFF
+		var cx := (clut & 0x3F) * 16; var cy := (clut >> 6) & 0x1FF
+		for j in 16:
+			for i in 16:
+				var tu := (u + i) & 255; var tv := (vv + j) & 255
+				var wd: int = vram.call(tpx + (tu >> 2), tpy + tv)
+				var c: int = vram.call(cx + ((wd >> ((tu & 3) * 4)) & 15), cy)
+				var X := x + i; var Y := y + j
+				if c == 0 or X < 0 or X >= 320 or Y < 0 or Y >= 240: continue
+				var k := (Y * 320 + X) * 4
+				img[k] = (c & 31) << 3; img[k + 1] = ((c >> 5) & 31) << 3; img[k + 2] = ((c >> 10) & 31) << 3; img[k + 3] = 255
+				x0 = mini(x0, X); y0 = mini(y0, Y); x1 = maxi(x1, X); y1 = maxi(y1, Y)
+	if x1 < 0: printerr("nenhum sprite na linha %d com a CLUT %x no quadro %d" % [linha, clut_alvo, q]); return false
+	var im := Image.create_from_data(320, 240, false, Image.FORMAT_RGBA8, img).get_region(Rect2i(x0, y0, x1 - x0 + 1, y1 - y0 + 1))
+	DirAccess.make_dir_recursive_absolute(saida.get_base_dir())
+	return im.save_png(saida) == OK
+
 const GRUPOS := {
 	"x4_arc": {"discos": ["x4"]},
 	"videos_x4": {"discos": ["x4"]}, "videos_x5": {"discos": ["x5"]}, "videos_x6": {"discos": ["x6"]},
 	"menus_x5": {"discos": ["x5"], "captura": true},
 	"menus_x6": {"discos": ["x6"], "captura": true},
 	"titulo_x5": {"discos": ["x5"], "captura": true}, "titulo_x6": {"discos": ["x6"], "captura": true},
+	"textos_x5": {"discos": ["x5"], "captura": true},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
 	"codigo_x4": {"discos": []},
 }
