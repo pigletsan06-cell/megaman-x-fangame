@@ -9,7 +9,7 @@ const MmxUI := preload("res://mmx_ui.gd")   # sem class_name (pasta nova não te
 ##   --sem-jogo        não abre o jogo no fim (com --auto)
 ##   --atualizar       procura atualização e aplica antes de preparar (com --auto)
 ##   --foto=PREFIXO    salva fotos da tela (PREFIXO_NN_nome.png) nos momentos importantes
-## Variáveis: FUSION_RAIZ (pasta do pacote), FUSION_PYTHON, FUSION_GODOT, FUSION_DISCOS (pasta dos discos)
+## Variáveis: FUSION_RAIZ (pasta do pacote), FUSION_PYTHON, FUSION_GODOT, FUSION_FFMPEG, FUSION_DISCOS (pasta dos discos)
 
 const DISCOS := [
 	{"id": "x4", "nome": "Mega Man X4", "arquivo": "Mega Man X4 (USA).bin", "sha1": "26ffe24a79384b24af7571674251ee575e889b38"},
@@ -269,7 +269,9 @@ func _vars() -> Dictionary:
 	if OS.get_environment("FUSION_PYTHON") != "": py = OS.get_environment("FUSION_PYTHON")
 	var gd := OS.get_executable_path()
 	if OS.get_environment("FUSION_GODOT") != "": gd = OS.get_environment("FUSION_GODOT")
-	var v := {"python": py, "godot": gd, "raiz": raiz, "tools": raiz.path_join("tools"), "jogo": raiz.path_join("godot"),
+	var ff := raiz.path_join("ferramentas/ffmpeg.exe") if OS.get_name() == "Windows" else "ffmpeg"
+	if OS.get_environment("FUSION_FFMPEG") != "": ff = OS.get_environment("FUSION_FFMPEG")
+	var v := {"python": py, "godot": gd, "ffmpeg": ff, "raiz": raiz, "tools": raiz.path_join("tools"), "jogo": raiz.path_join("godot"),
 		"gerado": raiz.path_join("gerado"), "so": OS.get_name()}
 	for d in DISCOS: v["disco_" + d.id] = str(discos.get(d.id, {}).get("caminho", ""))
 	return v

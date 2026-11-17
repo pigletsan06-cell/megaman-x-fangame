@@ -1,0 +1,22 @@
+{
+ "versao_receita": 1,
+ "nota": "Etapas que o launcher roda no PC do jogador, a partir dos discos dele. Cada etapa só roda de novo se mudar o disco, os arquivos dela ou uma etapa de antes.",
+ "etapas": [
+  {"id": "dados_x4", "nome": "Dados do X4", "discos": ["x4"],
+   "cmd": ["{python}", "{tools}/extrator/extrair.py", "{jogo}", "x4_arc", "disco_x4={disco_x4}"],
+   "arquivos": ["{tools}/extrator"]},
+  {"id": "videos_x4", "nome": "Vídeos do X4", "discos": ["x4"],
+   "cmd": ["{python}", "{tools}/extrator/extrair.py", "{jogo}", "videos_x4", "disco_x4={disco_x4}", "ffmpeg={ffmpeg}"],
+   "arquivos": ["{tools}/extrator"]},
+  {"id": "videos_x5", "nome": "Vídeos do X5", "discos": ["x5"],
+   "cmd": ["{python}", "{tools}/extrator/extrair.py", "{jogo}", "videos_x5", "disco_x5={disco_x5}", "ffmpeg={ffmpeg}"],
+   "arquivos": ["{tools}/extrator"]},
+  {"id": "videos_x6", "nome": "Vídeos do X6", "discos": ["x6"],
+   "cmd": ["{python}", "{tools}/extrator/extrair.py", "{jogo}", "videos_x6", "disco_x6={disco_x6}", "ffmpeg={ffmpeg}"],
+   "arquivos": ["{tools}/extrator"]},
+  {"id": "importar", "nome": "Preparar no Godot",
+   "cmd": ["{godot}", "--headless", "--path", "{jogo}", "--import"],
+   "arquivos": ["{jogo}/project.godot", "{jogo}/scripts", "{jogo}/scenes", "{jogo}/shaders"],
+   "depois_de": ["dados_x4", "videos_x4", "videos_x5", "videos_x6"]}
+ ]
+}
