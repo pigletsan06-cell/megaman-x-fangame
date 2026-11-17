@@ -1,5 +1,5 @@
 {
- "versao_receita": 16,
+ "versao_receita": 17,
  "nota": "Etapas que o launcher roda no PC do jogador, a partir dos discos dele. Cada etapa só roda de novo se mudar o disco, os arquivos dela ou uma etapa de antes.",
  "etapas": [
   {
@@ -679,6 +679,70 @@
    ]
   },
   {
+   "id": "musica_x6",
+   "nome": "Música da seleção (X6)",
+   "discos": [
+    "x6"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "musica_x6",
+    "disco_x6={disco_x6}",
+    "captura={captura}",
+    "bios={tools}/captura/openbios.bin",
+    "godot_render={godot_render}",
+    "godot={godot}",
+    "ffmpeg={ffmpeg}"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{tools}/captura/openbios.bin",
+    "{captura}"
+   ],
+   "depois_de": [
+    "godot_inicial"
+   ]
+  },
+  {
+   "id": "musica_titulo",
+   "nome": "Música do título",
+   "discos": [
+    "x5"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "musica_titulo",
+    "disco_x5={disco_x5}",
+    "captura={captura}",
+    "bios={tools}/captura/openbios.bin",
+    "godot_render={godot_render}",
+    "godot={godot}",
+    "ffmpeg={ffmpeg}"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{tools}/captura/openbios.bin",
+    "{captura}"
+   ],
+   "depois_de": [
+    "godot_inicial"
+   ]
+  },
+  {
    "id": "importar",
    "nome": "Preparar no Godot",
    "cmd": [
@@ -715,7 +779,9 @@
     "menus_x4",
     "mini_x4",
     "intro_x4",
-    "musica_x4"
+    "musica_x4",
+    "musica_x6",
+    "musica_titulo"
    ]
   }
  ]

@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
         if (getenv("AUDIO") && i >= atoi(getenv("AUDIO_FROM"))) {   // grava o som (44100 Hz estéreo 16 bits, cru)
             static FILE* af; const short* (*aud)(int) = (void*)x4_audio;
             if (!af) af = fopen(getenv("AUDIO"), "wb");
-            int nsmp = (i % 3 == 0) ? 736 : 735;   // 44100/60
+            int nsmp = getenv("AUDIO_POR") ? atoi(getenv("AUDIO_POR")) : (i % 3 == 0) ? 736 : 735;   // por quadro (padrão: 735/736)
             fwrite(aud(nsmp), 4, nsmp, af); fflush(af);
         }
         const char* l = lg(); if (*l) { printf("%s", l); lgc(); }

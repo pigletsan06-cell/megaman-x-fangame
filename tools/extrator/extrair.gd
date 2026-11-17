@@ -144,10 +144,11 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	var dir := jogo.path_join(".captura/" + nm)
 	DirAccess.make_dir_recursive_absolute(dir)
 	var fotos: Dictionary = r.fotos
-	for k in ["DUMP", "DUMP_FROM", "OBJLOG", "AUDIO", "AUDIO_FROM", "SPUDBG", "SPUDUMP", "RWATCH"]: OS.unset_environment(k)
+	for k in ["DUMP", "DUMP_FROM", "OBJLOG", "AUDIO", "AUDIO_FROM", "AUDIO_POR", "SPUDBG", "SPUDUMP", "RWATCH"]: OS.unset_environment(k)
 	var au: Dictionary = r.get("audio", {})
 	if not au.is_empty():   # som do núcleo (44,1 kHz estéreo 16 bits, cru) a partir de um quadro
 		OS.set_environment("AUDIO", dir.path_join("som.raw")); OS.set_environment("AUDIO_FROM", str(int(au.de)))
+		if au.has("por"): OS.set_environment("AUDIO_POR", str(int(au.por)))   # amostras por quadro (padrão 735/736)
 	OS.set_environment("NORAM", "1"); OS.set_environment("DUMPDIR", dir)
 	var quadros := fotos.keys()
 	for sp in r.get("sprites", []):
@@ -183,7 +184,7 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 		var ff := opcao("ffmpeg", "FUSION_FFMPEG", "ffmpeg")
 		var o2 := []
 		OS.execute(ff, ["-nostdin", "-v", "error", "-y", "-f", "s16le", "-ar", "44100", "-ac", "2", "-i", dir.path_join("laco.raw"),
-			"-c:a", "libvorbis", "-q:a", "5", dst + ".tmp.ogg"], o2, true)
+			"-c:a", "libvorbis", "-q:a", str(au.get("qualidade", 5)), dst + ".tmp.ogg"], o2, true)
 		if not FileAccess.file_exists(dst + ".tmp.ogg"): printerr("ffmpeg falhou no som: ", str(o2).right(300)); return -1
 		DirAccess.rename_absolute(dst + ".tmp.ogg", dst); n += 1
 	for sp in r.get("sprites", []):
@@ -392,7 +393,7 @@ func codigo_x4(jogo: String, prog: Callable) -> int:
 		var extra := ["-Dfunc_80018000=func_80018000_original"] if l.ends_with("/55C4.c") else []
 		lista.append([src.path_join(l), fl + inc + extra])
 	for f in ["marca_inicio.c", "marca_fim.c", "runtime.c", "fangame.c", "stubs_gen.c", "gdext.c", "memcard_x4.c"]:
-		lista.append([x4.path_join(f), fl + inc + ["-I" + x4]])
+		lista.append([x4.path_join(f), fl + inc + ["-I" + x4, "-I" + src.path_join("src")]])
 	for l in FileAccess.get_file_as_string(x4.path_join("audio_srcs.txt")).split("\n", false):
 		lista.append([src.path_join(l), fl + ainc])
 	var obj := base.path_join("obj_" + ("win" if win else "linux"))
@@ -627,7 +628,8 @@ const GRUPOS := {
 	"intro_x5": {"discos": ["x5"], "captura": true}, "intro_x6": {"discos": ["x6"], "captura": true},
 	"musica_x5": {"discos": ["x5"], "captura": true},
 	"menus_x4": {"discos": ["x4"], "captura": true}, "intro_x4": {"discos": ["x4"], "captura": true},
-	"musica_x4": {"discos": ["x4"], "captura": true},
+	"musica_x4": {"discos": ["x4"], "captura": true}, "musica_x6": {"discos": ["x6"], "captura": true},
+	"musica_titulo": {"discos": ["x5"], "captura": true},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
 	"codigo_x4": {"discos": []}, "codigo_psx": {"discos": []}, "ferramentas": {"discos": []},
 }

@@ -1,0 +1,16 @@
+{
+ "nota": "Música do título do fangame: a do menu do X5 (depois de apertar START na tela de título), som do nosso núcleo a partir do quadro 600; o laço é a 2ª volta da música (começa na amostra 2426661, 2351596 amostras) e vai em Vorbis q6. Conferido: depois de decodificar, o som é IDÊNTICO ao do arquivo do PC do dono.",
+ "jogo": "x5",
+ "disco": "x5",
+ "quadros": 7110,
+ "botoes": "start:700-710",
+ "poke": "",
+ "fotos": {},
+ "audio": {
+  "de": 600,
+  "inicio": 2426661,
+  "amostras": 2351596,
+  "qualidade": 6,
+  "saida": "assets/musica/titulo.ogg"
+ }
+}
