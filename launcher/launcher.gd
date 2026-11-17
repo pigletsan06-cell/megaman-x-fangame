@@ -329,6 +329,7 @@ func _lista_arquivos(p: String) -> PackedStringArray:
 	var subs := []
 	for fn in da.get_files():
 		if fn.ends_with(".import") or fn.ends_with(".uid") or fn.ends_with(".pyc"): continue
+		if fn.begins_with("psx_") and fn.ends_with(".json"): continue   # (registros que a recompilação grava na pasta atual)
 		out.append(p.path_join(fn))
 	for dn in da.get_directories():
 		if dn.begins_with(".") or dn == "__pycache__": continue

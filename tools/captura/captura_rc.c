@@ -9,6 +9,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <shellapi.h>
+#include <direct.h>
 #else
 #include <dlfcn.h>
 #include <unistd.h>
@@ -81,6 +82,12 @@ int main(int argc0, char** argv0)
     scr_f sc = (scr_f)simbolo(h, "recomp_screen"); hide_f hd = (hide_f)simbolo(h, "recomp_hide_cluts");
     if (!st || !fr || !mem || !sc || !hd) { fprintf(stderr, "captura_rc: a biblioteca não tem as funções da captura\n"); return 3; }
     int arm = atoi(v[3]), esc = atoi(v[4]); const char* dir = v[5]; const char* q = v[6];
+    /* a recompilação grava registros na pasta atual (psx_*.json): que fiquem na pasta da captura */
+#ifdef _WIN32
+    { wchar_t wd[1024]; MultiByteToWideChar(CP_UTF8, 0, dir, -1, wd, 1024); _wchdir(wd); }
+#else
+    if (chdir(dir) != 0) { fprintf(stderr, "captura_rc: pasta %s inacessível\n", dir); return 3; }
+#endif
     int ppm_de = c > 7 ? atoi(v[7]) : 0, ppm_ate = c > 8 ? atoi(v[8]) : 1 << 30;
     if (st(0, 0, v[2]) != 0) { fprintf(stderr, "captura_rc: a recompilação não iniciou\n"); sai(4); }
     /* até a fase: aperta start (6 de cada 40 quadros) fora da escolha de fase; na escolha, fase 1 e a armadura */
