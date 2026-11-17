@@ -41,7 +41,9 @@ prévia da fase (64×48), que só carrega quando o cursor anda pelo controle.
 Roteiro que dá as 8 telas do X5 numa passada só (`CT=9999` desliga a escrita do cursor; quadros 3290–4000):
 `left:3300 up:3360 down:3440 down:3520 down:3600 right:3680 up:3760 up:3840 up:3920` (5 quadros apertado cada) →
 x5_5 3303–3362 · x5_1 3363–3442 · x5_6 3523–3602 · x5_3 3603–3682 · x5_4 3683–3762 · x5_2 3763–3842 · x5_7 3843–3922 · x5_8 3923–3999,
-todas com o mesmo SHA-1 do PC do dono. Conclusão: o caminho das capturas é determinístico e refaz as telas idênticas.
+todas com o mesmo SHA-1 do PC do dono. X6 (`fusion/sel6.sh`): `x6_1` idêntica (cursor de início, quadros 2658+); para as
+outras 7 falta achar o roteiro de controle (só "direita" não move o cursor do X6).
+Conclusão: o caminho das capturas é determinístico e refaz as telas idênticas.
 
 ## Código dos jogos (pasta `godot/bin`, compilado no PC do jogador)
 
