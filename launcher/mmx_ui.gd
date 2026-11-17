@@ -1,4 +1,4 @@
-class_name MmxUI
+## Estilo visual do jogo (copiado de godot/scripts/mmx_ui.gd, sem class_name: o launcher roda de uma pasta nova, sem .godot/)
 extends RefCounted
 ## Estilo dos menus do fangame (desenho original): fonte de pixel própria (assets/fonte/mmx_ui.fnt, tools/fonte_mmx.py),
 ## painéis azul-metálicos com cantos cortados, faixa de título, barra de seleção pulsando e sons de menu

@@ -1,4 +1,5 @@
 extends Control
+const MmxUI := preload("res://mmx_ui.gd")   # sem class_name (pasta nova não tem o cache de classes do Godot)
 ## Launcher do Mega Man X Fusion: confere os discos do jogador, prepara o jogo a partir deles (arte, sons e código,
 ## pela receita em tools/receita.json), procura atualizações e abre o jogo.
 ## Desenho original: painéis no estilo dos menus do fangame, sem personagens nem arte dos jogos.
@@ -46,7 +47,7 @@ var http: HTTPRequest
 var upd := {"estado": "", "texto": "", "nova": 0, "asset": "", "url": ""}
 
 var cv: Control
-var btn_discos: Button; var btn_preparar: Button; var btn_jogar: Button; var btn_atualizar: Button
+var btn_discos: Button; var btn_preparar: Button; var btn_jogar: Button; var btn_atualizar: Button; var btn_log: Button
 var dlg: FileDialog
 var sfx := {}
 var abre_t := 0.0
@@ -57,19 +58,21 @@ func _ready() -> void:
 		elif a == "--sem-jogo": sem_jogo = true
 		elif a == "--atualizar": auto_upd = true
 		elif a.begins_with("--foto="): foto = a.substr(7)
+		elif a.begins_with("--tela="): _tela_depois(a.substr(7))   # --tela=ARQUIVO.png@SEGUNDOS: foto da tela e fecha (testes)
 	raiz = ProjectSettings.globalize_path("res://").rstrip("/").get_base_dir()
 	if OS.get_environment("FUSION_RAIZ") != "": raiz = OS.get_environment("FUSION_RAIZ")
 	DirAccess.make_dir_recursive_absolute(raiz.path_join("gerado"))
 	estado = _ler_json(raiz.path_join("gerado/estado.json"))
-	receita = _ler_json(raiz.path_join("tools/receita.json"))
+	_le_receita()
 	versao = _ler_json(raiz.path_join("versao.json"))
 	theme = MmxUI.theme()
 	cv = _Canvas.new(); cv.fn = _desenha; cv.size = Vector2(640, 360); add_child(cv)
-	btn_discos = _botao("PROCURAR DISCOS", Rect2(26, 196, 216, 18), _escolher_pasta)
-	btn_atualizar = _botao("ATUALIZAR", Rect2(26, 280, 216, 16), _baixar_atualizacao)
-	btn_preparar = _botao("PREPARAR", Rect2(276, 270, 336, 18), _preparar)
-	btn_jogar = _botao("JOGAR", Rect2(276, 308, 336, 34), _jogar, 18)
-	btn_atualizar.visible = false
+	btn_discos = _botao("PROCURAR DISCOS", Rect2(30, 199, 208, 17), _escolher_pasta)
+	btn_atualizar = _botao("ATUALIZAR", Rect2(30, 281, 208, 15), _baixar_atualizacao)
+	btn_preparar = _botao("PREPARAR", Rect2(268, 271, 124, 32), _preparar)
+	btn_jogar = _botao("JOGAR", Rect2(402, 271, 220, 32), _jogar, 18)
+	btn_log = _botao("ABRIR REGISTRO", Rect2(522, 318, 96, 14), _abrir_registro)
+	btn_atualizar.visible = false; btn_log.visible = false
 	dlg = FileDialog.new(); dlg.file_mode = FileDialog.FILE_MODE_OPEN_DIR; dlg.access = FileDialog.ACCESS_FILESYSTEM
 	dlg.use_native_dialog = true; dlg.title = "Pasta com os discos (.bin)"
 	dlg.dir_selected.connect(_pasta_escolhida); add_child(dlg)
@@ -85,7 +88,7 @@ func _ready() -> void:
 	_atualiza_botoes()
 
 func _botao(txt: String, r: Rect2, f: Callable, fs := MmxUI.SIZE) -> Button:
-	var b := Button.new(); b.text = txt; b.position = r.position; b.size = r.size; b.custom_minimum_size = r.size; b.clip_text = true
+	var b := Button.new(); b.text = txt; b.clip_text = true
 	b.add_theme_font_override("font", MmxUI.font()); b.add_theme_font_size_override("font_size", fs)
 	for st in ["normal", "hover", "pressed", "disabled", "focus"]:
 		var sb := StyleBoxFlat.new()
@@ -93,6 +96,7 @@ func _botao(txt: String, r: Rect2, f: Callable, fs := MmxUI.SIZE) -> Button:
 			"disabled": Color(0.02, 0.04, 0.1, 0.85), "focus": Color(0, 0, 0, 0)}[st]
 		sb.border_color = {"normal": MmxUI.C_EDGE_LO, "hover": MmxUI.C_SEL, "pressed": MmxUI.C_SEL, "disabled": Color(0.1, 0.16, 0.3), "focus": MmxUI.C_SEL}[st]
 		sb.set_border_width_all(1)
+		sb.skew = Vector2(0.25, 0)
 		sb.content_margin_left = 6; sb.content_margin_right = 6; sb.content_margin_top = 1; sb.content_margin_bottom = 1
 		sb.draw_center = st != "focus"
 		b.add_theme_stylebox_override(st, sb)
@@ -105,6 +109,8 @@ func _botao(txt: String, r: Rect2, f: Callable, fs := MmxUI.SIZE) -> Button:
 	b.mouse_entered.connect(func(): if not b.disabled: _som("menu_tab"))
 	b.focus_entered.connect(func(): _som("menu_tab"))
 	add_child(b)
+	# tamanho só depois da fonte e das bordas: antes disso o Godot usa a fonte padrão e o botão fica alto demais
+	b.custom_minimum_size = r.size; b.position = r.position; b.size = r.size
 	return b
 
 func _som(nm: String) -> void:
@@ -116,6 +122,14 @@ func _ler_json(p: String) -> Dictionary:
 	if not FileAccess.file_exists(p): return {}
 	var d = JSON.parse_string(FileAccess.get_file_as_string(p))
 	return d if d is Dictionary else {}
+
+var receita_msg := ""          # por que não tem etapas (receita faltando ou quebrada)
+func _le_receita() -> void:
+	var p := raiz.path_join("tools/receita.json")
+	receita = _ler_json(p)
+	receita_msg = ""
+	if not FileAccess.file_exists(p): receita_msg = "Receita não encontrada (tools/receita.json)."
+	elif receita.is_empty(): receita_msg = "Receita quebrada (tools/receita.json não é um JSON válido)."
 
 func _grava_estado() -> void:
 	var f := FileAccess.open(raiz.path_join("gerado/estado.json"), FileAccess.WRITE)
@@ -156,6 +170,7 @@ func _procura_thread(pastas: Array, cache: Dictionary) -> void:
 			for fn in da.get_files():
 				if fn.to_lower().ends_with(".bin"): cands.append(str(p).path_join(fn))
 		var visto := {}
+		var diferente := ""   # arquivo com o nome ou o tamanho do disco, mas outro conteúdo
 		for c in cands:
 			if visto.has(c): continue
 			visto[c] = true
@@ -169,10 +184,10 @@ func _procura_thread(pastas: Array, cache: Dictionary) -> void:
 			novo_cache[c] = {"tamanho": sz, "data": mt, "sha1": sha}
 			if sha == d.sha1:
 				achado = c; break
-			elif c.get_file() == d.arquivo:
-				call_deferred("_disco_resultado", d.id, "diferente", c, sha)
+			elif diferente == "": diferente = c
 		if achado != "": call_deferred("_disco_resultado", d.id, "ok", achado, d.sha1)
-		elif discos[d.id].estado == "procurando": call_deferred("_disco_resultado", d.id, "faltando", "", "")
+		elif diferente != "": call_deferred("_disco_resultado", d.id, "diferente", diferente, "")
+		else: call_deferred("_disco_resultado", d.id, "faltando", "", "")
 	call_deferred("_discos_fim", novo_cache)
 
 const TAMANHOS := {"x4": 592217136, "x5": 582954960, "x6": 599985792}
@@ -207,15 +222,20 @@ func _discos_fim(cache: Dictionary) -> void:
 	var c: Dictionary = estado.get("discos", {})
 	c.merge(cache, true)
 	estado["discos"] = c
-	var faltam := []
+	var faltam := []; var errados := []
 	for d in DISCOS:
-		if discos[d.id].estado != "ok": faltam.append(d.nome)
-	if faltam.is_empty():
+		if discos[d.id].estado == "diferente": errados.append("%s (%s)" % [d.nome, str(discos[d.id].caminho).get_file()])
+		elif discos[d.id].estado != "ok": faltam.append(d.nome)
+	if faltam.is_empty() and errados.is_empty():
 		disco_msg = "Os 3 discos conferem."
 		estado["pasta_discos"] = discos.x5.caminho.get_base_dir()
 		_som("menu_equip")
 	else:
-		disco_msg = "Falta: " + ", ".join(faltam)
+		var partes := []
+		if not faltam.is_empty(): partes.append("Falta: " + ", ".join(faltam))
+		if not errados.is_empty(): partes.append("Não é o disco certo: " + ", ".join(errados))
+		disco_msg = ". ".join(partes)
+		faltam.append_array(errados)
 		_som("menu_error")
 	_grava_estado()
 	_log(disco_msg)
@@ -224,6 +244,7 @@ func _discos_fim(cache: Dictionary) -> void:
 	_foto("discos")
 	if auto:
 		if not faltam.is_empty(): _fim_auto(false, disco_msg)
+		elif etapas.is_empty(): _fim_auto(false, receita_msg)
 		elif auto_upd and upd.estado == "disponivel": _baixar_atualizacao()
 		elif auto_upd and upd.estado in ["", "procurando"]: pass   # espera a resposta da atualização
 		else: _preparar()
@@ -240,7 +261,8 @@ func _monta_etapas() -> void:
 	etapas.clear()
 	for e in receita.get("etapas", []):
 		etapas.append({"id": str(e.id), "nome": str(e.nome), "estado": "pendente", "progresso": 0.0, "texto": "", "def": e})
-	if etapas.is_empty(): _log("receita vazia: tools/receita.json")
+	if etapas.is_empty() and receita_msg == "": receita_msg = "Receita sem etapas (tools/receita.json)."
+	if receita_msg != "": _log(receita_msg)
 
 func _vars() -> Dictionary:
 	var py := raiz.path_join("python/python.exe") if OS.get_name() == "Windows" else "python3"
@@ -418,8 +440,17 @@ func _atualiza_botoes() -> void:
 	btn_jogar.disabled = not (dok and prep_ok) or rodando >= 0 or upd.estado == "baixando"
 	btn_atualizar.visible = upd.estado == "disponivel"
 	btn_atualizar.disabled = rodando >= 0
+	var tem_erro := false
+	for e in etapas:
+		if e.estado == "erro": tem_erro = true
+	btn_log.visible = tem_erro
+	for b in [btn_discos, btn_preparar, btn_jogar, btn_atualizar]:
+		if b.disabled and b.has_focus(): b.release_focus()
 	if not btn_jogar.disabled and not btn_jogar.has_focus() and not auto: btn_jogar.grab_focus()
 	elif btn_jogar.disabled and not btn_preparar.disabled and not btn_preparar.has_focus(): btn_preparar.grab_focus()
+
+func _abrir_registro() -> void:
+	OS.shell_open(raiz.path_join("gerado/launcher.log"))
 
 func _jogar() -> void:
 	if btn_jogar.disabled: return
@@ -525,7 +556,7 @@ func _aplica_atualizacao(zip: String) -> void:
 		if r == "" or ".." in r or r.begins_with("/"): continue
 		if FileAccess.file_exists(raiz.path_join(r)): DirAccess.remove_absolute(raiz.path_join(r))
 	versao = _ler_json(raiz.path_join("versao.json"))
-	receita = _ler_json(raiz.path_join("tools/receita.json"))
+	_le_receita()
 	_log("atualização aplicada: %d arquivos, agora versão %d" % [n, int(versao.get("versao", 0))])
 	upd.estado = "em_dia"; upd.texto = "Atualizado para a versão %d" % int(versao.get("versao", 0))
 	_som("menu_full")
@@ -537,6 +568,15 @@ func _aplica_atualizacao(zip: String) -> void:
 	_preparar()
 
 # ---------------- teste automático ----------------
+func _tela_depois(arg: String) -> void:
+	var at := arg.rfind("@")
+	var arq := arg.substr(0, at) if at > 0 else arg
+	var seg := float(arg.substr(at + 1)) if at > 0 else 3.0
+	await get_tree().create_timer(seg).timeout
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png(arq)
+	get_tree().quit()
+
 func _foto(nm: String) -> void:
 	if foto == "": return
 	await get_tree().process_frame; await get_tree().process_frame
@@ -586,21 +626,88 @@ func _desenha(ci: Control) -> void:
 		var ph := fmod(t * (0.03 + (i % 5) * 0.01) + i * 0.137, 1.0)
 		ci.draw_rect(Rect2(fmod(i * 97.3, 640.0), 360.0 - ph * 380.0, 1.5, 1.5), Color(0.5, 0.8, 1.0, 0.35 * sin(ph * PI)))
 	var ab := MmxUI.ease_out(t / 0.6)
-	# título
-	MmxUI.text(ci, Vector2(20 - (1.0 - ab) * 30, 38), "MEGA MAN X FUSION", Color(1, 0.86, 0.35, ab), 27)
+	_titulo(ci, ab)
 	MmxUI.text(ci, Vector2(22, 50), "LAUNCHER  ·  X4  X5  X6", Color(0.6, 0.75, 1.0, ab))
 	MmxUI.text(ci, Vector2(0, 26), "versão %d" % int(versao.get("versao", 0)), Color(0.6, 0.75, 1.0, ab), MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, 620)
-	ci.draw_line(Vector2(16, 56), Vector2(624 * ab, 56), Color(0.3, 0.84, 1.0, 0.5), 1.0)
-	_painel_discos(ci, Rect2(16, 64, 236, 156), ab)
-	_painel_atualizacao(ci, Rect2(16, 228, 236, 74), ab)
-	_painel_etapas(ci, Rect2(264, 64, 360, 230), ab)
-	# rodapé: última linha do registro
-	var ult := log_linhas[log_linhas.size() - 1] if log_linhas.size() > 0 else ""
-	MmxUI.text(ci, Vector2(16, 352), MmxUI.fit(ult, 236), MmxUI.C_DIM)
+	ci.draw_line(Vector2(16, 56), Vector2(16 + 608 * ab, 56), Color(0.3, 0.84, 1.0, 0.5), 1.0)
+	_painel_discos(ci, Rect2(16, 64, 236, 164), ab)
+	_painel_atualizacao(ci, Rect2(16, 236, 236, 68), ab)
+	_painel_etapas(ci, Rect2(264, 64, 360, 198), ab)
+	_rodape(ci, ab)
 	# brilho no JOGAR quando pronto
 	if not btn_jogar.disabled:
 		var r := Rect2(btn_jogar.position, btn_jogar.size).grow(2)
-		ci.draw_rect(r, Color(1, 0.86, 0.35, 0.25 + 0.25 * sin(t * TAU * 1.2)), false, 1.0)
+		var a := 0.3 + 0.3 * sin(t * TAU * 1.1)
+		var sk := r.size.y * 0.25 * 0.5
+		ci.draw_polyline(PackedVector2Array([r.position + Vector2(sk, 0), Vector2(r.end.x + sk, r.position.y), r.end - Vector2(sk, 0), Vector2(r.position.x - sk, r.end.y), r.position + Vector2(sk, 0)]), Color(1, 0.86, 0.35, a), 1.0)
+
+## título com um brilho passando pelas letras
+func _titulo(ci: Control, ab: float) -> void:
+	var s := "MEGA MAN X FUSION"
+	var f := MmxUI.font()
+	var x := 20.0 - (1.0 - ab) * 30.0
+	var sw := fmod(t * 0.35, 1.8) * 360.0 - 60.0   # posição do brilho
+	for ch in s:
+		var w := f.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 27).x
+		var g := clampf(1.0 - absf(x + w * 0.5 - 20.0 - sw) / 26.0, 0.0, 1.0)
+		var col := Color(1, 0.86, 0.35).lerp(Color(1, 1, 0.92), g * 0.85)
+		col.a = ab
+		MmxUI.text(ci, Vector2(x, 38), ch, col, 27)
+		x += w
+
+## texto do rodapé: o que está acontecendo, em palavras de gente
+func _status() -> Array:   # [texto, cor]
+	if disco_thread and disco_thread.is_alive():
+		for d in DISCOS:
+			var st: Dictionary = discos.get(d.id, {})
+			if st.get("estado", "") == "procurando" and float(st.get("progresso", 0.0)) > 0.0:
+				return ["Conferindo os discos... (%s %d%%)" % [d.nome, int(float(st.progresso) * 100.0)], MmxUI.C_ACCENT]
+		return ["Procurando os discos...", MmxUI.C_ACCENT]
+	if upd.estado == "baixando": return ["Baixando a versão %d..." % int(upd.nova), MmxUI.C_ACCENT]
+	for d in DISCOS:
+		var st: Dictionary = discos.get(d.id, {})
+		if st.get("estado", "") == "diferente":
+			return ["\"%s\" não é o %s certo (precisa ser a versão americana: %s)." % [str(st.caminho).get_file(), d.nome, d.arquivo], C_ERR]
+	if not _discos_ok():
+		return ["Coloque os discos (.bin) na pasta \"discos\" ou clique em PROCURAR DISCOS.", C_ERR]
+	if receita_msg != "": return [receita_msg, C_ERR]
+	if rodando >= 0:
+		var e: Dictionary = etapas[rodando]
+		return ["Preparando: %s%s   ·   ESC cancela" % [e.nome, (" — " + str(e.texto)) if str(e.texto) != "" else ""], MmxUI.C_TEXT]
+	for e in etapas:
+		if e.estado == "erro": return ["Deu erro em \"%s\". O registro está em gerado/launcher.log." % e.nome, C_ERR]
+	if upd.estado == "disponivel": return ["Tem versão nova (%d): clique em ATUALIZAR." % int(upd.nova), MmxUI.C_SEL]
+	if prep_ok: return ["Tudo pronto! Clique em JOGAR.", C_OK]
+	return ["Clique em PREPARAR (só na primeira vez e depois de atualizar; pode levar alguns minutos).", MmxUI.C_TEXT]
+
+func _rodape(ci: Control, ab: float) -> void:
+	var r := Rect2(16, 314, 608, 22)
+	ci.draw_rect(r, Color(0.0, 0.03, 0.1, 0.8 * ab))
+	ci.draw_rect(r, Color(0.13, 0.32, 0.66, 0.8 * ab), false, 1.0)
+	var st := _status()
+	var col: Color = st[1]
+	ci.draw_rect(Rect2(r.position, Vector2(3, r.size.y)), col)
+	var w := r.size.x - 20 - (104.0 if btn_log.visible else 0.0)
+	MmxUI.text(ci, r.position + Vector2(10, 14), MmxUI.fit(str(st[0]), w), col)
+	var x := 18.0
+	x += MmxUI.hint(ci, Vector2(x, 352), "ENTER", "jogar")
+	x += MmxUI.hint(ci, Vector2(x + 6, 352), "ESC", "cancelar")
+	MmxUI.text(ci, Vector2(0, 352), "fangame sem fins lucrativos  ·  usa os seus próprios discos", Color(0.36, 0.44, 0.62), MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, 622)
+
+## disquinho desenhado (só um CD genérico, na cor do jogo); gira enquanto confere
+func _disco_icone(ci: Control, c: Vector2, col: Color, girando: bool, ok: bool) -> void:
+	ci.draw_circle(c, 10.0, Color(0.05, 0.1, 0.22))
+	ci.draw_arc(c, 9.5, 0, TAU, 32, Color(col.r, col.g, col.b, 0.9), 1.0)
+	ci.draw_arc(c, 6.5, 0, TAU, 24, Color(col.r, col.g, col.b, 0.35), 3.0)
+	var a0 := t * 7.0 if girando else 0.9
+	ci.draw_arc(c, 7.0, a0, a0 + 1.1, 10, Color(1, 1, 1, 0.55 if girando else 0.25), 2.0)
+	ci.draw_circle(c, 2.6, Color(0.0, 0.02, 0.06))
+	ci.draw_arc(c, 2.6, 0, TAU, 12, Color(col.r, col.g, col.b, 0.8), 1.0)
+	if ok:
+		ci.draw_circle(c + Vector2(7, 6), 4.0, Color(0.05, 0.25, 0.1))
+		ci.draw_polyline(PackedVector2Array([c + Vector2(5, 6), c + Vector2(6.5, 7.5), c + Vector2(9.5, 4.5)]), C_OK, 1.2)
+
+const COR_JOGO := {"x4": Color(0.35, 0.65, 1.0), "x5": Color(1.0, 0.55, 0.3), "x6": Color(0.75, 0.5, 1.0)}
 
 func _painel_discos(ci: Control, r: Rect2, ab: float) -> void:
 	MmxUI.frame(ci, Rect2(r.position + Vector2((1.0 - ab) * -40, 0), r.size), MmxUI.C_ACCENT, 7.0)
@@ -614,15 +721,17 @@ func _painel_discos(ci: Control, r: Rect2, ab: float) -> void:
 		ci.draw_rect(row, Color(0.13, 0.32, 0.66, 0.7), false, 1.0)
 		var col: Color = C_OK if s == "ok" else (C_ERR if s in ["faltando", "diferente"] else MmxUI.C_ACCENT)
 		ci.draw_rect(Rect2(row.position, Vector2(3, row.size.y)), col)
-		MmxUI.text(ci, row.position + Vector2(10, 12), str(d.nome).to_upper(), MmxUI.C_TEXT)
+		_disco_icone(ci, row.position + Vector2(20, 17), COR_JOGO[d.id], s == "procurando", s == "ok")
+		MmxUI.text(ci, row.position + Vector2(36, 14), str(d.nome).to_upper(), MmxUI.C_TEXT)
 		var sub := ""
 		match s:
-			"ok": sub = "confere  ✓"
+			"ok": sub = "disco certo"
 			"faltando": sub = "não encontrado"
-			"diferente": sub = "versão diferente do disco"
+			"diferente": sub = "não é este disco"
 			_: sub = "conferindo... %d%%" % int(float(st.get("progresso", 0.0)) * 100.0)
-		MmxUI.text(ci, row.position + Vector2(10, 25), sub, col)
-		if s == "ok": MmxUI.text(ci, Vector2(row.position.x, row.position.y + 25), MmxUI.fit(str(st.get("caminho", "")).get_file(), 110), MmxUI.C_DIM, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, row.size.x - 6)
+		MmxUI.text(ci, row.position + Vector2(36, 26), sub, col)
+		if s in ["ok", "diferente"]:
+			MmxUI.text(ci, Vector2(row.position.x, row.position.y + 26), MmxUI.fit(str(st.get("caminho", "")).get_file(), 104), MmxUI.C_DIM, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, row.size.x - 6)
 		if s == "procurando":
 			var k := float(st.get("progresso", 0.0))
 			ci.draw_rect(Rect2(row.position.x + 3, row.end.y - 2, (row.size.x - 3) * k, 2), MmxUI.C_ACCENT)
@@ -638,21 +747,27 @@ func _painel_atualizacao(ci: Control, r: Rect2, ab: float) -> void:
 		"erro": col = C_ERR
 		"baixando", "procurando": col = MmxUI.C_ACCENT
 	var ls := MmxUI.wrap(str(upd.texto), r.size.x - 20)
-	for i in mini(ls.size(), 3):
-		MmxUI.text(ci, r.position + Vector2(10, 18 + i * 10), ls[i], col)
+	var n := 1 if upd.estado in ["disponivel", "baixando"] else 2
+	for i in mini(ls.size(), n):
+		MmxUI.text(ci, r.position + Vector2(10, 22 + i * 11), ls[i], col)
+	if not upd.estado in ["disponivel", "baixando"]:
+		var info := "Você tem a versão %d." % int(versao.get("versao", 0))
+		if upd.estado == "sem_config": info = "Sem versao.json com o repositório."
+		MmxUI.text(ci, r.position + Vector2(10, r.size.y - 12), info, Color(0.36, 0.44, 0.62))
 	if upd.estado == "baixando":
 		var k := 0.0
 		if http.get_body_size() > 0: k = float(http.get_downloaded_bytes()) / float(http.get_body_size())
-		_barra(ci, Rect2(r.position.x + 10, r.end.y - 16, r.size.x - 20, 6), k)
+		_barra(ci, Rect2(r.position.x + 12, r.end.y - 22, r.size.x - 24, 8), k)
 
 func _painel_etapas(ci: Control, r: Rect2, ab: float) -> void:
 	MmxUI.frame(ci, Rect2(r.position + Vector2((1.0 - ab) * 40, 0), r.size), MmxUI.C_ACCENT, 7.0)
 	MmxUI.title_tab(ci, r, "PREPARAÇÃO")
 	if etapas.is_empty():
-		MmxUI.text(ci, r.position + Vector2(12, 30), "Receita não encontrada (tools/receita.json).", C_ERR)
+		for i in MmxUI.wrap(receita_msg, r.size.x - 24).size():
+			MmxUI.text(ci, r.position + Vector2(12, 30 + i * 11), MmxUI.wrap(receita_msg, r.size.x - 24)[i], C_ERR)
 		return
 	var y := r.position.y + 14
-	var h := minf(22.0, (r.size.y - 60.0) / etapas.size())
+	var h := minf(24.0, (r.size.y - 58.0) / etapas.size())
 	var tot := 0.0
 	for i in etapas.size():
 		var e: Dictionary = etapas[i]
@@ -663,19 +778,22 @@ func _painel_etapas(ci: Control, r: Rect2, ab: float) -> void:
 		if on: MmxUI.sel_bar(ci, row, t, MmxUI.C_ACCENT, false)
 		var col: Color = C_OK if s == "feita" else (C_ERR if s == "erro" else (MmxUI.C_SEL if on else MmxUI.C_DIM))
 		var ic := "✓" if s == "feita" else ("✗" if s == "erro" else ("▶" if on else "·"))
-		MmxUI.text(ci, row.position + Vector2(5, 9 + (row.size.y - 10) * 0.5), ic, col)
-		MmxUI.text(ci, row.position + Vector2(16, 9 + (row.size.y - 10) * 0.5), str(e.nome), MmxUI.C_TEXT if s != "pendente" else Color(0.6, 0.68, 0.85))
+		var ty := row.position.y + 9 + (row.size.y - 10) * 0.5
+		MmxUI.text(ci, Vector2(row.position.x + 5, ty), ic, col)
+		MmxUI.text(ci, Vector2(row.position.x + 16, ty), str(e.nome), MmxUI.C_TEXT if s != "pendente" else Color(0.6, 0.68, 0.85))
 		var bar := Rect2(row.end.x - 118, row.position.y + (row.size.y - 6) * 0.5, 112, 6)
 		_barra(ci, bar, float(e.progresso), col if s != "pendente" else MmxUI.C_EDGE_LO)
-		if on and str(e.texto) != "":
-			MmxUI.text(ci, Vector2(row.position.x, row.position.y + 9 + (row.size.y - 10) * 0.5), MmxUI.fit(str(e.texto), 90), MmxUI.C_DIM, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, row.size.x - 124)
-		elif s == "erro":
-			MmxUI.text(ci, Vector2(row.position.x, row.position.y + 9 + (row.size.y - 10) * 0.5), MmxUI.fit(str(e.texto), 110), C_ERR, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, row.size.x - 124)
+		var dica := ""
+		if on: dica = str(e.texto)
+		elif s == "feita" and str(e.texto) != "": dica = str(e.texto)
+		elif s == "erro": dica = "deu erro"
+		if dica != "":
+			MmxUI.text(ci, Vector2(row.position.x, ty), MmxUI.fit(dica, 92), C_ERR if s == "erro" else MmxUI.C_DIM, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, row.size.x - 124)
 		tot += float(e.progresso)
 		y += h
 	# barra geral
 	var k := tot / maxf(1.0, etapas.size())
-	var gr := Rect2(r.position.x + 8, r.end.y - 40, r.size.x - 16, 10)
+	var gr := Rect2(r.position.x + 10, r.end.y - 22, r.size.x - 20, 10)
 	_barra(ci, gr, k, MmxUI.C_SEL if prep_ok else MmxUI.C_ACCENT, true)
 	MmxUI.text(ci, Vector2(gr.position.x, gr.position.y - 3), "TOTAL", MmxUI.C_DIM)
 	MmxUI.text(ci, Vector2(gr.position.x, gr.position.y - 3), "%d%%" % int(k * 100.0), MmxUI.C_TEXT, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, gr.size.x)
