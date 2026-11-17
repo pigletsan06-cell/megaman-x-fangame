@@ -88,12 +88,16 @@ func x4_arc(jogo: String, discos: Dictionary, prog: Callable) -> int:
 
 ## vídeos: os .STR do disco convertidos para Theora/Vorbis (.ogv), que o Godot toca
 ## mesmos ajustes da conversão original: vídeo -q:v 8, som -q:a 5 a 44100 Hz (320x240, 15 quadros/s)
+## (3º campo: os números de série do Ogg de cada arquivo do PC do dono; com o nosso ffmpeg.exe o .ogv sai igual byte a byte)
 const VIDEOS := {
-	"x4": [["STR/CAPCOM20.STR", "CAPCOM20"], ["STR/OP_U.STR", "OP_U"], ["STR/X1_U.STR", "X1_U"], ["STR/X2_U.STR", "X2_U"],
-		["STR/X3_U.STR", "X3_U"], ["STR/X4_U.STR", "X4_U"], ["STR/Z1_U.STR", "Z1_U"], ["STR/Z2_U.STR", "Z2_U"],
-		["STR/Z3_U.STR", "Z3_U"], ["STR/Z4_U.STR", "Z4_U"], ["STR/Z5_U.STR", "Z5_U"]],
-	"x5": [["STR/CAPLOGO.STR", "x5_CAPLOGO"], ["STR/X5OP.STR", "x5_X5OP"]],
-	"x6": [["STR/CAPLOGO.STR", "x6_CAPLOGO"], ["STR/X6OP.STR", "x6_X6OP"]],
+	"x4": [["STR/CAPCOM20.STR", "CAPCOM20", "5f05b523,befd6c3c"], ["STR/OP_U.STR", "OP_U", "0a306f2f,1c85628f"],
+		["STR/X1_U.STR", "X1_U", "f7c1bb59,a40bbd34"], ["STR/X2_U.STR", "X2_U", "7344ab1b,997b79eb"],
+		["STR/X3_U.STR", "X3_U", "1ba0b7c6,6c77f5fd"], ["STR/X4_U.STR", "X4_U", "1f8318fd,ce04d88c"],
+		["STR/Z1_U.STR", "Z1_U", "3c48578c,87e242ed"], ["STR/Z2_U.STR", "Z2_U", "be14ccce,bf0255e7"],
+		["STR/Z3_U.STR", "Z3_U", "22a12f53,0ce37c41"], ["STR/Z4_U.STR", "Z4_U", "4247c1b8,a4de5a63"],
+		["STR/Z5_U.STR", "Z5_U", "a9b4586c,c5648be4"]],
+	"x5": [["STR/CAPLOGO.STR", "x5_CAPLOGO", "8f17d718,d3c4e88a"], ["STR/X5OP.STR", "x5_X5OP", "d085a1e9,8ad317f8"]],
+	"x6": [["STR/CAPLOGO.STR", "x6_CAPLOGO", "6b877f25,d4f4090f"], ["STR/X6OP.STR", "x6_X6OP", "1b590aad,3196b4ff"]],
 }
 func videos(jg: String, jogo: String, discos: Dictionary, prog: Callable) -> int:
 	var d: Disco = discos[jg]
@@ -114,8 +118,10 @@ func videos(jg: String, jogo: String, discos: Dictionary, prog: Callable) -> int
 		w.close()
 		var dst := jogo.path_join("assets/movies/" + saida + ".ogv")
 		var out := []
+		OS.set_environment("FUSION_OGG_SERIAIS", str(lista[i][2]) if lista[i].size() > 2 else "")
 		OS.execute(ff, ["-nostdin", "-v", "error", "-y", "-i", src, "-c:v", "libtheora", "-q:v", "8",
 			"-c:a", "libvorbis", "-q:a", "5", "-ar", "44100", dst + ".tmp.ogv"], out, true)
+		OS.unset_environment("FUSION_OGG_SERIAIS")
 		DirAccess.remove_absolute(src)
 		# (o leitor de STR do ffmpeg reclama no fim do arquivo: normal, o vídeo sai inteiro)
 		# (o arquivo aberto tem que ser fechado antes de renomear: no Windows não dá para renomear arquivo aberto)
@@ -207,8 +213,12 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 		DirAccess.make_dir_recursive_absolute(dst.get_base_dir())
 		var ff := opcao("ffmpeg", "FUSION_FFMPEG", "ffmpeg")
 		var o2 := []
+		# (o Ogg do PC do dono: número de série e os textos do ffmpeg que o fez; com o nosso ffmpeg.exe sai igual byte a byte)
+		OS.set_environment("FUSION_OGG_SERIAIS", str(au.get("serial", ""))); OS.set_environment("FUSION_OGG_VENDOR", str(au.get("vendor", "")))
+		var meta := ["-metadata:s:a", "encoder=" + str(au.codificador)] if au.has("codificador") else []
 		OS.execute(ff, ["-nostdin", "-v", "error", "-y", "-f", "s16le", "-ar", "44100", "-ac", "2", "-i", dir.path_join("laco.raw"),
-			"-c:a", "libvorbis", "-q:a", str(au.get("qualidade", 5)), dst + ".tmp.ogg"], o2, true)
+			"-c:a", "libvorbis", "-q:a", str(au.get("qualidade", 5))] + meta + [dst + ".tmp.ogg"], o2, true)
+		OS.unset_environment("FUSION_OGG_SERIAIS"); OS.unset_environment("FUSION_OGG_VENDOR")
 		if not FileAccess.file_exists(dst + ".tmp.ogg"): printerr("ffmpeg falhou no som: ", str(o2).right(300)); return -1
 		if FileAccess.file_exists(dst): DirAccess.remove_absolute(dst)
 		if DirAccess.rename_absolute(dst + ".tmp.ogg", dst) != OK: printerr("não consegui renomear ", dst + ".tmp.ogg"); return -1

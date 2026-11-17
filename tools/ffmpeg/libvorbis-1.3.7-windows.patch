@@ -1,0 +1,11 @@
+--- a/lib/os.h	2020-07-03 13:22:20.000000000 -0300
++++ b/lib/os.h	2026-11-17 14:04:38.480684309 -0300
+@@ -46,7 +46,7 @@
+ 
+ #if defined(_WIN32) && !defined(__SYMBIAN32__)
+ #  include <malloc.h>
+-#  define rint(x)   (floor((x)+0.5f))
++/* (fangame: sem a troca do rint por floor(x+0.5) do Windows: o arredondamento fica igual ao do Linux) */
+ #  define NO_FLOAT_MATH_LIB
+ #  define FAST_HYPOT(a, b) sqrt((a)*(a) + (b)*(b))
+ #endif

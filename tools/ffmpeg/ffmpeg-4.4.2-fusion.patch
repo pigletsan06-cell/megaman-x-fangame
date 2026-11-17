@@ -1,0 +1,73 @@
+diff --git a/libavcodec/x86/mathops.h b/libavcodec/x86/mathops.h
+index 6298f5e..2bafe58 100644
+--- a/libavcodec/x86/mathops.h
++++ b/libavcodec/x86/mathops.h
+@@ -113,18 +113,30 @@ __asm__ volatile(\
+ // avoid +32 for shift optimization (gcc should do that ...)
+ #define NEG_SSR32 NEG_SSR32
+ static inline  int32_t NEG_SSR32( int32_t a, int8_t s){
++    if (__builtin_constant_p(s))
+     __asm__ ("sarl %1, %0\n\t"
+          : "+r" (a)
+-         : "ic" ((uint8_t)(-s))
++         : "i" (-s & 0x1F)
++    );
++    else
++    __asm__ ("sarl %1, %0\n\t"
++         : "+r" (a)
++         : "c" ((uint8_t)(-s))
+     );
+     return a;
+ }
+ 
+ #define NEG_USR32 NEG_USR32
+ static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
++    if (__builtin_constant_p(s))
++    __asm__ ("shrl %1, %0\n\t"
++         : "+r" (a)
++         : "i" (-s & 0x1F)
++    );
++    else
+     __asm__ ("shrl %1, %0\n\t"
+          : "+r" (a)
+-         : "ic" ((uint8_t)(-s))
++         : "c" ((uint8_t)(-s))
+     );
+     return a;
+ }
+diff --git a/libavformat/oggenc.c b/libavformat/oggenc.c
+index f503275..a594988 100644
+--- a/libavformat/oggenc.c
++++ b/libavformat/oggenc.c
+@@ -20,6 +20,8 @@
+  */
+ 
+ #include <stdint.h>
++#include <stdlib.h>
++#include <string.h>
+ 
+ #include "libavutil/crc.h"
+ #include "libavutil/mathematics.h"
+@@ -276,6 +278,9 @@ static uint8_t *ogg_write_vorbiscomment(int64_t offset, int bitexact,
+                                         AVChapter **chapters, unsigned int nb_chapters)
+ {
+     const char *vendor = bitexact ? "ffmpeg" : LIBAVFORMAT_IDENT;
++    /* fangame: texto do "vendor" pedido (para o arquivo sair igual ao de referência) */
++    if (getenv("FUSION_OGG_VENDOR") && *getenv("FUSION_OGG_VENDOR"))
++        vendor = getenv("FUSION_OGG_VENDOR");
+     AVIOContext pb;
+     int64_t size;
+     uint8_t *p;
+@@ -518,6 +523,12 @@ static int ogg_init(AVFormatContext *s)
+                 }
+             } while (j < i);
+         oggstream->serial_num = serial_num;
++        {   /* fangame: números de série pedidos, um por fluxo, em hexadecimal ("5f05b523,befd6c3c") */
++            const char *ss = getenv("FUSION_OGG_SERIAIS");
++            int k = 0;
++            while (ss && *ss && k < i) { ss = strchr(ss, ','); if (ss) ss++; k++; }
++            if (ss && *ss) oggstream->serial_num = strtoul(ss, NULL, 16);
++        }
+ 
+         av_dict_copy(&st->metadata, s->metadata, AV_DICT_DONT_OVERWRITE);
+ 

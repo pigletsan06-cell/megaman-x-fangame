@@ -6,7 +6,7 @@
  "botoes": "start:700-710",
  "poke": "",
  "fotos": {},
- "audio": {
+ "audio": {"serial": "c7f70be4", "vendor": "Lavf60.16.100", "codificador": "Lavc60.31.102 libvorbis", 
   "de": 600,
   "inicio": 2426661,
   "amostras": 2351596,

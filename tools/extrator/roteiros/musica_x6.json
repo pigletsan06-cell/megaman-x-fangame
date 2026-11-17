@@ -6,7 +6,7 @@
  "botoes": "start:900-905,cross:1000-1006,start:1400-1403,start:1460-1463",
  "poke": "ccedc:0001:1440-1900,cced2:0000:2400-2400,cced0:0002:2400-2400",
  "fotos": {},
- "audio": {
+ "audio": {"serial": "dd93ad52", "vendor": "Lavf60.16.100", "codificador": "Lavc60.31.102 libvorbis", 
   "de": 2400,
   "por": 735,
   "inicio": 940347,

@@ -7,9 +7,10 @@ REPO=$(cd "$(dirname $0)/.." && pwd); SAIDA=$(realpath -m "${1:?uso: empacotar.s
 CACHE=${CACHE:-$HOME/.cache/fusion}; mkdir -p "$CACHE"
 GV=4.7.2
 GZ=$CACHE/Godot_v${GV}-stable_win64.exe.zip
-FZ=$CACHE/ffmpeg-master-latest-win64-gpl.zip
 [ -s "$GZ" ] || curl -sSfL -o "$GZ" "https://github.com/godotengine/godot/releases/download/${GV}-stable/Godot_v${GV}-stable_win64.exe.zip"
-[ -s "$FZ" ] || curl -sSfL -o "$FZ" "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+# FFmpeg nosso (4.4.2 + libtheora/libvorbis/libogg, tools/ffmpeg): os vídeos e as músicas saem iguais aos do PC do dono
+FV=$(cat "$REPO"/tools/ffmpeg/compilar.sh "$REPO"/tools/ffmpeg/*.patch "$REPO"/tools/ffmpeg/memo* | sha1sum | cut -c1-12); FF=$CACHE/ffmpeg-fusion-$FV
+[ -s "$FF/ffmpeg.exe" ] || "$REPO/tools/ffmpeg/compilar.sh" "$FF" > /dev/null
 # desenhista por software (Mesa llvmpipe, MIT): as fotos dos jogos saem iguais em qualquer placa de vídeo
 MV=25.2.7; MZ=$CACHE/mesa-llvmpipe-x64-$MV.7z; Z7=${Z7:-/home/claude/7z/7zz}
 [ -s "$MZ" ] || curl -sSfL -o "$MZ" "https://github.com/mmozeiko/build-mesa/releases/download/$MV/mesa-llvmpipe-x64-$MV.7z"
@@ -20,7 +21,7 @@ cp "$REPO/tools/LEIA-ME.txt" "$P/LEIA-ME.txt"
 echo "Coloque aqui os 3 discos (.bin): Mega Man X4 (USA).bin, Mega Man X5 (USA).bin, Mega Man X6 (USA) (v1.1).bin" > "$P/discos/COLOQUE OS DISCOS AQUI.txt"
 unzip -q -o -j "$GZ" "Godot_v${GV}-stable_win64.exe" -d "$P/engine"; mv "$P/engine/Godot_v${GV}-stable_win64.exe" "$P/engine/godot.exe"
 cp "$REPO/tools/windows/LICENCA_GODOT.txt" "$P/engine/" 2>/dev/null || true
-unzip -q -o -j "$FZ" "*/bin/ffmpeg.exe" "*/LICENSE.txt" -d "$P/ferramentas"; mv "$P/ferramentas/LICENSE.txt" "$P/ferramentas/LICENCA_FFMPEG.txt"
+cp "$FF/ffmpeg.exe" "$FF/LICENCA_FFMPEG.txt" "$P/ferramentas/"
 mkdir -p "$P/ferramentas/render"; "$Z7" e -y -o"$P/ferramentas/render" "$MZ" opengl32.dll > /dev/null
 cp "$REPO/tools/windows/LICENCA_MESA.txt" "$P/ferramentas/render/"
 # recompilação do X5/X6: kit com o runtime já compilado (psxrecomp, licença PolyForm Noncommercial) + recompilador;

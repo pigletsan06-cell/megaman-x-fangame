@@ -8,5 +8,5 @@
  "quadros": 3760,
  "botoes": "",
  "fotos": {},
- "audio": {"de": 0, "inicio": 485100, "amostras": 2276160, "saida": "assets/musica/x4_selecao.ogg"}
+ "audio": {"serial": "dffd3daf", "vendor": "Lavf60.16.100", "codificador": "Lavc60.31.102 libvorbis", "de": 0, "inicio": 485100, "amostras": 2276160, "saida": "assets/musica/x4_selecao.ogg"}
 }
