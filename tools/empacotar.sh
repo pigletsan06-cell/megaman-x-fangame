@@ -11,6 +11,9 @@ GZ=$CACHE/Godot_v${GV}-stable_win64.exe.zip
 # FFmpeg nosso (4.4.2 + libtheora/libvorbis/libogg, tools/ffmpeg): os vídeos e as músicas saem iguais aos do PC do dono
 FV=$(cat "$REPO"/tools/ffmpeg/compilar.sh "$REPO"/tools/ffmpeg/*.patch "$REPO"/tools/ffmpeg/memo* | sha1sum | cut -c1-12); FF=$CACHE/ffmpeg-fusion-$FV
 [ -s "$FF/ffmpeg.exe" ] || "$REPO/tools/ffmpeg/compilar.sh" "$FF" > /dev/null
+# codificador WebP nosso (libwebp 1.6.0, tools/webp): as aberturas das telas de seleção saem iguais às do PC do dono
+WV=$(cat "$REPO"/tools/webp/* | sha1sum | cut -c1-12); WP=$CACHE/webpenc-$WV
+[ -s "$WP/webpenc.exe" ] || "$REPO/tools/webp/compilar.sh" "$WP" > /dev/null
 # desenhista por software (Mesa llvmpipe, MIT): as fotos dos jogos saem iguais em qualquer placa de vídeo
 MV=25.2.7; MZ=$CACHE/mesa-llvmpipe-x64-$MV.7z; Z7=${Z7:-/home/claude/7z/7zz}
 [ -s "$MZ" ] || curl -sSfL -o "$MZ" "https://github.com/mmozeiko/build-mesa/releases/download/$MV/mesa-llvmpipe-x64-$MV.7z"
@@ -21,7 +24,7 @@ cp "$REPO/tools/LEIA-ME.txt" "$P/LEIA-ME.txt"
 echo "Coloque aqui os 3 discos (.bin): Mega Man X4 (USA).bin, Mega Man X5 (USA).bin, Mega Man X6 (USA) (v1.1).bin" > "$P/discos/COLOQUE OS DISCOS AQUI.txt"
 unzip -q -o -j "$GZ" "Godot_v${GV}-stable_win64.exe" -d "$P/engine"; mv "$P/engine/Godot_v${GV}-stable_win64.exe" "$P/engine/godot.exe"
 cp "$REPO/tools/windows/LICENCA_GODOT.txt" "$P/engine/" 2>/dev/null || true
-cp "$FF/ffmpeg.exe" "$FF/LICENCA_FFMPEG.txt" "$P/ferramentas/"
+cp "$FF/ffmpeg.exe" "$FF/LICENCA_FFMPEG.txt" "$WP/webpenc.exe" "$WP/LICENCA_WEBP.txt" "$P/ferramentas/"
 mkdir -p "$P/ferramentas/render"; "$Z7" e -y -o"$P/ferramentas/render" "$MZ" opengl32.dll > /dev/null
 cp "$REPO/tools/windows/LICENCA_MESA.txt" "$P/ferramentas/render/"
 # recompilação do X5/X6: kit com o runtime já compilado (psxrecomp, licença PolyForm Noncommercial) + recompilador;

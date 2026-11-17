@@ -1,5 +1,5 @@
 {
- "nota": "Abertura da seleção de chefes do X4 pelo x4core (30 quadros/s: um a cada 2 quadros do jogo, do 90 ao 368; a curta é do 196 em diante). APROXIMADA: as do PC do dono são WebP com perdas de outro codificador; aqui o Godot (qualidade 0,85). Mesma imagem de origem (conferido quadro a quadro).",
+ "nota": "Abertura da seleção de chefes do X4 pelo x4core (30 quadros/s: um a cada 2 quadros do jogo, do 90 ao 368; a curta é do 196 em diante). Com o codificador WebP do fangame (webpenc, igual ao Pillow: qualidade 88, método 6) as 227 saem IGUAIS byte a byte às do PC do dono; sem ele, o Godot grava aproximado (qualidade 0,85). Mesma imagem de origem (conferido quadro a quadro).",
  "jogo": "x4",
  "disco": "x4",
  "motor": "x4core",
@@ -415,5 +415,9 @@
   ]
  },
  "formato": "webp",
- "qualidade": 0.85
+ "qualidade": 0.85,
+ "webp": {
+  "qualidade": 88,
+  "metodo": 6
+ }
 }

@@ -1,36 +1,42 @@
 {
- "nota": "Abertura da seleção de chefes do X6 (30 quadros/s a partir do quadro 2591). Quadro de cada imagem escolhido pela gravação original (que tinha pequenos saltos). APROXIMADA: as do PC do dono são WebP com perdas de outro codificador; aqui o Godot (qualidade 0,83).",
+ "nota": "Abertura da seleção de chefes do X6 (30 quadros/s a partir do quadro 2590). Quadro de cada imagem conferido com o codificador WebP do fangame (webpenc, igual ao Pillow: qualidade 88, método 6): as 34 saem IGUAIS byte a byte às do PC do dono. Sem o webpenc, o Godot grava aproximado (qualidade 0,83).",
  "jogo": "x6",
  "disco": "x6",
  "quadros": 2654,
  "botoes": "start:900-905,cross:1000-1006,start:1400-1403,start:1460-1463",
  "poke": "ccedc:0001:1440-1900,cced2:0000:2400-2400,cced0:0002:2400-2400",
  "fotos": {
-  "2577": [
+  "2585": [
+   "assets/menus/intro/x6/016.webp",
+   "assets/menus/intro/x6/017.webp",
+   "assets/menus/intro/x6/018.webp",
+   "assets/menus/intro/x6/019.webp"
+  ],
+  "2590": [
    "assets/menus/intro/x6/000.webp"
   ],
-  "2591": [
+  "2592": [
    "assets/menus/intro/x6/001.webp"
   ],
   "2594": [
    "assets/menus/intro/x6/002.webp"
   ],
-  "2595": [
+  "2596": [
    "assets/menus/intro/x6/003.webp"
   ],
-  "2597": [
+  "2598": [
    "assets/menus/intro/x6/004.webp"
   ],
-  "2599": [
+  "2600": [
    "assets/menus/intro/x6/005.webp"
   ],
-  "2601": [
+  "2602": [
    "assets/menus/intro/x6/006.webp"
   ],
-  "2603": [
+  "2604": [
    "assets/menus/intro/x6/007.webp"
   ],
-  "2605": [
+  "2606": [
    "assets/menus/intro/x6/008.webp"
   ],
   "2608": [
@@ -53,12 +59,6 @@
   ],
   "2620": [
    "assets/menus/intro/x6/015.webp"
-  ],
-  "2585": [
-   "assets/menus/intro/x6/016.webp",
-   "assets/menus/intro/x6/017.webp",
-   "assets/menus/intro/x6/018.webp",
-   "assets/menus/intro/x6/019.webp"
   ],
   "2629": [
    "assets/menus/intro/x6/020.webp",
@@ -90,5 +90,9 @@
   ]
  },
  "formato": "webp",
- "qualidade": 0.83
+ "qualidade": 0.83,
+ "webp": {
+  "qualidade": 88,
+  "metodo": 6
+ }
 }

@@ -284,6 +284,9 @@ func _vars() -> Dictionary:
 	# captura pela recompilação do X6 (dash da Blade)
 	var crc := raiz.path_join("ferramentas/captura_rc.exe") if OS.get_name() == "Windows" else raiz.path_join("ferramentas/captura_rc")
 	if OS.get_environment("FUSION_CAPTURA_RC") != "": crc = OS.get_environment("FUSION_CAPTURA_RC")
+	# codificador WebP do fangame (aberturas das telas de seleção)
+	var wpe := raiz.path_join("ferramentas/webpenc.exe") if OS.get_name() == "Windows" else raiz.path_join("ferramentas/webpenc")
+	if OS.get_environment("FUSION_WEBPENC") != "": wpe = OS.get_environment("FUSION_WEBPENC")
 	# desenho das capturas: no Windows, uma cópia do Godot com o desenhista por software (Mesa llvmpipe) do lado
 	var gr := raiz.path_join("ferramentas/render/godot.exe") if OS.get_name() == "Windows" else gd
 	if OS.get_environment("FUSION_GODOT_RENDER") != "": gr = OS.get_environment("FUSION_GODOT_RENDER")
@@ -292,7 +295,7 @@ func _vars() -> Dictionary:
 	var ll := raiz.path_join("ferramentas/llvm/bin/ld.lld.exe") if OS.get_name() == "Windows" else "ld.lld"
 	if OS.get_environment("FUSION_CLANG") != "": cl = OS.get_environment("FUSION_CLANG")
 	if OS.get_environment("FUSION_LLD") != "": ll = OS.get_environment("FUSION_LLD")
-	var v := {"python": py, "godot": gd, "ffmpeg": ff, "captura": cap, "captura_rc": crc, "godot_render": gr, "clang": cl, "lld": ll, "raiz": raiz, "tools": raiz.path_join("tools"), "jogo": raiz.path_join("godot"),
+	var v := {"python": py, "godot": gd, "ffmpeg": ff, "captura": cap, "captura_rc": crc, "webpenc": wpe, "godot_render": gr, "clang": cl, "lld": ll, "raiz": raiz, "tools": raiz.path_join("tools"), "jogo": raiz.path_join("godot"),
 		"gerado": raiz.path_join("gerado"), "so": OS.get_name()}
 	for d in DISCOS: v["disco_" + d.id] = str(discos.get(d.id, {}).get("caminho", ""))
 	return v

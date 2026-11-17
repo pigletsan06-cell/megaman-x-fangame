@@ -275,7 +275,21 @@ func salva_foto(r: Dictionary, t: String, dst: String) -> int:
 			if i % 4 != 3: px[i] = int(round(px[i] * 31.0 / 255.0)) << 3
 	im = Image.create_from_data(im.get_width(), im.get_height(), false, Image.FORMAT_RGBA8, px)
 	if str(r.get("formato", "")) in ["rgb", "webp"]: im.convert(Image.FORMAT_RGB8)
-	if str(r.get("formato", "")) == "webp": return 1 if im.save_webp(dst, true, float(r.get("qualidade", 0.83))) == OK else 0
+	if str(r.get("formato", "")) == "webp":
+		# o webpenc do fangame (libwebp 1.6.0 pelo mesmo caminho do Pillow) dá o arquivo igual ao do PC do dono
+		var we := opcao("webpenc", "FUSION_WEBPENC", "")
+		if r.has("webp") and we != "" and FileAccess.file_exists(we):
+			var cru := dst + ".rgb"
+			var fc := FileAccess.open(cru, FileAccess.WRITE)
+			if fc == null: return 0
+			fc.store_buffer(im.get_data()); fc.close()
+			var o := []
+			var cod := OS.execute(we, [cru, str(im.get_width()), str(im.get_height()), str(r.webp.qualidade), str(r.webp.metodo), dst + ".tmp"], o, true)
+			DirAccess.remove_absolute(cru)
+			if cod != 0 or not FileAccess.file_exists(dst + ".tmp"): printerr("webpenc falhou em %s: %s" % [dst, str(o).right(300)]); return 0
+			if FileAccess.file_exists(dst): DirAccess.remove_absolute(dst)
+			return 1 if DirAccess.rename_absolute(dst + ".tmp", dst) == OK else 0
+		return 1 if im.save_webp(dst, true, float(r.get("qualidade", 0.83))) == OK else 0
 	return 1 if im.save_png(dst) == OK else 0
 
 ## miniaturas dos chefes: recorte da tela de seleção com a máscara do retrato (tools/extrator/mini, nossa) + versão cinza
