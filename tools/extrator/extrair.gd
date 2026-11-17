@@ -426,12 +426,23 @@ func pasta_x4core() -> String:
 	return ProjectSettings.globalize_path("res://").path_join("../x4core").simplify_path()
 
 ## baixa um arquivo por HTTPS seguindo redirecionamentos (o GitHub manda para codeload.github.com)
+## certificados para o HTTPS: o extrator faz tudo no _init do script, e nessa hora o Godot ainda não carregou os
+## certificados padrão ("SSL module failed to initialize!"); então usa os do sistema (no Windows, os do próprio Windows)
+var _tls: TLSOptions = null
+func tls_cliente() -> TLSOptions:
+	if _tls == null:
+		var pem := OS.get_system_ca_certificates()
+		var ca := X509Certificate.new()
+		if pem != "" and ca.load_from_string(pem) == OK: _tls = TLSOptions.client(ca)
+		else: printerr("baixar: não achei os certificados do sistema"); _tls = TLSOptions.client()
+	return _tls
+
 func baixa(url: String, destino: String) -> bool:
 	for tentativa in 5:
 		var u := url.trim_prefix("https://")
 		var host := u.get_slice("/", 0); var caminho := u.substr(host.length())
 		var c := HTTPClient.new()
-		if c.connect_to_host(host, 443, TLSOptions.client()) != OK: return false
+		if c.connect_to_host(host, 443, tls_cliente()) != OK: printerr("sem conexão com ", host); return false
 		while c.get_status() in [HTTPClient.STATUS_CONNECTING, HTTPClient.STATUS_RESOLVING]: c.poll(); OS.delay_msec(20)
 		if c.get_status() != HTTPClient.STATUS_CONNECTED: printerr("sem conexão com ", host); return false
 		c.request(HTTPClient.METHOD_GET, caminho, ["User-Agent: MegaManXFusion"])

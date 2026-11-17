@@ -80,11 +80,7 @@ func _ready() -> void:
 	dlg.use_native_dialog = true; dlg.title = "Pasta com os discos (.bin)"
 	dlg.dir_selected.connect(_pasta_escolhida); add_child(dlg)
 	http = HTTPRequest.new(); http.timeout = 20.0; add_child(http)
-	for s in ["menu_open", "menu_close", "menu_back", "menu_equip", "menu_error", "menu_full", "menu_tab"]:
-		var p := AudioStreamPlayer.new(); add_child(p)
-		var f := "res://assets/sfx/%s.wav" % s
-		if FileAccess.file_exists(f): p.stream = AudioStreamWAV.load_from_file(ProjectSettings.globalize_path(f))
-		sfx[s] = p
+	_carrega_sons()
 	_monta_etapas()
 	_procura_discos()
 	_procurar_atualizacao()
@@ -119,6 +115,31 @@ func _botao(txt: String, r: Rect2, f: Callable, fs := MmxUI.SIZE) -> Button:
 func _som(nm: String) -> void:
 	var p: AudioStreamPlayer = sfx.get(nm)
 	if p and p.stream: p.play()
+
+# sons do launcher: os do Mega Man que o PREPARAR tira dos discos do jogador (godot/assets/sfx); antes da 1ª preparação
+# (o pacote não traz nada dos jogos) ficam os sons próprios do launcher (assets/sfx)
+const SONS_MEGAMAN := {
+	"menu_tab": "menu_move",      # cursor do menu de pausa do X4 (passar por um botão)
+	"menu_open": "menu_ok",       # confirmar do menu de pausa do X4 (apertar um botão)
+	"menu_close": "menu_move", "menu_back": "menu_move",
+	"menu_equip": "x6_shot",      # tiro do X (discos conferidos, cada etapa pronta)
+	"menu_full": "fg_tele_in",    # o X chegando pelo teletransporte (tudo pronto, atualização)
+	"menu_error": "vx_0",         # o X tomando dano (erro)
+	"jogar": "fg_tele_out",       # o X saindo pelo teletransporte (JOGAR)
+}
+var sons_megaman := 0
+func _carrega_sons() -> void:
+	var n := 0
+	for s in SONS_MEGAMAN:
+		var p: AudioStreamPlayer = sfx.get(s)
+		if p == null: p = AudioStreamPlayer.new(); add_child(p); sfx[s] = p
+		var f := raiz.path_join("godot/assets/sfx/%s.wav" % SONS_MEGAMAN[s])
+		if not FileAccess.file_exists(f): f = ProjectSettings.globalize_path("res://assets/sfx/%s.wav" % s)
+		else: n += 1
+		var st: AudioStreamWAV = AudioStreamWAV.load_from_file(f) if FileAccess.file_exists(f) else null
+		if st != null or p.stream == null: p.stream = st
+	if n != sons_megaman: _log("sons do Mega Man no launcher: %d de %d" % [n, SONS_MEGAMAN.size()])
+	sons_megaman = n
 
 # ---------------- arquivos ----------------
 func _ler_json(p: String) -> Dictionary:
@@ -455,6 +476,7 @@ func _confere_processo() -> void:
 	estado["etapas"] = feitas
 	_grava_estado()
 	_log("ok: %s (%s)" % [e.nome, e.texto])
+	if sons_megaman < SONS_MEGAMAN.size(): _carrega_sons()
 	_som("menu_equip")
 	rodando = -1
 	_proxima_etapa()
@@ -482,10 +504,16 @@ func _abrir_registro() -> void:
 func _jogar() -> void:
 	if btn_jogar.disabled: return
 	var v := _vars()
+	var po: AudioStreamPlayer = sfx.get("menu_open")
+	if po: po.stop()   # no JOGAR só o teletransporte
+	_som("jogar")
 	var pid := OS.create_process(v.godot, PackedStringArray(["--path", v.jogo]))
 	_log("abrindo o jogo (pid %d)" % pid)
 	if pid > 0:
-		await get_tree().create_timer(0.6).timeout
+		var p: AudioStreamPlayer = sfx.get("jogar")
+		var t := 0.6
+		if p and p.stream: t = maxf(t, p.stream.get_length())   # deixa o som do teletransporte terminar
+		await get_tree().create_timer(t).timeout
 		get_tree().quit()
 
 # ---------------- atualização (GitHub Releases) ----------------
