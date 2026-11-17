@@ -12,7 +12,8 @@ if [ -z "$P" ]; then
   ln -s "${X4:-/home/claude/x4/Mega Man X4 (USA).bin}" "$P/discos/Mega Man X4 (USA).bin"
   ln -s "${X5:-/home/claude/x5/Mega Man X5 (USA).bin}" "$P/discos/Mega Man X5 (USA).bin"
   ln -s "${X6:-/home/claude/ext/MegaManX6Recomp/mmx6/Mega Man X6 (USA) (v1.1).bin}" "$P/discos/Mega Man X6 (USA) (v1.1).bin"
-  echo "{\"versao\": 54, \"repo\": \"dono/repo\", \"api\": \"http://127.0.0.1:$PORTA\", \"token\": \"teste123\"}" > $P/versao.json
+  echo "{\"versao\": 54, \"repo\": \"dono/repo\", \"api\": \"http://127.0.0.1:$PORTA\"}" > $P/versao.json
+  echo "teste123" > $P/chave.txt   # a chave fica fora do versao.json: as atualizações não mexem nela
 fi
 : > /tmp/github_falso.log
 roda() { DISPLAY=:99 FUSION_DISCOS="$P/discos" timeout 600 $G --path "$P/launcher" -- --auto --sem-jogo --atualizar "$@" >/tmp/launcher_saida.txt 2>&1; echo $?; }
@@ -21,7 +22,7 @@ servidor() { pkill -f github_falso.py; sleep 0.5; python3 "$(dirname $0)/github_
 # a atualização de teste: versão 55, um script mudado e um arquivo para remover
 rm -rf /tmp/upd && mkdir -p /tmp/upd/tools/teste /tmp/upd/godot
 cp "$P/tools/teste/passo.py" /tmp/upd/tools/teste/ && echo "# mudou na 55" >> /tmp/upd/tools/teste/passo.py
-python3 -c "import json;d=json.load(open('$P/versao.json'));d['versao']=55;json.dump(d,open('/tmp/upd/versao.json','w'))"
+echo '{"versao": 55}' > /tmp/upd/versao.json   # como sai do repositório: sem repo/api/chave
 echo "godot/velho.txt" > /tmp/upd/remover.txt
 (cd /tmp/upd && rm -f /tmp/atualizacao_teste.zip && zip -qr /tmp/atualizacao_teste.zip .)
 echo "arquivo antigo" > "$P/godot/velho.txt"
@@ -32,6 +33,8 @@ python3 -c "import json;print('versao.json agora:', json.load(open('$P/versao.js
 [ -f "$P/godot/velho.txt" ] && echo "FALHA: velho.txt não foi removido" || echo "ok: velho.txt removido"
 grep -c "mudou na 55" "$P/tools/teste/passo.py" | sed 's/^/linhas novas no script: /'
 grep "== \|ok: " "$P/gerado/launcher.log" | tail -8
-echo "== 4) já na 55 -> nada para fazer"; echo "saida: $(roda)"; rel
+python3 -c "import json;d=json.load(open('$P/versao.json'));print('versao.json manteve repo/api:', d.get('repo')=='dono/repo' and 'api' in d)"
+echo "chave.txt: $(cat $P/chave.txt)"
+echo "== 4) já na 55 -> nada para fazer (e a chave ainda funciona)"; echo "saida: $(roda)"; rel
 pkill -f github_falso.py
 echo "== pedidos que o servidor recebeu:"; tail -12 /tmp/github_falso.log

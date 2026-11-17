@@ -66,6 +66,9 @@ func _ready() -> void:
 	_le_receita()
 	versao = _ler_json(raiz.path_join("versao.json"))
 	theme = MmxUI.theme()
+	var ic := Image.load_from_file(ProjectSettings.globalize_path("res://assets/icone.png"))
+	if ic: DisplayServer.set_icon(ic)
+	get_window().title = "Mega Man X Fusion"
 	cv = _Canvas.new(); cv.fn = _desenha; cv.size = Vector2(640, 360); add_child(cv)
 	btn_discos = _botao("PROCURAR DISCOS", Rect2(30, 199, 208, 17), _escolher_pasta)
 	btn_atualizar = _botao("ATUALIZAR", Rect2(30, 281, 208, 15), _baixar_atualizacao)
@@ -464,6 +467,12 @@ func _jogar() -> void:
 		get_tree().quit()
 
 # ---------------- atualização (GitHub Releases) ----------------
+## chave de leitura do repositório: chave.txt (só no pacote do jogador, as atualizações não mexem) ou versao.json
+func _chave_repo() -> String:
+	var c := raiz.path_join("chave.txt")
+	if FileAccess.file_exists(c): return FileAccess.get_file_as_string(c).strip_edges()
+	return str(versao.get("token", ""))
+
 func _hdr(token: String, acc := "application/vnd.github+json") -> PackedStringArray:
 	var h := PackedStringArray(["Accept: " + acc, "User-Agent: MegaManXFusion-Launcher", "X-GitHub-Api-Version: 2022-11-28"])
 	if token != "": h.append("Authorization: Bearer " + token)
@@ -477,7 +486,7 @@ func _procurar_atualizacao() -> void:
 	if http.request_completed.is_connected(_resp_versao): http.request_completed.disconnect(_resp_versao)
 	http.request_completed.connect(_resp_versao, CONNECT_ONE_SHOT)
 	http.max_redirects = 8; http.download_file = ""
-	if http.request(api + "/repos/%s/releases/latest" % repo, _hdr(str(versao.get("token", "")))) != OK:
+	if http.request(api + "/repos/%s/releases/latest" % repo, _hdr(_chave_repo())) != OK:
 		upd.estado = "erro"; upd.texto = "Sem conexão para procurar atualização"
 
 func _resp_versao(res: int, code: int, _h: PackedStringArray, body: PackedByteArray) -> void:
@@ -516,7 +525,7 @@ func _baixar_atualizacao() -> void:
 	http.max_redirects = 0
 	http.download_file = zip
 	http.request_completed.connect(_resp_download.bind(0), CONNECT_ONE_SHOT)
-	http.request(upd.url, _hdr(str(versao.get("token", "")), "application/octet-stream"))
+	http.request(upd.url, _hdr(_chave_repo(), "application/octet-stream"))
 
 func _resp_download(res: int, code: int, headers: PackedStringArray, _b: PackedByteArray, passo: int) -> void:
 	var zip := raiz.path_join("gerado/atualizacao.zip")
@@ -544,9 +553,17 @@ func _aplica_atualizacao(zip: String) -> void:
 	var n := 0
 	for f in zr.get_files():
 		if f.ends_with("/") or f.begins_with("/") or ".." in f or ":" in f: continue
+		if f == "chave.txt": continue
 		var dst := raiz.path_join(f)
 		DirAccess.make_dir_recursive_absolute(dst.get_base_dir())
 		var bytes := zr.read_file(f)
+		if f == "versao.json":   # mantém repositório e chave daqui se a versão nova não trouxer
+			var novo = JSON.parse_string(bytes.get_string_from_utf8())
+			if novo is Dictionary:
+				for k in ["repo", "api", "token"]:
+					if not novo.has(k) and versao.has(k): novo[k] = versao[k]
+				novo["versao"] = int(novo.get("versao", 0))
+				bytes = JSON.stringify(novo, " ").to_utf8_buffer()
 		if f.begins_with("launcher/") and FileAccess.file_exists(dst) and FileAccess.get_file_as_bytes(dst) != bytes: mudou_launcher = true
 		var w := FileAccess.open(dst, FileAccess.WRITE)
 		if w: w.store_buffer(bytes); n += 1

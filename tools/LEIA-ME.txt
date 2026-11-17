@@ -1,0 +1,22 @@
+MEGA MAN X FUSION - fangame sem fins lucrativos
+================================================
+
+Você precisa dos SEUS discos de Mega Man X4, X5 e X6 (versão americana), em .bin:
+  - Mega Man X4 (USA).bin
+  - Mega Man X5 (USA).bin
+  - Mega Man X6 (USA) (v1.1).bin
+(os .cue não precisam; o nome do arquivo pode ser outro, o launcher confere pelo conteúdo)
+
+1. Extraia esta pasta inteira (não abra de dentro do .zip).
+2. Coloque os 3 arquivos .bin na pasta "discos" (ou clique em PROCURAR DISCOS no launcher).
+3. Abra "Mega Man X Fusion.exe".
+   Se o Windows avisar "O Windows protegeu o computador": clique em "Mais informações" e "Executar assim mesmo".
+4. Clique em PREPARAR (só na primeira vez e depois de atualizar; leva alguns minutos).
+5. Clique em JOGAR.
+
+Atualizações: o launcher procura sozinho quando abre. Se tiver, aparece o botão ATUALIZAR.
+Se der erro: o botão ABRIR REGISTRO abre o gerado\launcher.log; mande esse arquivo para quem te passou o jogo.
+
+Este pacote não traz nada dos jogos: tudo o que é dos jogos sai dos SEUS discos, no SEU PC, na hora de preparar.
+Programas livres que vêm junto: Godot Engine (licença MIT, godotengine.org) e FFmpeg
+(licença GPL, ffmpeg.org; build de github.com/BtbN/FFmpeg-Builds, onde está o código-fonte).
