@@ -1,5 +1,5 @@
 {
- "versao_receita": 20,
+ "versao_receita": 21,
  "nota": "Etapas que o launcher roda no PC do jogador, a partir dos discos dele. Cada etapa só roda de novo se mudar o disco, os arquivos dela ou uma etapa de antes.",
  "etapas": [
   {
@@ -890,6 +890,32 @@
    "depois_de": [
     "godot_inicial",
     "dados_x4"
+   ]
+  },
+  {
+   "id": "pecas_x",
+   "nome": "Peças das armaduras do X",
+   "discos": [
+    "x4",
+    "x5",
+    "x6"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "pecas_x",
+    "disco_x4={disco_x4}",
+    "disco_x5={disco_x5}",
+    "disco_x6={disco_x6}"
+   ],
+   "arquivos": [
+    "{tools}/extrator"
    ]
   },
   {
