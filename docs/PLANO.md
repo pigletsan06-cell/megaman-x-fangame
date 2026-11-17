@@ -77,6 +77,10 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
 - Teste completo (tools/testes/teste_discos_reais.sh, pasta nova + discos): 13 etapas em 146 s, tudo ok. 101 arquivos gerados
   que existem no PC do dono, 52 idênticos byte a byte (o resto: vídeos com a mesma imagem, miniaturas e título do X5 com os
   mesmos pontos, título do X6 aproximado).
+- FEITO `textos_x5` (press_start + menu_*_on/off): sprites 16x16 direto da VRAM fotografada (`sprite_da_vram` em
+  extrair.gd: página 384,0 de 4 bits, CLUT 0x7800 apagado / 0x7801 aceso, linha y, cores <<3, recorte nos opacos) — 7 iguais.
+- `titulo_fusion` (66x12, "FUSION" laranja itálico): montado por nós com letras de alguma fonte do jogo — achar as letras
+  (provavelmente a fonte dos nomes de fase das telas de seleção X5/X6) e a posição de cada uma.
 - PRÓXIMOS: (1) X4: telas x4_N + título + mini_x4 (achar o roteiro com o x4core; ver tests/x4ms.gd e a diferença de pasta);
   (2) loading x5/x6, press_start, menu_*, titulo_fusion; (3) intro (317); (4) sfx/musica; (5) sprites x/parts, zero;
   (6) psxcore no pacote (+ testar fase do X5/X6 pelo psxcore com X4_PSXCORE=1); (7) llvm-mingw baixado na 1ª vez;
