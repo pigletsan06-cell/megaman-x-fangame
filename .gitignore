@@ -1,0 +1,33 @@
+# cache do Godot
+.godot/
+*.tmp
+
+# tudo que vem dos discos é gerado pelo launcher no PC de cada um: nunca vai para o repositório
+/godot/bin/
+/godot/assets/*
+!/godot/assets/fonte/
+!/godot/assets/sfx/
+/godot/assets/sfx/*
+!/godot/assets/sfx/menu_back.wav*
+!/godot/assets/sfx/menu_close.wav*
+!/godot/assets/sfx/menu_equip.wav*
+!/godot/assets/sfx/menu_error.wav*
+!/godot/assets/sfx/menu_full.wav*
+!/godot/assets/sfx/menu_open.wav*
+!/godot/assets/sfx/menu_tab.wav*
+!/godot/assets/sfx/meta.json
+!/godot/assets/menus/
+/godot/assets/menus/*
+!/godot/assets/menus/mascaras.json
+
+# discos, saves, dumps e coisas geradas
+*.bin
+*.cue
+*.iso
+*.mcd
+*.pst
+psx_freeze_*.json
+psx_last_run_report.json
+/gerado/
+/discos/
+__pycache__/

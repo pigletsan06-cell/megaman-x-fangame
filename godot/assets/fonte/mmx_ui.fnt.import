@@ -1,0 +1,17 @@
+[remap]
+
+importer="font_data_bmfont"
+type="FontFile"
+uid="uid://ds8ptydq6p033"
+path="res://.godot/imported/mmx_ui.fnt-7d048e5b5270c4b5cdec4d45074c2b65.fontdata"
+
+[deps]
+
+source_file="res://assets/fonte/mmx_ui.fnt"
+dest_files=["res://.godot/imported/mmx_ui.fnt-7d048e5b5270c4b5cdec4d45074c2b65.fontdata"]
+
+[params]
+
+fallbacks=[]
+compress=true
+scaling_mode=2
