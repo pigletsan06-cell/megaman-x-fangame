@@ -1,6 +1,6 @@
 // Cartão de memória na memória; o Godot carrega/grava o arquivo (user://memcardN.mcr)
 #include "common.h"
-#include "/home/claude/ext/mmx4/src/pc/memcard.h"
+#include "pc/memcard.h"   // da decompilação (src/pc), via -I<decompilação>/src
 #include <string.h>
 #include "x4core.h"
 

@@ -434,17 +434,26 @@ func codigo_x4(jogo: String, prog: Callable) -> int:
 	DirAccess.make_dir_recursive_absolute(jogo.path_join("bin"))
 	var r2 := []
 	var cod2: int
+	# a lista de objetos vai num arquivo de resposta (@arquivo): no Windows a linha de comando tem limite de 32 mil letras
+	var rsp := lista_resposta(obj.path_join("objetos.rsp"), ordem)
 	if win:
 		cod2 = OS.execute(ld, ["-flavor", "link", "/dll", "/noentry", "/nodefaultlib", "/out:" + jogo.path_join("bin/x4core.dll"),
-			"/base:0x10000000", "/dynamicbase:no", "/opt:ref"] + ordem + ["/export:x4core_init"], r2, true)
+			"/base:0x10000000", "/dynamicbase:no", "/opt:ref", "@" + rsp, "/export:x4core_init"], r2, true)
 	else:
-		cod2 = OS.execute(ld, ["-shared", "-o", jogo.path_join("bin/libx4core.so")] + ordem + ["--gc-sections", "-z", "defs"], r2, true)
+		cod2 = OS.execute(ld, ["-shared", "-o", jogo.path_join("bin/libx4core.so"), "@" + rsp, "--gc-sections", "-z", "defs"], r2, true)
 	if cod2 != 0: printerr("erro ao juntar: ", str(r2).left(800)); return -1
 	var ge := FileAccess.open(jogo.path_join("bin/x4core.gdextension"), FileAccess.WRITE)
 	ge.store_string('[configuration]\nentry_symbol = "x4core_init"\ncompatibility_minimum = "4.4"\n\n[libraries]\nwindows.x86_64 = "res://bin/x4core.dll"\nlinux.x86_64 = "res://bin/libx4core.so"\n')
 	ge.close()
 	prog.call(10, 10, "pronto")
 	return 1
+
+## arquivo de resposta do ligador: um caminho por linha, entre aspas (os caminhos podem ter espaços)
+func lista_resposta(caminho: String, objs: Array) -> String:
+	var f := FileAccess.open(caminho, FileAccess.WRITE)
+	for o in objs: f.store_string('"%s"\n' % str(o).replace("\\", "/"))
+	f.close()
+	return caminho
 
 ## sprites 16x16 de uma linha da tela, direto da VRAM fotografada (sem desenhar): página de 4 bits, uma CLUT,
 ## cor 0 = transparente, cores 5 bits << 3; recorta nos pontos opacos
@@ -573,10 +582,10 @@ func codigo_psx(jogo: String, prog: Callable) -> int:
 	var r := []; var cod: int
 	if win:
 		var k32 := opcao("kernel32", "", cc.get_base_dir().path_join("../x86_64-w64-mingw32/lib/libkernel32.a").simplify_path())
-		cod = OS.execute(ld, ["-flavor", "link", "/dll", "/noentry", "/nodefaultlib", "/out:" + jogo.path_join("bin/psxcore.dll"), "/opt:ref"]
-			+ objs + [k32, "/export:psxcore_init"], r, true)
+		cod = OS.execute(ld, ["-flavor", "link", "/dll", "/noentry", "/nodefaultlib", "/out:" + jogo.path_join("bin/psxcore.dll"), "/opt:ref",
+			"@" + lista_resposta(base.path_join("objetos_psx.rsp"), objs + [k32]), "/export:psxcore_init"], r, true)
 	else:
-		cod = OS.execute(ld, ["-shared", "-o", jogo.path_join("bin/libpsxcore.so")] + objs + ["--gc-sections"], r, true)
+		cod = OS.execute(ld, ["-shared", "-o", jogo.path_join("bin/libpsxcore.so"), "@" + lista_resposta(base.path_join("objetos_psx.rsp"), objs), "--gc-sections"], r, true)
 	if cod != 0: printerr("erro ao juntar: ", str(r).left(800)); return -1
 	var ge := FileAccess.open(jogo.path_join("bin/psxcore.gdextension"), FileAccess.WRITE)
 	ge.store_string('[configuration]\nentry_symbol = "psxcore_init"\ncompatibility_minimum = "4.4"\n\n[libraries]\nwindows.x86_64 = "res://bin/psxcore.dll"\nlinux.x86_64 = "res://bin/libpsxcore.so"\n')
