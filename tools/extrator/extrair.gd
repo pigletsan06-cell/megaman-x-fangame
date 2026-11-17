@@ -144,7 +144,10 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	var dir := jogo.path_join(".captura/" + nm)
 	DirAccess.make_dir_recursive_absolute(dir)
 	var fotos: Dictionary = r.fotos
-	for k in ["DUMP", "DUMP_FROM", "OBJLOG", "AUDIO", "SPUDBG", "SPUDUMP", "RWATCH"]: OS.unset_environment(k)
+	for k in ["DUMP", "DUMP_FROM", "OBJLOG", "AUDIO", "AUDIO_FROM", "SPUDBG", "SPUDUMP", "RWATCH"]: OS.unset_environment(k)
+	var au: Dictionary = r.get("audio", {})
+	if not au.is_empty():   # som do núcleo (44,1 kHz estéreo 16 bits, cru) a partir de um quadro
+		OS.set_environment("AUDIO", dir.path_join("som.raw")); OS.set_environment("AUDIO_FROM", str(int(au.de)))
 	OS.set_environment("NORAM", "1"); OS.set_environment("DUMPDIR", dir)
 	var quadros := fotos.keys()
 	for sp in r.get("sprites", []):
@@ -157,6 +160,19 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 		if not FileAccess.file_exists(dir.path_join("v_%s.bin" % k)):
 			printerr("a captura não fotografou o quadro %s (saída %d): %s" % [k, code, str(out).right(400)]); return -1
 	var n := 0
+	if not au.is_empty():
+		var raw := FileAccess.get_file_as_bytes(dir.path_join("som.raw"))
+		var ini := int(au.inicio) * 4; var tam := int(au.amostras) * 4
+		if raw.size() < ini + tam: printerr("som curto demais: %d bytes" % raw.size()); return -1
+		var cut := FileAccess.open(dir.path_join("laco.raw"), FileAccess.WRITE); cut.store_buffer(raw.slice(ini, ini + tam)); cut.close()
+		var dst := jogo.path_join(str(au.saida))
+		DirAccess.make_dir_recursive_absolute(dst.get_base_dir())
+		var ff := opcao("ffmpeg", "FUSION_FFMPEG", "ffmpeg")
+		var o2 := []
+		OS.execute(ff, ["-nostdin", "-v", "error", "-y", "-f", "s16le", "-ar", "44100", "-ac", "2", "-i", dir.path_join("laco.raw"),
+			"-c:a", "libvorbis", "-q:a", "5", dst + ".tmp.ogg"], o2, true)
+		if not FileAccess.file_exists(dst + ".tmp.ogg"): printerr("ffmpeg falhou no som: ", str(o2).right(300)); return -1
+		DirAccess.rename_absolute(dst + ".tmp.ogg", dst); n += 1
 	for sp in r.get("sprites", []):
 		if not sprite_da_vram(dir, int(sp.quadro), int(sp.linha), int(sp.clut), jogo.path_join(str(sp.saida))): return -1
 		n += 1
@@ -588,6 +604,7 @@ const GRUPOS := {
 	"textos_x5": {"discos": ["x5"], "captura": true},
 	"loading_x5": {"discos": ["x5"], "captura": true}, "loading_x6": {"discos": ["x6"], "captura": true},
 	"intro_x5": {"discos": ["x5"], "captura": true}, "intro_x6": {"discos": ["x6"], "captura": true},
+	"musica_x5": {"discos": ["x5"], "captura": true},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
 	"codigo_x4": {"discos": []}, "codigo_psx": {"discos": []}, "ferramentas": {"discos": []},
 }

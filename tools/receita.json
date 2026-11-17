@@ -1,5 +1,5 @@
 {
- "versao_receita": 12,
+ "versao_receita": 13,
  "nota": "Etapas que o launcher roda no PC do jogador, a partir dos discos dele. Cada etapa só roda de novo se mudar o disco, os arquivos dela ou uma etapa de antes.",
  "etapas": [
   {
@@ -537,6 +537,38 @@
    ]
   },
   {
+   "id": "musica_x5",
+   "nome": "Música da seleção (X5)",
+   "discos": [
+    "x5"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "musica_x5",
+    "disco_x5={disco_x5}",
+    "captura={captura}",
+    "bios={tools}/captura/openbios.bin",
+    "godot_render={godot_render}",
+    "godot={godot}",
+    "ffmpeg={ffmpeg}"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{tools}/captura/openbios.bin",
+    "{captura}"
+   ],
+   "depois_de": [
+    "godot_inicial"
+   ]
+  },
+  {
    "id": "importar",
    "nome": "Preparar no Godot",
    "cmd": [
@@ -568,7 +600,8 @@
     "loading_x6",
     "titulo_x4",
     "intro_x5",
-    "intro_x6"
+    "intro_x6",
+    "musica_x5"
    ]
   }
  ]
