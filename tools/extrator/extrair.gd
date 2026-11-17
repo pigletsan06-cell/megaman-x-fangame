@@ -155,7 +155,20 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	OS.set_environment("DUMP_LIST", ",".join(quadros)); OS.set_environment("POKE", str(r.get("poke", "")))
 	prog.call(0, 3, "rodando o %s" % str(r.jogo).to_upper())
 	var out := []
-	var code := OS.execute(cap, ["x", bios, "DISC=" + d.caminho, str(int(r.quadros)), str(r.botoes)], out, true)
+	var code := 0
+	if str(r.get("motor", "")) == "x4core":
+		# X4 pelo x4core (código do X4 compilado neste PC): o próprio jogo roda o roteiro e grava as fotos
+		var x4env := []
+		for k in r.get("x4env", {}): x4env.append("%s=%s" % [k, r.x4env[k]])
+		OS.set_environment("X4ENV", ";".join(x4env)); OS.set_environment("X4_SEM_VIDEO", "1")
+		OS.set_environment("SAIDA", dir); OS.set_environment("QUADROS", ",".join(quadros))
+		OS.set_environment("TOTAL", str(int(r.quadros))); OS.set_environment("BOTOES", str(r.botoes))
+		OS.set_environment("MEM", str(r.get("mem", "")))
+		code = OS.execute(opcao("godot", "FUSION_GODOT", OS.get_executable_path()),
+			["--headless", "--path", jogo, "-s", "res://tests/x4_fotos.gd"], out, true)
+		for k in ["X4ENV", "X4_SEM_VIDEO", "SAIDA", "QUADROS", "TOTAL", "BOTOES", "MEM"]: OS.unset_environment(k)
+	else:
+		code = OS.execute(cap, ["x", bios, "DISC=" + d.caminho, str(int(r.quadros)), str(r.botoes)], out, true)
 	for k in quadros:
 		if not FileAccess.file_exists(dir.path_join("v_%s.bin" % k)):
 			printerr("a captura não fotografou o quadro %s (saída %d): %s" % [k, code, str(out).right(400)]); return -1
@@ -605,6 +618,7 @@ const GRUPOS := {
 	"loading_x5": {"discos": ["x5"], "captura": true}, "loading_x6": {"discos": ["x6"], "captura": true},
 	"intro_x5": {"discos": ["x5"], "captura": true}, "intro_x6": {"discos": ["x6"], "captura": true},
 	"musica_x5": {"discos": ["x5"], "captura": true},
+	"menus_x4": {"discos": ["x4"], "captura": true},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
 	"codigo_x4": {"discos": []}, "codigo_psx": {"discos": []}, "ferramentas": {"discos": []},
 }

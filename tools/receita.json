@@ -1,5 +1,5 @@
 {
- "versao_receita": 13,
+ "versao_receita": 14,
  "nota": "Etapas que o launcher roda no PC do jogador, a partir dos discos dele. Cada etapa só roda de novo se mudar o disco, os arquivos dela ou uma etapa de antes.",
  "etapas": [
   {
@@ -185,6 +185,36 @@
    ]
   },
   {
+   "id": "menus_x4",
+   "nome": "Telas do X4",
+   "discos": [
+    "x4"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "menus_x4",
+    "disco_x4={disco_x4}",
+    "godot_render={godot_render}",
+    "godot={godot}"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{jogo}/tests/x4_fotos.gd",
+    "{jogo}/tests/render_dump.gd"
+   ],
+   "depois_de": [
+    "godot_inicial",
+    "dados_x4"
+   ]
+  },
+  {
    "id": "menus_x5",
    "nome": "Telas do X5",
    "discos": [
@@ -244,6 +274,27 @@
    ],
    "depois_de": [
     "godot_inicial"
+   ]
+  },
+  {
+   "id": "mini_x4",
+   "nome": "Miniaturas do X4",
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "mini_x4"
+   ],
+   "arquivos": [
+    "{tools}/extrator"
+   ],
+   "depois_de": [
+    "menus_x4"
    ]
   },
   {

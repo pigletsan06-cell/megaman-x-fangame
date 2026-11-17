@@ -1,0 +1,20 @@
+{
+ "nota": "Telas de seleção de chefes do X4 pelo x4core (código do X4 compilado neste PC): cena da seleção com o X, sem o vídeo; o cursor anda com o controle por todos os chefes e cada foto é tirada no mesmo ponto do pisca do cursor (conferido: mesmos pontos do PC do dono).",
+ "jogo": "x4",
+ "disco": "x4",
+ "motor": "x4core",
+ "x4env": {"MMX4_ORACLE_SCENE": "mission-briefing", "MMX4_DIRECT_STAGE": "1", "MMX4_DIRECT_CHARACTER": "0"},
+ "mem": "8:0:3",
+ "quadros": 985,
+ "botoes": "right:480-482,right:560-562,right:640-642,down:720-722,left:800-802,left:880-882,left:960-962",
+ "fotos": {
+  "394": "assets/menus/x4_1.png",
+  "514": "assets/menus/x4_6.png",
+  "562": "assets/menus/x4_7.png",
+  "646": "assets/menus/x4_4.png",
+  "730": "assets/menus/x4_2.png",
+  "826": "assets/menus/x4_8.png",
+  "886": "assets/menus/x4_3.png",
+  "984": "assets/menus/x4_5.png"
+ }
+}

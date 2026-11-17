@@ -108,6 +108,13 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
 - `titulo_x6`: não é quadro do X6OP.STR nem do boot no psxcore (cores contínuas 0..255) — talvez do recomp. Fica aproximado.
 - `titulo_fusion` (66x12, "FUSION" laranja itálico): montado por nós com letras de alguma fonte do jogo — achar as letras
   (provavelmente a fonte dos nomes de fase das telas de seleção X5/X6) e a posição de cada uma.
+- FEITO `menus_x4` (17/nov 04h30): as 8 telas `x4_N` saem com o MESMO SHA-1 do PC do dono, pelo x4core compilado no PC do
+  jogador. Caminho: `godot/tests/x4_fotos.gd` (X4Machine + MMX4_ORACLE_SCENE=mission-briefing, X4_SEM_VIDEO=1, mem(8,0) no
+  quadro 3; o estado 3/4 é a seleção, a partir do quadro 363; sem apertar confirmar) grava v/p e o `render_dump.gd`
+  (JOGO=x4) desenha. Cursor pelo controle (direita 480/560/640, baixo 720, esquerda 800/880/960); o pisca do cursor tem
+  ciclo de 36 quadros. Cursor → arquivo: 0→x4_1 (q394), 1→x4_6 (514), 2→x4_7 (562), 3→x4_4 (646), 7→x4_2 (730),
+  6→x4_8 (826), 5→x4_3 (886), 4→x4_5 (984). Roteiro `menus_x4.json` com "motor": "x4core" (extrair.gd roda o próprio jogo).
+  `mini_x4` (16) com os mesmos pontos. Tudo em 1,5 s.
 - PRÓXIMOS: (1) X4: telas x4_N + título + mini_x4 (achar o roteiro com o x4core; ver tests/x4ms.gd e a diferença de pasta);
   (2) loading x5/x6, press_start, menu_*, titulo_fusion; (3) intro (317); (4) sfx/musica; (5) sprites x/parts, zero;
   (6) psxcore no pacote (+ testar fase do X5/X6 pelo psxcore com X4_PSXCORE=1); (7) llvm-mingw baixado na 1ª vez;
