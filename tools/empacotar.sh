@@ -23,6 +23,10 @@ cp "$REPO/tools/windows/LICENCA_GODOT.txt" "$P/engine/" 2>/dev/null || true
 unzip -q -o -j "$FZ" "*/bin/ffmpeg.exe" "*/LICENSE.txt" -d "$P/ferramentas"; mv "$P/ferramentas/LICENSE.txt" "$P/ferramentas/LICENCA_FFMPEG.txt"
 mkdir -p "$P/ferramentas/render"; "$Z7" e -y -o"$P/ferramentas/render" "$MZ" opengl32.dll > /dev/null
 cp "$REPO/tools/windows/LICENCA_MESA.txt" "$P/ferramentas/render/"
+# recompilação do X5/X6: kit com o runtime já compilado (psxrecomp, licença PolyForm Noncommercial) + recompilador;
+# o código do jogo é gerado do disco e compilado no PC do jogador
+[ -s "${RCWIN:-/tmp/rcwin}/psxrecomp-game.exe" ] || "$REPO/tools/recomp/recompilador.sh" "${RCWIN:-/tmp/rcwin}" > /dev/null
+python3 "$REPO/tools/recomp/kit.py" "$P/ferramentas/recomp" "${RCWIN:-/tmp/rcwin}/psxrecomp-game.exe" > /dev/null
 # captura (nosso núcleo de PS1 + SPU do psyz, MPL 2.0: código em github.com/sozud/psyz)
 CB=$(mktemp -d); "$REPO/tools/captura/compilar.sh" "$CB" > /dev/null; cp "$CB/captura.exe" "$P/ferramentas/captura.exe"; rm -rf "$CB"
 "$REPO/tools/windows/compilar.sh" "$P/Mega Man X Fusion.exe" > /dev/null

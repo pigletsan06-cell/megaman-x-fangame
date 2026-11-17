@@ -1,5 +1,5 @@
 {
- "versao_receita": 18,
+ "versao_receita": 19,
  "nota": "Etapas que o launcher roda no PC do jogador, a partir dos discos dele. Cada etapa só roda de novo se mudar o disco, os arquivos dela ou uma etapa de antes.",
  "etapas": [
   {
@@ -164,6 +164,66 @@
    ]
   },
   {
+   "id": "recomp_x5",
+   "nome": "Recompilação do X5 (compilando)",
+   "discos": [
+    "x5"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "recomp_x5",
+    "disco_x5={disco_x5}",
+    "kit={raiz}/ferramentas/recomp",
+    "clang={clang}",
+    "lld={lld}",
+    "fontes={gerado}/fontes"
+   ],
+   "arquivos": [
+    "{tools}/extrator/extrair.gd",
+    "{raiz}/ferramentas/recomp/x5/kit.json"
+   ],
+   "depois_de": [
+    "ferramentas"
+   ]
+  },
+  {
+   "id": "recomp_x6",
+   "nome": "Recompilação do X6 (compilando)",
+   "discos": [
+    "x6"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "recomp_x6",
+    "disco_x6={disco_x6}",
+    "kit={raiz}/ferramentas/recomp",
+    "clang={clang}",
+    "lld={lld}",
+    "fontes={gerado}/fontes"
+   ],
+   "arquivos": [
+    "{tools}/extrator/extrair.gd",
+    "{raiz}/ferramentas/recomp/x6/kit.json"
+   ],
+   "depois_de": [
+    "ferramentas"
+   ]
+  },
+  {
    "id": "godot_inicial",
    "nome": "Preparar o Godot (1ª vez)",
    "cmd": [
@@ -181,7 +241,9 @@
    ],
    "depois_de": [
     "codigo_x4",
-    "codigo_psx"
+    "codigo_psx",
+    "recomp_x5",
+    "recomp_x6"
    ]
   },
   {

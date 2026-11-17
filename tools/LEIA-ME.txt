@@ -24,3 +24,6 @@ Mesa 3D (licença MIT, ferramentas\render; build de github.com/mmozeiko/build-me
 ferramentas\captura.exe, o SPU do psyz (licença MPL 2.0; código em github.com/sozud/psyz).
 Na primeira preparação o launcher baixa o compilador llvm-mingw (github.com/mstorsjo/llvm-mingw)
 e a decompilação pública do X4 (github.com/sozud/mmx4), e compila o código do jogo no seu PC.
+O X5 e o X6 rodam pela recompilação (psxrecomp, github.com/RetroPortingToolKit/psxrecomp, e os projetos
+MegaManX5Recomp/MegaManX6Recomp de github.com/mstan, licença PolyForm Noncommercial: uso sem fins lucrativos):
+ferramentas\recomp traz o runtime já compilado; o código do jogo é gerado do SEU disco e compilado no seu PC.

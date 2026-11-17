@@ -494,6 +494,86 @@ func som_da_spu(ram: PackedByteArray, addr: int, pitch: int, vl: int, vr: int, g
 	w.store_buffer(cab); w.store_buffer(dados); w.close()
 	return true
 
+# ---------------- recompilação do X5/X6 (psxrecomp): o código do jogo é gerado do disco e compilado AQUI ----------------
+## kit (ferramentas/recomp, montado por tools/recomp/kit.py): objetos do runtime já compilados, bibliotecas, recompilador.
+## 1) tira o executável do disco (bin/recomp_xN/mmxN/SLUS_...), 2) o recompilador gera o C, 3) o clang compila,
+## 4) o ld.lld junta tudo na DLL bin/xNrecomp.dll (mesma lista e ordem da DLL do PC do dono), 5) a extensão do Godot.
+func codigo_recomp(g: String, jogo: String, discos: Dictionary, prog: Callable) -> int:
+	if OS.get_name() != "Windows" and opcao("forcar", "", "") == "":
+		print("%s: a recompilação só é montada no Windows (aqui o jogo usa o núcleo de PS1)" % g); return 0
+	var kit := opcao("kit", "FUSION_KIT_RECOMP", "").simplify_path()
+	var kj = JSON.parse_string(FileAccess.get_file_as_string(kit.path_join(g + "/kit.json")))
+	if not kj is Dictionary: printerr("kit da recompilação não encontrado em ", kit); return -1
+	var k: Dictionary = kj
+	var cc := opcao("clang", "FUSION_CLANG", "clang"); var ld := opcao("lld", "FUSION_LLD", "ld.lld")
+	var trab := opcao("fontes", "FUSION_FONTES", jogo.path_join("../gerado/fontes")).simplify_path().path_join("recomp_" + g)
+	var gen := trab.path_join("generated")
+	DirAccess.make_dir_recursive_absolute(gen)
+	# 1) executável do jogo, de dentro do disco
+	prog.call(0, 10, "lendo o disco")
+	var d: Disco = discos[g]
+	var arqs := d.arquivos()
+	if not arqs.has(str(k.exe)): printerr("o disco não tem ", k.exe); return -1
+	var e: Array = arqs[str(k.exe)]
+	var exe_bytes := d.dados(int(e[0]), (int(e[1]) + 2047) / 2048).slice(0, int(e[1]))
+	var rt := jogo.path_join("bin/recomp_" + g)
+	if not escreve(jogo, "bin/recomp_%s/%s/%s" % [g, k.pasta, k.exe], exe_bytes): return -1
+	# 2) recompilador (configuração do projeto com os nossos ganchos; caminhos absolutos: o recompilador roda daqui)
+	prog.call(1, 10, "gerando o código do jogo")
+	var cfg := FileAccess.get_file_as_string(kit.path_join(g + "/recompilar/game.toml"))
+	var rc := kit.path_join(g + "/recompilar")
+	var linhas := []
+	for ln in cfg.split("\n"):
+		var t := ln.strip_edges()
+		if t.begins_with("exe ="): ln = 'exe = "%s"' % rt.path_join("%s/%s" % [k.pasta, k.exe])
+		elif t.begins_with("seeds ="): ln = 'seeds = "%s"' % rc.path_join("seeds/ghidra_funcs.txt")
+		elif t.begins_with("bios_config ="): ln = 'bios_config = "%s"' % rc.path_join("bios/SCPH1001.toml")
+		elif t.begins_with("out_dir ="): ln = 'out_dir = "%s"' % gen
+		linhas.append(ln)
+	var cfg_tmp := trab.path_join("game.toml")
+	var fc := FileAccess.open(cfg_tmp, FileAccess.WRITE); fc.store_string("\n".join(linhas)); fc.close()
+	var out := []
+	var cod := OS.execute(kit.path_join("psxrecomp-game.exe"), ["--config", cfg_tmp], out, true)
+	for f in k.gerados:
+		if not FileAccess.file_exists(gen.path_join(str(f))): printerr("o recompilador não gerou %s (saída %d): %s" % [f, cod, str(out).right(500)]); return -1
+	# 3) compila o código gerado (mesmas definições e otimização da DLL do PC do dono)
+	var fl := ["--target=x86_64-w64-mingw32", "-nostdinc", "-isystem", kit.path_join("sysinc/clang"), "-isystem", kit.path_join("sysinc/mingw"),
+		"-I" + kit.path_join(g + "/include"), "-I" + gen, "-w"] + Array(k.defines) + Array(k.flags)
+	var lista := []
+	for f in k.gerados: lista.append([gen.path_join(str(f)), fl])
+	var objs := compila(lista, trab.path_join("obj"), cc, func(a: int, b: int, t := "") -> void: prog.call(2 + a * 6 / 10, 10, t), "compilando o " + g.to_upper())
+	if objs.is_empty(): return -1
+	# 4) junta (a ordem é a da DLL do PC do dono: objetos de antes, o código do jogo, objetos de depois, os nossos)
+	prog.call(9, 10, "juntando")
+	var lib := kit.path_join("lib"); var kg := kit.path_join(g)
+	var args: Array = Array(k.inicio) + ["-o", jogo.path_join("bin/%srecomp.dll" % g), lib.path_join("dllcrt2.o"), lib.path_join("crtbegin.o"),
+		"-L" + lib] + Array(k.pilha)
+	for r in k.res: args.append(kg.path_join("res/" + str(r)))
+	args += ["--whole-archive", kg.path_join("antes.a"), "--no-whole-archive"] + objs
+	args += ["--whole-archive", kg.path_join("depois.a"), "--no-whole-archive"]
+	for o in k.emb: args.append(kg.path_join(str(o)))
+	for a in k.ligar:
+		var s2 := str(a)
+		if s2.begins_with("deps/"): args.append(kg.path_join(s2))
+		elif s2.begins_with("lib/"): args.append(kit.path_join(s2))
+		else: args.append(s2)
+	var rsp := lista_resposta(trab.path_join("ligar.rsp"), args)
+	var r2 := []
+	if OS.execute(ld, ["@" + rsp], r2, true) != 0: printerr("erro ao juntar a recompilação: ", str(r2).left(1500)); return -1
+	# 5) extensão do Godot e a pasta de execução (configuração, BIOS)
+	var ge := FileAccess.open(jogo.path_join("bin/recomp_%s.gdextension" % g), FileAccess.WRITE)
+	ge.store_string('[configuration]\nentry_symbol = "recomp_%s_init"\ncompatibility_minimum = "4.4"\n\n[libraries]\nwindows.x86_64 = "res://bin/%srecomp.dll"\n' % [g, g])
+	ge.close()
+	DirAccess.make_dir_recursive_absolute(rt.path_join("bios"))
+	DirAccess.copy_absolute(kg.path_join("execucao/game.toml"), rt.path_join("game.toml"))
+	for f in ["openbios.bin", "OpenBIOS.LICENSE"]: DirAccess.copy_absolute(kg.path_join("execucao/bios/" + f), rt.path_join("bios/" + f))
+	# o código gerado e os objetos (uns 150 MB, saídos do disco) não precisam ficar: a DLL já está pronta
+	for sub in ["generated", "obj"]:
+		for f in DirAccess.get_files_at(trab.path_join(sub)): DirAccess.remove_absolute(trab.path_join(sub).path_join(f))
+		DirAccess.remove_absolute(trab.path_join(sub))
+	prog.call(10, 10, "pronto")
+	return 1
+
 ## arquivo de resposta do ligador: um caminho por linha, entre aspas (os caminhos podem ter espaços)
 func lista_resposta(caminho: String, objs: Array) -> String:
 	var f := FileAccess.open(caminho, FileAccess.WRITE)
@@ -689,6 +769,7 @@ const GRUPOS := {
 	"sons_x6": {"discos": ["x6"], "roteiros": ["sons_x6_x", "sons_x6_zero", "sons_x6_a1", "sons_x6_a2", "sons_x6_a3"]},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
 	"codigo_x4": {"discos": []}, "codigo_psx": {"discos": []}, "ferramentas": {"discos": []},
+	"recomp_x5": {"discos": ["x5"]}, "recomp_x6": {"discos": ["x6"]},
 }
 func roda_grupo(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> int:
 	if GRUPOS.get(nm, {}).get("captura", false): return captura(nm, jogo, discos, prog)
@@ -705,6 +786,7 @@ func roda_grupo(nm: String, jogo: String, discos: Dictionary, prog: Callable) ->
 	if nm == "ferramentas": return ferramentas(prog)
 	if nm == "codigo_x4": return codigo_x4(jogo, prog)
 	if nm == "codigo_psx": return codigo_psx(jogo, prog)
+	if nm.begins_with("recomp_"): return codigo_recomp(nm.substr(7), jogo, discos, prog)
 	match nm:
 		"x4_arc": return x4_arc(jogo, discos, prog)
 		"videos_x4": return videos("x4", jogo, discos, prog)
