@@ -25,3 +25,11 @@ no PC de cada jogador, a partir dos discos dele, pelo launcher.
 - `godot/` — o projeto do jogo (sem os arquivos que vêm dos discos).
 - `launcher/` — o launcher (projeto Godot separado).
 - `tools/` — o extrator e os scripts que montam o jogo a partir dos discos.
+- `docs/` — `INVENTARIO.md` (o que é nosso, o que sai dos discos e o que ainda falta) e `TESTES.md` (o que foi testado).
+
+## Para quem mexe no projeto
+
+- Testes do launcher: `tools/testes/teste_launcher.sh` (11 casos), `tools/testes/teste_atualizador.sh` (GitHub de mentira),
+  `tools/testes/teste_discos_reais.sh` (receita de verdade com os discos).
+- Pacote do Windows: `tools/empacotar.sh SAIDA.zip [arquivo_com_a_chave]` — junta só os arquivos daqui com o Godot e o FFmpeg.
+  A chave de leitura vai em `chave.txt` dentro do pacote, nunca no repositório.
