@@ -232,6 +232,11 @@ func _discos_fim(cache: Dictionary) -> void:
 	if faltam.is_empty() and errados.is_empty():
 		disco_msg = "Os 3 discos conferem."
 		estado["pasta_discos"] = discos.x5.caminho.get_base_dir()
+		# o jogo acha os discos por aqui (em qualquer pasta e com qualquer nome)
+		var dj := {}
+		for d in DISCOS: dj[d.id] = {"caminho": str(discos[d.id].caminho)}
+		var fdj := FileAccess.open(raiz.path_join("godot/discos.json"), FileAccess.WRITE)
+		if fdj: fdj.store_string(JSON.stringify(dj, " "))
 		_som("menu_equip")
 	else:
 		var partes := []

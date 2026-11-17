@@ -163,12 +163,21 @@ func _ready() -> void:
 func _disc_path() -> String:
 	return disc_file(game)
 
+# discos conferidos pelo launcher (SHA-1 certo): godot/discos.json {"x4": {"caminho": ...}, "x5": ..., "x6": ...}
+static func discos_launcher() -> Dictionary:
+	var p := ProjectSettings.globalize_path("res://discos.json")
+	if not FileAccess.file_exists(p): return {}
+	var d = JSON.parse_string(FileAccess.get_file_as_string(p))
+	return d if d is Dictionary else {}
+
 # aceita os nomes comuns do disco (o X6 pode ser a versão 1.1)
 static func disc_file(g: String) -> String:
-	var names := {"x5": ["Mega Man X5 (USA).bin", "Mega Man X5.bin"],
+	var names := {"x4": ["Mega Man X4 (USA).bin", "Mega Man X4.bin"], "x5": ["Mega Man X5 (USA).bin", "Mega Man X5.bin"],
 		"x6": ["Mega Man X6 (USA).bin", "Mega Man X6 (USA) (v1.1).bin", "Mega Man X6 (USA) (v1.0).bin", "Mega Man X6.bin"]}
 	var disc := OS.get_environment("PSX_BIN")
 	if disc != "": return disc
+	var dl: Dictionary = discos_launcher().get(g, {})
+	if FileAccess.file_exists(str(dl.get("caminho", ""))): return str(dl.caminho)
 	var base := ProjectSettings.globalize_path("res://").path_join("..")
 	var lista: Array = names.get(g, [])
 	for n in lista:
@@ -179,6 +188,7 @@ static func disc_file(g: String) -> String:
 static func disc_tag(g: String) -> String:
 	if g != "x5" and g != "x6": return ""
 	var n := disc_file(g).get_file()
+	if discos_launcher().has(g): n = "Mega Man %s (USA).bin" % g.to_upper()   # o launcher conferiu o SHA-1: é o disco certo
 	var t := "" if n == "Mega Man %s (USA).bin" % g.to_upper() else "_d%x" % (n.hash() & 0xFFFF)
 	if use_recomp(g): t += "_rc"   # estados da recompilação não servem para o emulador (e vice-versa)
 	return t
@@ -438,7 +448,7 @@ var bin: FileAccess
 
 func _audio_init() -> void:
 	var cands := [OS.get_environment("X4_BIN"),
-		ProjectSettings.globalize_path("res://").path_join("../Mega Man X4 (USA).bin"),
+		disc_file("x4"),
 		ProjectSettings.globalize_path("res://").path_join("assets/x4.bin")]
 	for c in cands:
 		if c != "" and FileAccess.file_exists(c):

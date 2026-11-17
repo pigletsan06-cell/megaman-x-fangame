@@ -33,3 +33,4 @@ psx_last_run_report.json
 /discos/
 __pycache__/
 chave.txt
+/godot/discos.json
