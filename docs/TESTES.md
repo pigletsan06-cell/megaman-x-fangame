@@ -46,3 +46,8 @@ Conferido com a lista do PC do dono (`confere_assets.py`):
 153 MB (352 MB aberto), 247 arquivos, nada dos discos. Descompactado e rodado (no Linux, com o Godot do Linux): prepara tudo com um
 disco renomeado ("meu disco x6.bin"). O abridor `Mega Man X Fusion.exe` (70 KB) é um executável de janela do Windows com só
 kernel32/user32 — **ainda não testado num Windows de verdade**, nem o `godot.exe`/`ffmpeg.exe` rodando as etapas lá.
+
+## Capturas do núcleo de PS1 (para o próximo grupo do extrator)
+
+Tela de seleção do X5 refeita pelo `psxcore` + `render_dump.gd` com o controle de verdade (esquerda, cima):
+60 quadros seguidos com o **mesmo SHA-1** do `assets/menus/x5_1.png` do PC do dono.
