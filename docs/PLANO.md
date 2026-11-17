@@ -83,6 +83,11 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
 - X4 telas: tentativa /tmp/x4_telas_busca.gd (X4Machine + mission-briefing + mem(8,0) + mem(9,cursor), step_frame(true),
   foto do root) deu só um retângulo cinza — falta achar como as x4_N foram desenhadas (ver tests/x4ms.gd e scripts de
   fotos do X4 no hub; talvez desenhar pelo stream de primitivas como o render_dump).
+- X4 no psxcore (sem x4core): engine_obj US = 0x801721C0 (state +0, unk1 +1, unk3 +3 = cursor, stage +0xC, unkE +0xE).
+  Botões "start:900-905,start:1000-1005,cross:1100-1105,cross:1200-1205,start:1300-1305,cross:1400-1405" → estado 3 no
+  quadro 1494, 3/8 no 1579 (QG: "Mavericks have been found at point 5567!"), unkE=0x0a. POKE unkE=0 (1721ce:0000:1580-1590)
+  + cross a cada 40 quadros NÃO chegou na seleção até 3400. Próximas tentativas: unkE=0 desde 1494 até o fim (faixa), ou
+  junto com stage; ver no x4core (runtime.c MMX4_ORACLE_SCENE) o que exatamente ele faz para "mission-briefing".
 - `titulo_x6`: não é quadro do X6OP.STR nem do boot no psxcore (cores contínuas 0..255) — talvez do recomp. Fica aproximado.
 - `titulo_fusion` (66x12, "FUSION" laranja itálico): montado por nós com letras de alguma fonte do jogo — achar as letras
   (provavelmente a fonte dos nomes de fase das telas de seleção X5/X6) e a posição de cada uma.
