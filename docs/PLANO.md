@@ -88,6 +88,10 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
   quadro 1494, 3/8 no 1579 (QG: "Mavericks have been found at point 5567!"), unkE=0x0a. POKE unkE=0 (1721ce:0000:1580-1590)
   + cross a cada 40 quadros NÃO chegou na seleção até 3400. Próximas tentativas: unkE=0 desde 1494 até o fim (faixa), ou
   junto com stage; ver no x4core (runtime.c MMX4_ORACLE_SCENE) o que exatamente ele faz para "mission-briefing".
+- PISTA X4: a decompilação tem um "oracle" (src/pc/oracle.c) que grava a tela direto da VRAM do psyz (buffer mostrado,
+  y = (SP_DRAW_BUFFER^1)*240, cores 5 bits << 3) quando MMX4_ORACLE_SCENE bate ("mission-briefing" = engine.state 3).
+  As x4_N devem ter saído daí, via /home/claude/x4core/test_main(.c). O X4Core no Godot NÃO devolve a VRAM ("vram" vem vazio).
+  Caminho: rodar o test_main (ou igual) com o x4core compilado no PC do amigo, cena mission-briefing, unkE=0, cursor unk3.
 - `titulo_x6`: não é quadro do X6OP.STR nem do boot no psxcore (cores contínuas 0..255) — talvez do recomp. Fica aproximado.
 - `titulo_fusion` (66x12, "FUSION" laranja itálico): montado por nós com letras de alguma fonte do jogo — achar as letras
   (provavelmente a fonte dos nomes de fase das telas de seleção X5/X6) e a posição de cada uma.
