@@ -34,3 +34,5 @@ psx_last_run_report.json
 __pycache__/
 chave.txt
 /godot/discos.json
+# OpenBIOS (PCSX-Redux, licença MIT): é nosso pacote, não vem dos discos
+!/tools/captura/openbios.bin
