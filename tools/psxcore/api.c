@@ -116,9 +116,12 @@ static s32 xa_h[4];
 static u32 xa_phase;
 static s16 xa_cur[2], xa_prev[2];
 int xa_active;
+// fase inicial do reamostrador a cada ReadN/ReadS (16.16, em amostras de 37800 Hz); 0 no jogo.
+// A captura muda isto (XA_FASE) para refazer músicas gravadas com outra fase (ex.: x6_selecao.ogg)
+unsigned xa_fase_inicial;
 void xa_reset_stream(void)
 {
-    xa_rd = xa_cnt = 0; xa_phase = 0;
+    xa_rd = xa_cnt = 0; xa_phase = xa_fase_inicial & 0xFFFF;
     xa_h[0] = xa_h[1] = xa_h[2] = xa_h[3] = 0;
     xa_cur[0] = xa_cur[1] = xa_prev[0] = xa_prev[1] = 0;
 }

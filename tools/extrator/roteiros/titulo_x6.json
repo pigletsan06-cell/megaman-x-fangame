@@ -1,5 +1,5 @@
 {
- "nota": "Tela de título do X6 (quadro 500). APROXIMADA: a do PC do dono foi feita de outro jeito (cores com diferença de 1 a 3).",
+ "nota": "Tela de título do X6 (quadro 500). O X6 desenha essa tela com 512 pontos de largura: igual ao PC do dono = desenho no tamanho do jogo (VRAM + sprites) reduzido para 320 com o LANCZOS do Pillow (pesos inteiros em tabelas/lanczos_512_320.json).",
  "jogo": "x6",
  "disco": "x6",
  "quadros": 501,
@@ -8,6 +8,9 @@
  "fotos": {
   "500": "assets/menus/titulo_x6.png"
  },
- "cores": "5bits",
- "formato": "rgb"
+ "tela_nativa": {
+  "largura": 512,
+  "altura": 240,
+  "reducao": "tabelas/lanczos_512_320.json"
+ }
 }

@@ -148,6 +148,7 @@ func opcao(k: String, env: String, padrao: String) -> String:
 func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> int:
 	var r = JSON.parse_string(FileAccess.get_file_as_string("res://roteiros/%s.json" % nm))
 	if not r is Dictionary: printerr("roteiro estragado: ", nm); return -1
+	if str(r.get("motor", "")) == "x4som": return sons_x4som(nm, r, jogo, prog)
 	var cap := opcao("captura", "FUSION_CAPTURA", "captura")
 	var bios := opcao("bios", "FUSION_BIOS", "")
 	var render := opcao("godot_render", "FUSION_GODOT_RENDER", OS.get_executable_path())
@@ -158,11 +159,12 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	var dir := jogo.path_join(".captura/" + nm)
 	DirAccess.make_dir_recursive_absolute(dir)
 	var fotos: Dictionary = r.fotos
-	for k in ["DUMP", "DUMP_FROM", "OBJLOG", "AUDIO", "AUDIO_FROM", "AUDIO_POR", "SPUDBG", "SPUDUMP", "RWATCH"]: OS.unset_environment(k)
+	for k in ["DUMP", "DUMP_FROM", "OBJLOG", "AUDIO", "AUDIO_FROM", "AUDIO_POR", "SPUDBG", "SPUDUMP", "RWATCH", "XA_FASE"]: OS.unset_environment(k)
 	var au: Dictionary = r.get("audio", {})
 	if not au.is_empty():   # som do núcleo (44,1 kHz estéreo 16 bits, cru) a partir de um quadro
 		OS.set_environment("AUDIO", dir.path_join("som.raw")); OS.set_environment("AUDIO_FROM", str(int(au.de)))
 		if au.has("por"): OS.set_environment("AUDIO_POR", str(int(au.por)))   # amostras por quadro (padrão 735/736)
+		if au.has("xa_fase"): OS.set_environment("XA_FASE", str(int(au.xa_fase)))   # fase do reamostrador do XA (música do CD)
 	OS.set_environment("NORAM", "1"); OS.set_environment("DUMPDIR", dir)
 	if r.has("spu"): OS.set_environment("SPUDUMP", str(int(r.spu)))   # RAM do SPU (sons) fotografada neste quadro
 	if r.has("spudbg"): OS.set_environment("SPUDBG", str(r.spudbg))   # vozes/CD do SPU ("ffffff:1:0" = sem a música do CD)
@@ -187,6 +189,7 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 		for k in ["X4ENV", "X4_SEM_VIDEO", "SAIDA", "QUADROS", "TOTAL", "BOTOES", "MEM", "X4_BIN", "AUDIO_SEM_XA"]: OS.unset_environment(k)
 	else:
 		code = OS.execute(cap, ["x", bios, "DISC=" + d.caminho, str(int(r.quadros)), str(r.botoes)], out, true)
+	OS.unset_environment("XA_FASE")
 	for k in quadros:
 		if not FileAccess.file_exists(dir.path_join("v_%s.bin" % k)):
 			printerr("a captura não fotografou o quadro %s (saída %d): %s" % [k, code, str(out).right(400)]); return -1
@@ -235,6 +238,19 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 		DirAccess.remove_absolute(dir); DirAccess.remove_absolute(jogo.path_join(".captura"))
 		return n
 	prog.call(1, 3, "desenhando %d telas" % fotos.size())
+	if r.has("tela_nativa"):   # desenho por software no tamanho do jogo (ex.: 512 de largura) e redução como no PC do dono
+		for k in fotos:
+			var im := tela_nativa(dir, str(k), r.tela_nativa)
+			if im == null: return -1
+			for dd in (fotos[k] if fotos[k] is Array else [fotos[k]]):
+				var dst := jogo.path_join(str(dd))
+				DirAccess.make_dir_recursive_absolute(dst.get_base_dir())
+				if im.save_png(dst) != OK: printerr("não gravei ", dst); return -1
+				n += 1
+		for f in DirAccess.get_files_at(dir): DirAccess.remove_absolute(dir.path_join(f))
+		DirAccess.remove_absolute(dir); DirAccess.remove_absolute(jogo.path_join(".captura"))
+		prog.call(3, 3, "pronto")
+		return n
 	var bases := []
 	for k in fotos: bases.append(dir.path_join(k))
 	OS.set_environment("JOGO", str(r.jogo)); OS.set_environment("DUMPS", ",".join(bases))
@@ -265,6 +281,84 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	DirAccess.remove_absolute(dir); DirAccess.remove_absolute(jogo.path_join(".captura"))
 	prog.call(3, 3, "pronto")
 	return n
+
+## tela desenhada por software direto da VRAM e das primitivas gravadas (v_N.bin, p_N.bin), no tamanho do jogo
+## (cfg.largura x cfg.altura) e reduzida na horizontal com os pesos inteiros de cfg.reducao (LANCZOS do Pillow, como o
+## título do X6 do PC do dono). Só as primitivas que essas telas usam: retângulo cheio (0x60) e sprite 16x16 sem
+## mistura (0x7D); qualquer outra para a etapa com erro (melhor que uma foto diferente).
+func tela_nativa(dir: String, k: String, cfg: Dictionary) -> Image:
+	var vb := FileAccess.get_file_as_bytes(dir.path_join("v_%s.bin" % k))
+	var pw := FileAccess.get_file_as_bytes(dir.path_join("p_%s.bin" % k)).to_int32_array()
+	if vb.size() != 1024 * 512 * 2: printerr("tela_nativa: VRAM do quadro %s faltando" % k); return null
+	var vr := vb.to_int32_array()   # 2 pontos de 16 bits por inteiro
+	var vram := func(x: int, y: int) -> int:
+		var q: int = vr[(y * 1024 + x) >> 1]
+		return (q >> 16) & 0xFFFF if x & 1 else q & 0xFFFF
+	var W := int(cfg.largura); var H := int(cfg.altura)
+	var px := PackedByteArray(); px.resize(W * H * 3)
+	var tp := 0; var i := 0
+	var s11 := func(v: int) -> int:
+		v &= 0x7FF
+		return v - 0x800 if v & 0x400 else v
+	while i < pw.size():
+		var sz: int = pw[i]; i += 1
+		if sz <= 0 or i + sz > pw.size(): break
+		var o := i; i += sz
+		var w0: int = pw[o]; var op := (w0 >> 24) & 0xFF
+		if op == 0xE1: tp = w0 & 0x1FF; continue
+		if op == 0xF1:
+			if sz >= 2 and ((pw[o + 1] & 0xFFFF) != W or ((pw[o + 1] >> 16) & 0xFFFF) != H):
+				printerr("tela_nativa: a tela do quadro %s é %dx%d, não %dx%d" % [k, pw[o + 1] & 0xFFFF, (pw[o + 1] >> 16) & 0xFFFF, W, H]); return null
+			continue
+		if op == 0x60 and sz >= 3:
+			var x0: int = s11.call(pw[o + 1]); var y0: int = s11.call(pw[o + 1] >> 16)
+			var rw: int = pw[o + 2] & 0xFFFF; var rh: int = (pw[o + 2] >> 16) & 0xFFFF
+			for y in range(maxi(y0, 0), mini(y0 + rh, H)):
+				for x in range(maxi(x0, 0), mini(x0 + rw, W)):
+					var p := (y * W + x) * 3
+					px[p] = w0 & 0xFF; px[p + 1] = (w0 >> 8) & 0xFF; px[p + 2] = (w0 >> 16) & 0xFF
+			continue
+		if op == 0x7D and sz >= 3:
+			var x0: int = s11.call(pw[o + 1]); var y0: int = s11.call(pw[o + 1] >> 16)
+			var u0: int = pw[o + 2] & 0xFF; var v0: int = (pw[o + 2] >> 8) & 0xFF; var clut: int = (pw[o + 2] >> 16) & 0xFFFF
+			var tx := (tp & 15) * 64; var ty := ((tp >> 4) & 1) * 256; var dep := (tp >> 7) & 3
+			var cx := (clut & 0x3F) * 16; var cy := clut >> 6
+			for dy in 16:
+				var Y := y0 + dy
+				if Y < 0 or Y >= H: continue
+				var vv := (v0 + dy) & 0xFF
+				for dx in 16:
+					var X := x0 + dx
+					if X < 0 or X >= W: continue
+					var uu := (u0 + dx) & 0xFF
+					var c: int
+					if dep == 0: c = vram.call(cx + ((vram.call(tx + (uu >> 2), ty + vv) >> ((uu & 3) * 4)) & 15), cy)
+					elif dep == 1: c = vram.call(cx + ((vram.call(tx + (uu >> 1), ty + vv) >> ((uu & 1) * 8)) & 255), cy)
+					else: c = vram.call(tx + uu, ty + vv)
+					if c == 0: continue
+					var p := (Y * W + X) * 3
+					px[p] = (c & 31) << 3; px[p + 1] = ((c >> 5) & 31) << 3; px[p + 2] = ((c >> 10) & 31) << 3
+			continue
+		printerr("tela_nativa: primitiva 0x%02X no quadro %s (não sei desenhar igual)" % [op, k]); return null
+	var red = JSON.parse_string(FileAccess.get_file_as_string("res://" + str(cfg.reducao)))
+	if not red is Dictionary or int(red.de) != W: printerr("tela_nativa: tabela de redução estragada"); return null
+	var W2 := int(red.para); var P := int(red.precisao)
+	var out := PackedByteArray(); out.resize(W2 * H * 3)
+	var cols: Array = red.colunas
+	var meio := 1 << (P - 1); var topo := 1 << P << 8
+	for y in H:
+		var lin := y * W * 3
+		for xx in W2:
+			var xmin := int(cols[xx][0]); var ks: Array = cols[xx][1]
+			var s0 := meio; var s1 := meio; var s2 := meio
+			for j in ks.size():
+				var kv := int(ks[j]); var p := lin + (xmin + j) * 3
+				s0 += px[p] * kv; s1 += px[p + 1] * kv; s2 += px[p + 2] * kv
+			var q := (y * W2 + xx) * 3
+			out[q] = 255 if s0 >= topo else (0 if s0 <= 0 else s0 >> P)
+			out[q + 1] = 255 if s1 >= topo else (0 if s1 <= 0 else s1 >> P)
+			out[q + 2] = 255 if s2 >= topo else (0 if s2 <= 0 else s2 >> P)
+	return Image.create_from_data(W2, H, false, Image.FORMAT_RGB8, out)
 
 ## grava a foto desenhada com a conversão do roteiro (cores de 5 bits, RGB, WebP)
 func salva_foto(r: Dictionary, t: String, dst: String) -> int:
@@ -617,6 +711,42 @@ func codigo_recomp(g: String, jogo: String, discos: Dictionary, prog: Callable) 
 	prog.call(10, 10, "pronto")
 	return 1
 
+## sons do X4 pela diferença entre duas gravações (com o som e sem ele) na fase 1, pela cena da fase do jogo
+## (tests/x4_sons.gd do jogo): a cachoeira da fase 1 some na conta. Foi assim que os sons do PC do dono foram feitos.
+func sons_x4som(nm: String, r: Dictionary, jogo: String, prog: Callable) -> int:
+	var dir := jogo.path_join(".captura/" + nm)
+	DirAccess.make_dir_recursive_absolute(dir)
+	var godot := opcao("godot", "FUSION_GODOT", OS.get_executable_path())
+	var grav: Dictionary = r.gravacoes
+	var k := 0
+	for g in grav:
+		prog.call(k, grav.size() + 1, "gravando o X4 (%d/%d)" % [k + 1, grav.size()])
+		var env: Dictionary = grav[g]
+		for e in env: OS.set_environment(e, str(env[e]))
+		OS.set_environment("SAIDA", dir)
+		var out := []
+		var code := OS.execute(godot, ["--headless", "--path", jogo, "-s", "res://tests/x4_sons.gd"], out, true)
+		for e in env: OS.unset_environment(e)
+		OS.unset_environment("SAIDA")
+		if code != 0: printerr("a gravação %s do X4 falhou (saída %d): %s" % [g, code, str(out).right(400)]); return -1
+		k += 1
+	var n := 0
+	for so in r.sons:
+		var a := FileAccess.get_file_as_bytes(dir.path_join(str(so.com)))
+		var b := FileAccess.get_file_as_bytes(dir.path_join(str(so.sem)))
+		var ini := int(so.inicio) * 4; var tam := int(so.amostras) * 4
+		if a.size() < ini + tam or b.size() < ini + tam: printerr("gravação curta demais para ", so.saida); return -1
+		var pcm := PackedByteArray(); pcm.resize(tam)
+		for i in range(0, tam, 2):
+			pcm.encode_s16(i, clampi(a.decode_s16(ini + i) - b.decode_s16(ini + i), -32768, 32767))
+		if not grava_wav(jogo.path_join(str(so.saida)), pcm, 44100, 2): return -1
+		n += 1
+	prog.call(grav.size(), grav.size() + 1, "limpando")
+	for f in DirAccess.get_files_at(dir): DirAccess.remove_absolute(dir.path_join(f))
+	DirAccess.remove_absolute(dir); DirAccess.remove_absolute(jogo.path_join(".captura"))
+	prog.call(grav.size() + 1, grav.size() + 1, "pronto")
+	return n
+
 ## WAV PCM de 16 bits (o mesmo cabeçalho de 44 bytes do módulo wave do Python)
 func grava_wav(saida: String, dados: PackedByteArray, taxa: int, canais: int) -> bool:
 	var cab := PackedByteArray(); cab.resize(44)
@@ -820,7 +950,7 @@ const GRUPOS := {
 	"musica_x5": {"discos": ["x5"], "captura": true},
 	"menus_x4": {"discos": ["x4"], "captura": true}, "intro_x4": {"discos": ["x4"], "captura": true},
 	"musica_x4": {"discos": ["x4"], "captura": true}, "musica_x6": {"discos": ["x6"], "captura": true},
-	"musica_titulo": {"discos": ["x5"], "captura": true}, "sons_x4": {"discos": ["x4"], "roteiros": ["sons_x4", "sons_x4_tele"]},
+	"musica_titulo": {"discos": ["x5"], "captura": true}, "sons_x4": {"discos": ["x4"], "roteiros": ["sons_x4"]},
 	"sons_x5": {"discos": ["x5"], "roteiros": ["sons_x5_x", "sons_x5_a2", "sons_x5_a3", "sons_x5_nova"]},
 	"sons_x6": {"discos": ["x6"], "roteiros": ["sons_x6_x", "sons_x6_zero", "sons_x6_a1", "sons_x6_a2", "sons_x6_a3"]},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},

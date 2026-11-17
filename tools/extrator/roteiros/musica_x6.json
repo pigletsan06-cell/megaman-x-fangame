@@ -1,16 +1,20 @@
 {
- "nota": "Música da seleção de chefes do X6: som do nosso núcleo a partir do quadro 2400 (735 amostras por quadro), o laço começa na amostra 940347 e tem 1587622 amostras, Vorbis q5. APROXIMADA: a do PC do dono está uns 0,4 de amostra deslocada (mesma música, mesmo laço e mesmo andamento).",
+ "nota": "Música da seleção de chefes do X6: som do nosso núcleo a partir do quadro 2400 (735 amostras por quadro), com o reamostrador do XA começando na fase 21354 (a do PC do dono); o laço começa na amostra 940348 e tem 1587622 amostras, Vorbis q5. Igual byte a byte ao x6_selecao.ogg do PC do dono.",
  "jogo": "x6",
  "disco": "x6",
  "quadros": 5850,
  "botoes": "start:900-905,cross:1000-1006,start:1400-1403,start:1460-1463",
  "poke": "ccedc:0001:1440-1900,cced2:0000:2400-2400,cced0:0002:2400-2400",
  "fotos": {},
- "audio": {"serial": "dd93ad52", "vendor": "Lavf60.16.100", "codificador": "Lavc60.31.102 libvorbis", 
+ "audio": {
+  "serial": "dd93ad52",
+  "vendor": "Lavf60.16.100",
+  "codificador": "Lavc60.31.102 libvorbis",
   "de": 2400,
   "por": 735,
-  "inicio": 940347,
+  "inicio": 940348,
   "amostras": 1587622,
-  "saida": "assets/musica/x6_selecao.ogg"
+  "saida": "assets/musica/x6_selecao.ogg",
+  "xa_fase": 21354
  }
 }

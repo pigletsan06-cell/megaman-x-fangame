@@ -148,13 +148,22 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
   quadro como na foto do dono). Cada quadro = pedaço ligado (8 vizinhos) dos pontos que mudam sem a paleta 0x794B, acima
   de y 200; 1x numa grade 91x91 e Scale3x do atlas inteiro (bordas repetidas). Os 25 quadros saem com os mesmos pontos
   do PC do dono (Linux e Windows iguais).
-- **Sons do X4** (`menu_move`, `menu_ok`, `fg_tele_in`, `fg_tele_out`): gravados na fase 2 (a fase 1 tem a cachoeira por
-  baixo, que deixava os teletransportes diferentes); ficam com no máximo 4 de diferença em 32768 (a gravação do dono tem
-  ruído de arredondamento: não dá para sair byte a byte), no Linux e no Windows.
+- **Sons do X4** (`menu_move`, `menu_ok`, `fg_tele_in`, `fg_tele_out`): gravados na fase 2 ficavam com até 4 de
+  diferença em 32768; depois saíram iguais pela diferença de duas gravações na fase 1 (ver abaixo).
 - **Teste final (17/nov, 17h)**: pacote novo + pasta nova + 3 discos no Windows (Wine): 37 etapas, "pronto"; 496 idênticos,
   306 mesmos pontos, 45 mesmo som; fases do X4, X5 e X6 carregam e jogam.
-- **Falta**: `titulo_x6.png` e `x6_selecao.ogg` aproximados (o dono fez de outro jeito); `x5_nova` com um som a mais no
-  começo da gravação do dono (meio segundo).
+- **Os que faltavam (17/nov, noite)**, agora iguais aos do PC do dono:
+  - `titulo_x6.png`: o X6 desenha o título em 512x240; a do dono é essa tela reduzida para 320 com o Lanczos do Pillow
+    (inteiro, 22 bits). O extrator desenha a tela nativa da VRAM (`tela_nativa`) e reduz com a tabela
+    `tabelas/lanczos_512_320.json` (gerada por `tabelas/gera_lanczos.py`, conferida com o Pillow): mesmos pontos.
+  - `x6_selecao.ogg`: a música do dono tem o reamostrador do XA (37800 -> 44100) começando na fase 21354 em vez de 0;
+    `api.c` ganhou `xa_fase_inicial` (0 no jogo; a captura lê `XA_FASE`) e o laço começa na amostra 940348: byte a byte.
+  - `x5_nova.wav`: antes de `AUDIO_FROM` o SPU fica parado, então o som que começou no quadro 1843 toca a partir do
+    começo da gravação; na do dono a gravação começou no quadro 2682 (R2 no 2702) e a voz 3 do SPU estava fora
+    (`SPUDBG fffff7:1:0`): amostra por amostra.
+  - Sons do X4: os do dono são a diferença (com o som - sem o som) de gravações na fase 1 pela cena da fase
+    (`tests/snd_preview.gd`/`snd_seq.gd` da época; agora `tests/x4_sons.gd`, sem a música do CD e com as opções de
+    fábrica): amostra por amostra, em 3,5 s.
 
 ## Ordem de trabalho
 

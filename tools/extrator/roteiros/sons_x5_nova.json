@@ -1,17 +1,17 @@
 {
- "nota": "Som do Nova Strike do X5 (x5_nova, armadura 4): fase 1 com a armadura Ultimate, R2 no quadro 2700, som do núcleo sem a música do CD (SPUDBG). Do quadro 66 em diante sai IGUAL ao do PC do dono; no começo a gravação do dono tem também o fim de outro som do X (pouso), que aqui não aparece.",
+ "nota": "Som do Nova Strike do X5 (x5_nova, armadura 4): fase 1 com a armadura Ultimate, R2 no quadro 2702, som do núcleo a partir do quadro 2682 (antes disso o SPU fica parado: o som que começou no quadro 1843 toca a partir dali), sem a música do CD e sem a voz 3 do SPU (SPUDBG), como na gravação do PC do dono. Igual amostra por amostra ao x5_nova.wav do PC do dono.",
  "jogo": "x5",
  "disco": "x5",
  "quadros": 2860,
- "botoes": "start:700-710,down:830-835,down:870-875,down:910-915,cross:960-966,cross:1210-1216,cross:1900-1903,cross:1930-1933,cross:1960-1963,cross:1990-1993,cross:2020-2023,cross:2050-2053,cross:2080-2083,cross:2110-2113,cross:2140-2143,cross:2170-2173,cross:2200-2203,cross:2230-2233,cross:2260-2263,cross:2290-2293,cross:2320-2323,cross:2350-2353,cross:2380-2383,cross:2410-2413,cross:2440-2443,cross:2470-2473,cross:2500-2503,cross:2530-2533,cross:2560-2563,cross:2590-2593,b9:2700-2703",
+ "botoes": "start:700-710,down:830-835,down:870-875,down:910-915,cross:960-966,cross:1210-1216,cross:1900-1903,cross:1930-1933,cross:1960-1963,cross:1990-1993,cross:2020-2023,cross:2050-2053,cross:2080-2083,cross:2110-2113,cross:2140-2143,cross:2170-2173,cross:2200-2203,cross:2230-2233,cross:2260-2263,cross:2290-2293,cross:2320-2323,cross:2350-2353,cross:2380-2383,cross:2410-2413,cross:2440-2443,cross:2470-2473,cross:2500-2503,cross:2530-2533,cross:2560-2563,cross:2590-2593,b9:2702-2705",
  "poke": "d1c0c:0001:1255-1600,d1c48:0400:1000-1800",
- "spudbg": "ffffff:1:0",
+ "spudbg": "fffff7:1:0",
  "fotos": {},
  "audio": {
-  "de": 2600,
+  "de": 2682,
   "cortes": [
    {
-    "inicio": 86756,
+    "inicio": 27930,
     "amostras": 89670,
     "saida": "assets/sfx/x5_nova.wav"
    }

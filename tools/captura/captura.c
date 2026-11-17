@@ -29,6 +29,7 @@ int main(int argc, char** argv) {
     unsigned (*dpc)(void) = (void*)psx_debug_pc;
     int (*mreq)(void) = (void*)x4_movie_request; void (*mdone)(void) = (void*)x4_movie_done;
     FILE* f = fopen(argv[2], "rb"); unsigned char* b = malloc(524288); fread(b, 1, 524288, f); fclose(f);
+    { extern unsigned xa_fase_inicial; if (getenv("XA_FASE")) xa_fase_inicial = (unsigned)strtoul(getenv("XA_FASE"), 0, 10); }   // fase do XA (ver api.c)
     int r = start(b, 524288, argv[3]);
     printf("start=%d %s\n", r, lg()); lgc();
     int frames = atoi(argv[4]);
