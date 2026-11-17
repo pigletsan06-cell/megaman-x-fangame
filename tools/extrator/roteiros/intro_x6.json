@@ -1,0 +1,94 @@
+{
+ "nota": "Abertura da seleção de chefes do X6 (30 quadros/s a partir do quadro 2591). Quadro de cada imagem escolhido pela gravação original (que tinha pequenos saltos). APROXIMADA: as do PC do dono são WebP com perdas de outro codificador; aqui o Godot (qualidade 0,83).",
+ "jogo": "x6",
+ "disco": "x6",
+ "quadros": 2654,
+ "botoes": "start:900-905,cross:1000-1006,start:1400-1403,start:1460-1463",
+ "poke": "ccedc:0001:1440-1900,cced2:0000:2400-2400,cced0:0002:2400-2400",
+ "fotos": {
+  "2577": [
+   "assets/menus/intro/x6/000.webp"
+  ],
+  "2591": [
+   "assets/menus/intro/x6/001.webp"
+  ],
+  "2594": [
+   "assets/menus/intro/x6/002.webp"
+  ],
+  "2595": [
+   "assets/menus/intro/x6/003.webp"
+  ],
+  "2597": [
+   "assets/menus/intro/x6/004.webp"
+  ],
+  "2599": [
+   "assets/menus/intro/x6/005.webp"
+  ],
+  "2601": [
+   "assets/menus/intro/x6/006.webp"
+  ],
+  "2603": [
+   "assets/menus/intro/x6/007.webp"
+  ],
+  "2605": [
+   "assets/menus/intro/x6/008.webp"
+  ],
+  "2608": [
+   "assets/menus/intro/x6/009.webp"
+  ],
+  "2610": [
+   "assets/menus/intro/x6/010.webp"
+  ],
+  "2612": [
+   "assets/menus/intro/x6/011.webp"
+  ],
+  "2614": [
+   "assets/menus/intro/x6/012.webp"
+  ],
+  "2616": [
+   "assets/menus/intro/x6/013.webp"
+  ],
+  "2618": [
+   "assets/menus/intro/x6/014.webp"
+  ],
+  "2620": [
+   "assets/menus/intro/x6/015.webp"
+  ],
+  "2585": [
+   "assets/menus/intro/x6/016.webp",
+   "assets/menus/intro/x6/017.webp",
+   "assets/menus/intro/x6/018.webp",
+   "assets/menus/intro/x6/019.webp"
+  ],
+  "2629": [
+   "assets/menus/intro/x6/020.webp",
+   "assets/menus/intro/x6/021.webp"
+  ],
+  "2633": [
+   "assets/menus/intro/x6/022.webp",
+   "assets/menus/intro/x6/023.webp"
+  ],
+  "2637": [
+   "assets/menus/intro/x6/024.webp",
+   "assets/menus/intro/x6/025.webp"
+  ],
+  "2641": [
+   "assets/menus/intro/x6/026.webp",
+   "assets/menus/intro/x6/027.webp"
+  ],
+  "2645": [
+   "assets/menus/intro/x6/028.webp",
+   "assets/menus/intro/x6/029.webp"
+  ],
+  "2649": [
+   "assets/menus/intro/x6/030.webp",
+   "assets/menus/intro/x6/031.webp"
+  ],
+  "2653": [
+   "assets/menus/intro/x6/032.webp",
+   "assets/menus/intro/x6/033.webp"
+  ]
+ },
+ "formato": "webp",
+ "qualidade": 0.83
+}

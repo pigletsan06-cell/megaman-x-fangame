@@ -177,25 +177,32 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	for k in fotos:
 		var t := dir.path_join("tela_%s.png" % k)
 		if not FileAccess.file_exists(t): printerr("não desenhou o quadro %s (saída %d): %s" % [k, code, str(out).right(400)]); return -1
-		var dst := jogo.path_join(str(fotos[k]))
-		DirAccess.make_dir_recursive_absolute(dst.get_base_dir())
-		if str(r.get("cores", "")) == "" and str(r.get("formato", "")) == "":
-			DirAccess.copy_absolute(t, dst); n += 1
-			continue
-		var im := Image.load_from_file(t)
-		im.convert(Image.FORMAT_RGBA8)
-		var px := im.get_data()
-		if str(r.get("cores", "")) == "5bits":   # cores do desenho antigo: 5 bits por canal << 3 (em vez de *255/31)
-			for i in px.size():
-				if i % 4 != 3: px[i] = int(round(px[i] * 31.0 / 255.0)) << 3
-		im = Image.create_from_data(im.get_width(), im.get_height(), false, Image.FORMAT_RGBA8, px)
-		if str(r.get("formato", "")) == "rgb": im.convert(Image.FORMAT_RGB8)
-		im.save_png(dst); n += 1
+		var dsts: Array = fotos[k] if fotos[k] is Array else [fotos[k]]   # o mesmo quadro pode virar mais de uma imagem
+		for dd in dsts:
+			var dst := jogo.path_join(str(dd))
+			DirAccess.make_dir_recursive_absolute(dst.get_base_dir())
+			if str(r.get("cores", "")) == "" and str(r.get("formato", "")) in ["", "png"]:
+				DirAccess.copy_absolute(t, dst); n += 1
+				continue
+			n += salva_foto(r, t, dst)
 	prog.call(2, 3, "limpando")
 	for f in DirAccess.get_files_at(dir): DirAccess.remove_absolute(dir.path_join(f))
 	DirAccess.remove_absolute(dir); DirAccess.remove_absolute(jogo.path_join(".captura"))
 	prog.call(3, 3, "pronto")
 	return n
+
+## grava a foto desenhada com a conversão do roteiro (cores de 5 bits, RGB, WebP)
+func salva_foto(r: Dictionary, t: String, dst: String) -> int:
+	var im := Image.load_from_file(t)
+	im.convert(Image.FORMAT_RGBA8)
+	var px := im.get_data()
+	if str(r.get("cores", "")) == "5bits":   # cores do desenho antigo: 5 bits por canal << 3 (em vez de *255/31)
+		for i in px.size():
+			if i % 4 != 3: px[i] = int(round(px[i] * 31.0 / 255.0)) << 3
+	im = Image.create_from_data(im.get_width(), im.get_height(), false, Image.FORMAT_RGBA8, px)
+	if str(r.get("formato", "")) in ["rgb", "webp"]: im.convert(Image.FORMAT_RGB8)
+	if str(r.get("formato", "")) == "webp": return 1 if im.save_webp(dst, true, float(r.get("qualidade", 0.83))) == OK else 0
+	return 1 if im.save_png(dst) == OK else 0
 
 ## miniaturas dos chefes: recorte da tela de seleção com a máscara do retrato (tools/extrator/mini, nossa) + versão cinza
 ## (mesma conta do hub_masks.py: cinza do PIL (R*19595+G*38470+B*7471+0x8000)>>16, vezes 0,55 truncado)
@@ -580,6 +587,7 @@ const GRUPOS := {
 	"titulo_x4": {"discos": ["x4"], "captura": true}, "titulo_x5": {"discos": ["x5"], "captura": true}, "titulo_x6": {"discos": ["x6"], "captura": true},
 	"textos_x5": {"discos": ["x5"], "captura": true},
 	"loading_x5": {"discos": ["x5"], "captura": true}, "loading_x6": {"discos": ["x6"], "captura": true},
+	"intro_x5": {"discos": ["x5"], "captura": true}, "intro_x6": {"discos": ["x6"], "captura": true},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
 	"codigo_x4": {"discos": []}, "codigo_psx": {"discos": []}, "ferramentas": {"discos": []},
 }

@@ -1,0 +1,156 @@
+{
+ "nota": "Abertura da seleção de chefes do X5 (30 quadros/s: um a cada 2 quadros do jogo, a partir do 2985). Quadro de cada imagem escolhido pela gravação original (que tinha pequenos saltos). APROXIMADA: as do PC do dono são WebP com perdas de outro codificador; aqui o Godot (qualidade 0,83).",
+ "jogo": "x5",
+ "disco": "x5",
+ "quadros": 3096,
+ "botoes": "start:700-710,down:830-835,down:870-875,down:910-915,cross:960-966,cross:1210-1216,cross:1900-1903,cross:1930-1933,cross:1960-1963,cross:1990-1993,cross:2020-2023,cross:2050-2053,cross:2080-2083,cross:2110-2113,cross:2140-2143,cross:2170-2173,cross:2200-2203,cross:2230-2233,cross:2260-2263,cross:2290-2293,cross:2320-2323,cross:2350-2353,cross:2380-2383,cross:2410-2413,cross:2440-2443,cross:2470-2473,cross:2500-2503,cross:2530-2533,cross:2560-2563,cross:2590-2593",
+ "poke": "d1c00:0003:2800-2800,d1c02:0000:2800-2800",
+ "fotos": {
+  "2974": [
+   "assets/menus/intro/x5/000.webp"
+  ],
+  "2987": [
+   "assets/menus/intro/x5/001.webp"
+  ],
+  "2989": [
+   "assets/menus/intro/x5/002.webp"
+  ],
+  "2991": [
+   "assets/menus/intro/x5/003.webp"
+  ],
+  "2993": [
+   "assets/menus/intro/x5/004.webp"
+  ],
+  "2995": [
+   "assets/menus/intro/x5/005.webp"
+  ],
+  "2997": [
+   "assets/menus/intro/x5/006.webp"
+  ],
+  "2999": [
+   "assets/menus/intro/x5/007.webp"
+  ],
+  "3001": [
+   "assets/menus/intro/x5/008.webp"
+  ],
+  "3003": [
+   "assets/menus/intro/x5/009.webp"
+  ],
+  "3005": [
+   "assets/menus/intro/x5/010.webp"
+  ],
+  "3007": [
+   "assets/menus/intro/x5/011.webp"
+  ],
+  "3009": [
+   "assets/menus/intro/x5/012.webp"
+  ],
+  "3011": [
+   "assets/menus/intro/x5/013.webp"
+  ],
+  "3013": [
+   "assets/menus/intro/x5/014.webp"
+  ],
+  "3015": [
+   "assets/menus/intro/x5/015.webp"
+  ],
+  "2980": [
+   "assets/menus/intro/x5/016.webp",
+   "assets/menus/intro/x5/017.webp",
+   "assets/menus/intro/x5/018.webp"
+  ],
+  "3023": [
+   "assets/menus/intro/x5/019.webp"
+  ],
+  "3025": [
+   "assets/menus/intro/x5/020.webp"
+  ],
+  "3027": [
+   "assets/menus/intro/x5/021.webp"
+  ],
+  "3029": [
+   "assets/menus/intro/x5/022.webp"
+  ],
+  "3031": [
+   "assets/menus/intro/x5/023.webp"
+  ],
+  "3033": [
+   "assets/menus/intro/x5/024.webp"
+  ],
+  "3035": [
+   "assets/menus/intro/x5/025.webp"
+  ],
+  "3037": [
+   "assets/menus/intro/x5/026.webp"
+  ],
+  "3039": [
+   "assets/menus/intro/x5/027.webp"
+  ],
+  "3041": [
+   "assets/menus/intro/x5/028.webp"
+  ],
+  "3043": [
+   "assets/menus/intro/x5/029.webp"
+  ],
+  "3045": [
+   "assets/menus/intro/x5/030.webp"
+  ],
+  "3047": [
+   "assets/menus/intro/x5/031.webp"
+  ],
+  "3049": [
+   "assets/menus/intro/x5/032.webp"
+  ],
+  "3051": [
+   "assets/menus/intro/x5/033.webp"
+  ],
+  "3053": [
+   "assets/menus/intro/x5/034.webp"
+  ],
+  "3055": [
+   "assets/menus/intro/x5/035.webp"
+  ],
+  "3057": [
+   "assets/menus/intro/x5/036.webp",
+   "assets/menus/intro/x5/037.webp",
+   "assets/menus/intro/x5/038.webp"
+  ],
+  "3063": [
+   "assets/menus/intro/x5/039.webp",
+   "assets/menus/intro/x5/040.webp"
+  ],
+  "3067": [
+   "assets/menus/intro/x5/041.webp",
+   "assets/menus/intro/x5/042.webp"
+  ],
+  "3071": [
+   "assets/menus/intro/x5/043.webp",
+   "assets/menus/intro/x5/044.webp"
+  ],
+  "3075": [
+   "assets/menus/intro/x5/045.webp",
+   "assets/menus/intro/x5/046.webp"
+  ],
+  "3079": [
+   "assets/menus/intro/x5/047.webp",
+   "assets/menus/intro/x5/048.webp"
+  ],
+  "3083": [
+   "assets/menus/intro/x5/049.webp",
+   "assets/menus/intro/x5/050.webp"
+  ],
+  "3087": [
+   "assets/menus/intro/x5/051.webp",
+   "assets/menus/intro/x5/052.webp"
+  ],
+  "3091": [
+   "assets/menus/intro/x5/053.webp",
+   "assets/menus/intro/x5/054.webp"
+  ],
+  "3095": [
+   "assets/menus/intro/x5/055.webp"
+  ]
+ },
+ "formato": "webp",
+ "qualidade": 0.83
+}
