@@ -120,6 +120,30 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
   (6) psxcore no pacote (+ testar fase do X5/X6 pelo psxcore com X4_PSXCORE=1); (7) llvm-mingw baixado na 1ª vez;
   (8) Mesa no pacote; (9) recomp X5/X6.
 
+## Andamento (17/nov tarde)
+
+- **Windows: vídeos ficavam `.tmp.ogv`** (o extrator abria o arquivo para ver o tamanho e não fechava antes de renomear;
+  no Windows não dá para renomear arquivo aberto). Corrigido em `extrair.gd`.
+- **Vídeos idênticos byte a byte**: os .ogv do PC do dono foram feitos por um FFmpeg 4.4 **de Windows** (Lavf58.76.100).
+  `tools/ffmpeg/compilar.sh` monta o FFmpeg 4.4.2 + libtheora 1.1.1 + libvorbis 1.3.7 + libogg 1.3.5 (mingw gcc 13.3,
+  asm x86_64) e o pacote leva esse `ffmpeg.exe` no lugar do da BtbN. Mudanças nossas: números de série do Ogg pedidos
+  (`FUSION_OGG_SERIAIS`, guardados no `VIDEOS` do extrator), texto do muxer (`FUSION_OGG_VENDOR`), a libvorbis sem o
+  `rint` → `floor(x+.5)` do Windows (`os.h`), contas da libm com o resultado da glibc (`memo.c`, tabela gerada por
+  `gera_registro.py`) e `qsort` estável. Teste no Wine, pasta nova: **15 de 15 vídeos com o mesmo SHA-1**.
+  No Linux a libtheora sai diferente da do Windows (233 de 1044 quadros do X1_U), então o teste de vídeo é no Wine.
+- **Músicas**: as do dono são do FFmpeg 6.1 do Linux; com o nosso ffmpeg + `serial`/`vendor`/`codificador` no roteiro
+  o `titulo.ogg` sai igual byte a byte (o som decodificado já era igual; o x6_selecao segue aproximado).
+- **Aberturas (317 WebP)**: gravadas pelo Pillow com a libwebp 1.6.0, qualidade 88, método 6. `tools/webp/webpenc.c`
+  faz o mesmo caminho (`WebPEncode` com ARGB + `WebPMux`); as 317 saem iguais (8 quadros do X6 estavam 1 quadro antes).
+- **Dash da Blade** (`dash6`, `dash6_add`): foi capturado da recompilação do X6. Roteiros achados (frente
+  `88:0,6:4000,4:0,40:2000,40:0`, cima `...,40:0010`, baixo com pulo de 10 quadros) e `dash.gd` refaz igual pela DLL
+  do X6 que o launcher monta (`tools/captura/captura_rc.c`, roda dentro da pasta da captura: os `psx_*.json` da
+  recompilação faziam o launcher refazer tudo).
+- **Sons**: `x5_nova` pela captura sem a música do CD (`SPUDBG ffffff:1:0`): igual do quadro 66 em diante;
+  `fg_tele_out` pelo comando do x4core que toca um som do X4 (0xFFFFFF13 = 0x10B): mesmo som, outro volume.
+- **Falta**: `zero/x6/giga` (corte do Zero Nightmare: a luta não aparece nas fases 19-22 pela captura; sem esse atlas
+  o Giga do Nightmare Zero não desenha o corte), `titulo_x6.png` e `x6_selecao.ogg` aproximados.
+
 ## Ordem de trabalho
 
 1. [x] `captura` para Linux e Windows a partir das fontes do `psxcore` (mesmo resultado do harness).
