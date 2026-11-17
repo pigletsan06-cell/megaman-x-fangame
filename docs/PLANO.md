@@ -80,6 +80,10 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
 - FEITO `textos_x5` (press_start + menu_*_on/off): sprites 16x16 direto da VRAM fotografada (`sprite_da_vram` em
   extrair.gd: página 384,0 de 4 bits, CLUT 0x7800 apagado / 0x7801 aceso, linha y, cores <<3, recorte nos opacos) — 7 iguais.
 - FEITO `loading_x5/x6` (Now Loading aceso/apagado: X5 quadros 1288/1300, X6 1484/1480 do roteiro do hub, cores 5bits) — 4 iguais.
+- X4 telas: tentativa /tmp/x4_telas_busca.gd (X4Machine + mission-briefing + mem(8,0) + mem(9,cursor), step_frame(true),
+  foto do root) deu só um retângulo cinza — falta achar como as x4_N foram desenhadas (ver tests/x4ms.gd e scripts de
+  fotos do X4 no hub; talvez desenhar pelo stream de primitivas como o render_dump).
+- `titulo_x6`: não é quadro do X6OP.STR nem do boot no psxcore (cores contínuas 0..255) — talvez do recomp. Fica aproximado.
 - `titulo_fusion` (66x12, "FUSION" laranja itálico): montado por nós com letras de alguma fonte do jogo — achar as letras
   (provavelmente a fonte dos nomes de fase das telas de seleção X5/X6) e a posição de cada uma.
 - PRÓXIMOS: (1) X4: telas x4_N + título + mini_x4 (achar o roteiro com o x4core; ver tests/x4ms.gd e a diferença de pasta);
