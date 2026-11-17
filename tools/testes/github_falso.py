@@ -19,11 +19,13 @@ class H(http.server.BaseHTTPRequestHandler):
         auth = self.headers.get("Authorization", "")
         log.write(f"{self.path} auth={'sim' if auth else 'nao'} accept={self.headers.get('Accept')}\n"); log.flush()
         if self.path.endswith("/releases/latest"):
-            if token and auth != "Bearer " + token: return self._r(404, b'{"message":"Not Found"}')
+            if token and auth != "Bearer " + token:   # como o GitHub: chave errada 401, sem chave (privado) 404
+                return self._r(401, b'{"message":"Bad credentials"}') if auth else self._r(404, b'{"message":"Not Found"}')
             body = {"tag_name": tag, "assets": [{"name": "atualizacao.zip", "url": f"http://127.0.0.1:{porta}/assets/1"}]}
             return self._r(200, json.dumps(body).encode())
         if self.path == "/assets/1":
-            if token and auth != "Bearer " + token: return self._r(404, b'{"message":"Not Found"}')
+            if token and auth != "Bearer " + token:   # como o GitHub: chave errada 401, sem chave (privado) 404
+                return self._r(401, b'{"message":"Bad credentials"}') if auth else self._r(404, b'{"message":"Not Found"}')
             return self._r(302, extra={"Location": f"http://127.0.0.1:{porta}/s3/atualizacao.zip"})
         if self.path == "/s3/atualizacao.zip":
             if auth: return self._r(400, b"Only one auth mechanism allowed", "text/plain")

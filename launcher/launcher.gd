@@ -492,7 +492,11 @@ func _procurar_atualizacao() -> void:
 func _resp_versao(res: int, code: int, _h: PackedStringArray, body: PackedByteArray) -> void:
 	if res != HTTPRequest.RESULT_SUCCESS or code != 200:
 		upd.estado = "erro"
-		upd.texto = "Não deu para procurar atualização (%s)" % ("sem internet" if res != HTTPRequest.RESULT_SUCCESS else "erro %d" % code)
+		if res != HTTPRequest.RESULT_SUCCESS: upd.texto = "Sem internet: não deu para procurar atualização"
+		elif code == 401: upd.texto = "Chave de atualização inválida ou vencida (chave.txt)"
+		elif code == 404: upd.estado = "em_dia"; upd.texto = "Nenhuma versão nova publicada"
+		elif code == 403 or code == 429: upd.texto = "O GitHub pediu para esperar; tente mais tarde"
+		else: upd.texto = "Não deu para procurar atualização (erro %d)" % code
 		_log(upd.texto)
 		if auto and auto_upd and not discos.is_empty() and disco_thread and not disco_thread.is_alive(): _preparar()
 		return
