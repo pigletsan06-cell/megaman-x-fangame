@@ -438,16 +438,29 @@ func baixa(url: String, destino: String) -> bool:
 		while c.get_status() == HTTPClient.STATUS_REQUESTING: c.poll(); OS.delay_msec(20)
 		var cod := c.get_response_code()
 		if cod in [301, 302, 303, 307, 308]:
-			url = str(c.get_response_headers_as_dictionary().get("Location", c.get_response_headers_as_dictionary().get("location", "")))
+			# (o Godot entrega os cabeçalhos uma vez só: lê tudo de uma vez e procura "Location" sem ligar para maiúsculas)
+			url = ""
+			for h in c.get_response_headers():
+				if h.to_lower().begins_with("location:"): url = h.substr(9).strip_edges()
+			if not url.begins_with("https://"): printerr("baixar: redirecionamento sem endereço"); return false
 			continue
 		if cod != 200: printerr("baixar %s: erro %d" % [url, cod]); return false
-		var f := FileAccess.open(destino, FileAccess.WRITE)
+		# grava em .parte e só troca o nome no fim: um download interrompido não fica parecendo pronto
+		var tam := c.get_response_body_length()   # -1 quando o servidor não diz
+		var parte := destino + ".parte"
+		var f := FileAccess.open(parte, FileAccess.WRITE)
+		if f == null: printerr("baixar: não consegui gravar ", parte); return false
+		var n := 0
 		while c.get_status() == HTTPClient.STATUS_BODY:
 			c.poll()
 			var ch := c.read_response_body_chunk()
-			if ch.size() > 0: f.store_buffer(ch)
+			if ch.size() > 0: f.store_buffer(ch); n += ch.size()
 			else: OS.delay_msec(5)
 		f.close()
+		if n == 0 or (tam >= 0 and n != tam):
+			printerr("baixar %s: vieram %d de %d bytes" % [url, n, tam]); DirAccess.remove_absolute(parte); return false
+		if FileAccess.file_exists(destino): DirAccess.remove_absolute(destino)
+		if DirAccess.rename_absolute(parte, destino) != OK: printerr("baixar: não consegui renomear ", parte); return false
 		return true
 	return false
 
@@ -512,7 +525,11 @@ func codigo_x4(jogo: String, prog: Callable) -> int:
 		var zm := opcao("zip_mmx4", "", base.path_join("mmx4.zip")); var zp := opcao("zip_psyz", "", base.path_join("psyz.zip"))
 		if not FileAccess.file_exists(zm) and not baixa("https://github.com/sozud/mmx4/archive/%s.zip" % MMX4_COMMIT, zm): return -1
 		if not FileAccess.file_exists(zp) and not baixa("https://github.com/sozud/psyz/archive/%s.zip" % PSYZ_COMMIT, zp): return -1
-		if not extrai(zm, src) or not extrai(zp, src.path_join("tools/psyz")): printerr("zip estragado"); return -1
+		if not extrai(zm, src) or not extrai(zp, src.path_join("tools/psyz")):
+			printerr("zip da decompilação estragado")
+			if opcao("zip_mmx4", "", "") == "": DirAccess.remove_absolute(zm)   # baixa de novo no próximo PREPARAR
+			if opcao("zip_psyz", "", "") == "": DirAccess.remove_absolute(zp)
+			return -1
 		if not aplica_patch(src, FileAccess.get_file_as_string(x4.path_join("mmx4.patch"))): return -1
 		if not aplica_patch(src.path_join("tools/psyz"), FileAccess.get_file_as_string(x4.path_join("psyz.patch"))): return -1
 		DirAccess.make_dir_recursive_absolute(src.path_join("src/godot"))
@@ -921,7 +938,10 @@ func ferramentas(prog: Callable) -> int:
 		if not baixa("https://github.com/mstorsjo/llvm-mingw/releases/download/%s/%s" % [LLVM_MINGW, nome], zip): return -1
 	prog.call(5, 10, "abrindo o compilador")
 	var z := ZIPReader.new()
-	if z.open(zip) != OK: printerr("zip do compilador estragado"); return -1
+	if z.open(zip) != OK:
+		printerr("zip do compilador estragado")
+		if opcao("zip_llvm", "", "") == "": DirAccess.remove_absolute(zip)   # baixa de novo no próximo PREPARAR
+		return -1
 	var n := 0
 	for f in z.get_files():
 		var rel := f.substr(f.find("/") + 1)
