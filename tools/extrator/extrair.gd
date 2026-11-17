@@ -124,11 +124,62 @@ func videos(jg: String, jogo: String, discos: Dictionary, prog: Callable) -> int
 	prog.call(lista.size(), lista.size(), "vídeos prontos")
 	return lista.size()
 
+## capturas: o nosso núcleo de PS1 (captura/captura.exe) roda o disco com um roteiro de controle (roteiros/NOME.json)
+## e fotografa os quadros pedidos; o Godot desenha cada foto (tests/render_dump.gd) e a imagem vai para assets/.
+func opcao(k: String, env: String, padrao: String) -> String:
+	if str(opcoes.get(k, "")) != "": return str(opcoes[k])
+	if OS.get_environment(env) != "": return OS.get_environment(env)
+	return padrao
+
+func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> int:
+	var r = JSON.parse_string(FileAccess.get_file_as_string("res://roteiros/%s.json" % nm))
+	if not r is Dictionary: printerr("roteiro estragado: ", nm); return -1
+	var cap := opcao("captura", "FUSION_CAPTURA", "captura")
+	var bios := opcao("bios", "FUSION_BIOS", "")
+	var render := opcao("godot_render", "FUSION_GODOT_RENDER", OS.get_executable_path())
+	if OS.get_name() == "Windows" and not FileAccess.file_exists(render) and FileAccess.file_exists(opcao("godot", "FUSION_GODOT", "")):
+		# cópia do Godot ao lado do desenhista por software (opengl32.dll): o desenho sai igual em qualquer placa de vídeo
+		DirAccess.copy_absolute(opcao("godot", "FUSION_GODOT", ""), render)
+	var d: Disco = discos[r.disco]
+	var dir := jogo.path_join(".captura/" + nm)
+	DirAccess.make_dir_recursive_absolute(dir)
+	var fotos: Dictionary = r.fotos
+	for k in ["DUMP", "DUMP_FROM", "OBJLOG", "AUDIO", "SPUDBG", "SPUDUMP", "RWATCH"]: OS.unset_environment(k)
+	OS.set_environment("NORAM", "1"); OS.set_environment("DUMPDIR", dir)
+	OS.set_environment("DUMP_LIST", ",".join(fotos.keys())); OS.set_environment("POKE", str(r.get("poke", "")))
+	prog.call(0, 3, "rodando o %s" % str(r.jogo).to_upper())
+	var out := []
+	var code := OS.execute(cap, ["x", bios, "DISC=" + d.caminho, str(int(r.quadros)), str(r.botoes)], out, true)
+	for k in fotos:
+		if not FileAccess.file_exists(dir.path_join("v_%s.bin" % k)):
+			printerr("a captura não fotografou o quadro %s (saída %d): %s" % [k, code, str(out).right(400)]); return -1
+	prog.call(1, 3, "desenhando %d telas" % fotos.size())
+	var bases := []
+	for k in fotos: bases.append(dir.path_join(k))
+	OS.set_environment("JOGO", str(r.jogo)); OS.set_environment("DUMPS", ",".join(bases))
+	out = []
+	code = OS.execute(render, ["--path", jogo, "--rendering-method", "gl_compatibility", "--rendering-driver", "opengl3",
+		"-s", "res://tests/render_dump.gd"], out, true)
+	var n := 0
+	for k in fotos:
+		var t := dir.path_join("tela_%s.png" % k)
+		if not FileAccess.file_exists(t): printerr("não desenhou o quadro %s (saída %d): %s" % [k, code, str(out).right(400)]); return -1
+		var dst := jogo.path_join(str(fotos[k]))
+		DirAccess.make_dir_recursive_absolute(dst.get_base_dir())
+		DirAccess.copy_absolute(t, dst); n += 1
+	prog.call(2, 3, "limpando")
+	for f in DirAccess.get_files_at(dir): DirAccess.remove_absolute(dir.path_join(f))
+	DirAccess.remove_absolute(dir); DirAccess.remove_absolute(jogo.path_join(".captura"))
+	prog.call(3, 3, "pronto")
+	return n
+
 const GRUPOS := {
 	"x4_arc": {"discos": ["x4"]},
 	"videos_x4": {"discos": ["x4"]}, "videos_x5": {"discos": ["x5"]}, "videos_x6": {"discos": ["x6"]},
+	"menus_x5": {"discos": ["x5"], "captura": true},
 }
 func roda_grupo(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> int:
+	if GRUPOS.get(nm, {}).get("captura", false): return captura(nm, jogo, discos, prog)
 	match nm:
 		"x4_arc": return x4_arc(jogo, discos, prog)
 		"videos_x4": return videos("x4", jogo, discos, prog)

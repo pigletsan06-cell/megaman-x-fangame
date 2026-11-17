@@ -5,11 +5,12 @@ G=/home/claude/godot/Godot_v4.7.2-stable_linux.x86_64; REPO=/home/claude/megaman
 rm -rf /tmp/amigo; mkdir -p "$P/discos"
 cd $REPO && git archive HEAD godot | tar -x -C "$P"
 cp -r $REPO/launcher "$P/launcher"; rm -rf "$P/launcher/.godot"
-mkdir -p "$P/tools"; cp -r $REPO/tools/extrator "$P/tools/"; rm -rf "$P/tools/extrator/.godot"; cp $REPO/tools/receita.json "$P/tools/"
+mkdir -p "$P/tools"; cp -r $REPO/tools/extrator "$P/tools/"; rm -rf "$P/tools/extrator/.godot"; cp $REPO/tools/receita.json "$P/tools/"; cp -r $REPO/tools/captura "$P/tools/"
 echo '{"versao": 54}' > "$P/versao.json"
 ln -s "/home/claude/x4/Mega Man X4 (USA).bin" "$P/discos/"; ln -s "/home/claude/x5/Mega Man X5 (USA).bin" "$P/discos/"; ln -s "/home/claude/ext/MegaManX6Recomp/mmx6/Mega Man X6 (USA) (v1.1).bin" "$P/discos/"
 rm -f /tmp/real_*.png; T0=$(date +%s)
-DISPLAY=:99 FUSION_GODOT=$G timeout 3000 $G --path "$P/launcher" -- --auto --sem-jogo --foto=/tmp/real > /tmp/amigo/saida.txt 2>&1
+[ -x /tmp/captura_bin/captura ] || $REPO/tools/captura/compilar.sh /tmp/captura_bin > /dev/null
+DISPLAY=:99 FUSION_GODOT=$G FUSION_CAPTURA=/tmp/captura_bin/captura timeout 3000 $G --path "$P/launcher" -- --auto --sem-jogo --foto=/tmp/real > /tmp/amigo/saida.txt 2>&1
 echo "saída $? em $(( $(date +%s) - T0 ))s"
 python3 -c "
 import json;d=json.load(open('$P/gerado/relatorio_launcher.json'))

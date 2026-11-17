@@ -1,5 +1,5 @@
 {
- "versao_receita": 2,
+ "versao_receita": 3,
  "nota": "Etapas que o launcher roda no PC do jogador, a partir dos discos dele. Cada etapa só roda de novo se mudar o disco, os arquivos dela ou uma etapa de antes.",
  "etapas": [
   {
@@ -94,6 +94,54 @@
    ]
   },
   {
+   "id": "godot_inicial",
+   "nome": "Preparar o Godot (1ª vez)",
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{jogo}",
+    "--import"
+   ],
+   "arquivos": [
+    "{jogo}/project.godot",
+    "{jogo}/scripts",
+    "{jogo}/scenes",
+    "{jogo}/shaders"
+   ]
+  },
+  {
+   "id": "menus_x5",
+   "nome": "Telas do X5",
+   "discos": [
+    "x5"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "menus_x5",
+    "disco_x5={disco_x5}",
+    "captura={captura}",
+    "bios={tools}/captura/openbios.bin",
+    "godot_render={godot_render}",
+    "godot={godot}"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{tools}/captura/openbios.bin",
+    "{captura}"
+   ],
+   "depois_de": [
+    "godot_inicial"
+   ]
+  },
+  {
    "id": "importar",
    "nome": "Preparar no Godot",
    "cmd": [
@@ -113,7 +161,8 @@
     "dados_x4",
     "videos_x4",
     "videos_x5",
-    "videos_x6"
+    "videos_x6",
+    "menus_x5"
    ]
   }
  ]

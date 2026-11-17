@@ -274,7 +274,12 @@ func _vars() -> Dictionary:
 	if OS.get_environment("FUSION_GODOT") != "": gd = OS.get_environment("FUSION_GODOT")
 	var ff := raiz.path_join("ferramentas/ffmpeg.exe") if OS.get_name() == "Windows" else "ffmpeg"
 	if OS.get_environment("FUSION_FFMPEG") != "": ff = OS.get_environment("FUSION_FFMPEG")
-	var v := {"python": py, "godot": gd, "ffmpeg": ff, "raiz": raiz, "tools": raiz.path_join("tools"), "jogo": raiz.path_join("godot"),
+	var cap := raiz.path_join("ferramentas/captura.exe") if OS.get_name() == "Windows" else raiz.path_join("ferramentas/captura")
+	if OS.get_environment("FUSION_CAPTURA") != "": cap = OS.get_environment("FUSION_CAPTURA")
+	# desenho das capturas: no Windows, uma cópia do Godot com o desenhista por software (Mesa llvmpipe) do lado
+	var gr := raiz.path_join("ferramentas/render/godot.exe") if OS.get_name() == "Windows" else gd
+	if OS.get_environment("FUSION_GODOT_RENDER") != "": gr = OS.get_environment("FUSION_GODOT_RENDER")
+	var v := {"python": py, "godot": gd, "ffmpeg": ff, "captura": cap, "godot_render": gr, "raiz": raiz, "tools": raiz.path_join("tools"), "jogo": raiz.path_join("godot"),
 		"gerado": raiz.path_join("gerado"), "so": OS.get_name()}
 	for d in DISCOS: v["disco_" + d.id] = str(discos.get(d.id, {}).get("caminho", ""))
 	return v
