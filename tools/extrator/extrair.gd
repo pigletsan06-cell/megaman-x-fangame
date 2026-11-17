@@ -177,6 +177,7 @@ const GRUPOS := {
 	"x4_arc": {"discos": ["x4"]},
 	"videos_x4": {"discos": ["x4"]}, "videos_x5": {"discos": ["x5"]}, "videos_x6": {"discos": ["x6"]},
 	"menus_x5": {"discos": ["x5"], "captura": true},
+	"menus_x6": {"discos": ["x6"], "captura": true},
 }
 func roda_grupo(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> int:
 	if GRUPOS.get(nm, {}).get("captura", false): return captura(nm, jogo, discos, prog)

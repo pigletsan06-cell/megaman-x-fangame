@@ -1,0 +1,18 @@
+{
+ "nota": "Telas de seleção de chefes do X6: o jogo até a seleção; o cursor (byte 0x800CCEF7) vai de chefe em chefe e cada tela é fotografada (conferido: mesmo SHA-1 do PC do dono).",
+ "jogo": "x6",
+ "disco": "x6",
+ "quadros": 3391,
+ "botoes": "start:900-905,cross:1000-1006,start:1400-1403,start:1460-1463",
+ "poke": "ccedc:0001:1440-1900,cced2:0000:2400-2400,cced0:0002:2400-2400,ccef6:0100:2700-2700,ccef6:0200:2800-2800,ccef6:0300:2900-2900,ccef6:0400:3000-3000,ccef6:0500:3100-3100,ccef6:0600:3200-3200,ccef6:0700:3300-3300",
+ "fotos": {
+  "2690": "assets/menus/x6_1.png",
+  "2790": "assets/menus/x6_6.png",
+  "2890": "assets/menus/x6_7.png",
+  "2990": "assets/menus/x6_2.png",
+  "3090": "assets/menus/x6_3.png",
+  "3190": "assets/menus/x6_8.png",
+  "3290": "assets/menus/x6_4.png",
+  "3390": "assets/menus/x6_5.png"
+ }
+}
