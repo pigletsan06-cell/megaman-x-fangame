@@ -63,8 +63,10 @@ func pacote(g: String, p) -> Dictionary:
 	if _pk.has(k): return _pk[k]
 	var es := entradas_arc(_bytes_pacote(g, p))
 	var r := {}
+	r.folhas = []
 	for e in es:
 		var t: int = e[0]
+		if (t >> 16) == 1: r.folhas.append(e[1])
 		if t == 3 and not r.has("grupos"): r.grupos = grupos(e[1])
 		elif t == 2 and not r.has("tiles"): r.tiles = e[1]
 		elif t == 9 and not r.has("banco"): r.banco = _u16(e[1])
@@ -124,12 +126,12 @@ static func descomprime(b: PackedByteArray, p: int) -> PackedByteArray:
 	return PackedByteArray()
 
 ## tiles 16x16 de 4 bits do quadro i (tabela 0 do tipo 2): nib = pontos, base/passo = onde começa cada tile
-func tiles(g: String, p, i: int) -> Dictionary:
+func tiles(g: String, p, i: int, sub := 0) -> Dictionary:
 	p = _p(p)
-	var k := "%s|%s|%d" % [g, str(p), i]
+	var k := "%s|%s|%d|%d" % [g, str(p), i, sub]
 	if _tb.has(k): return _tb[k]
 	var T: PackedByteArray = pacote(g, p).tiles
-	var base0 := T.decode_u32(0)
+	var base0 := T.decode_u32(sub * 4)
 	var w := T.decode_u32(base0 + i * 4)
 	var nt := w >> 20
 	var raw := descomprime(T, base0 + (w & 0xfffff))
@@ -236,6 +238,132 @@ func monta_atlas(nome: String, e: Dictionary, frames: Array, mascara: PackedByte
 				px[o] = cor(banco[pm[v >> 4] * 16 + (v & 15)])
 	return px
 
+# ---------------- receita genérica (Zero, efeitos do X4) ----------------
+## formato do jogador num grupo só, com a tabela de tiles "sub"; peça com tile que não existe fica de fora
+func pontos_j(g: String, p, gi: int, i: int, sub: int, hf: bool, vf: bool) -> Array:
+	var G: Array = pacote(g, p).grupos
+	var tb := tiles(g, p, i, sub)
+	var nib: PackedByteArray = tb.nib; var bases: PackedInt32Array = tb.base; var passos: PackedInt32Array = tb.passo
+	var xs := PackedInt32Array(); var ys := PackedInt32Array(); var vs := PackedInt32Array()
+	if gi >= G.size() or i >= G[gi].size(): return [xs, ys, vs]
+	var pc: PackedInt32Array = G[gi][i]
+	for q in range(0, pc.size(), 4):
+		var fl := pc[q]; var ti := pc[q + 1]
+		if ti >= bases.size(): continue
+		var b0 := bases[ti]; var st := passos[ti]
+		var h := hf and (fl & 0x40) != 0; var v := vf and (fl & 0x80) != 0
+		var pal := (fl & 15) << 4
+		for r in 16:
+			var lin := b0 + (15 - r if v else r) * st
+			for c in 16:
+				var t := nib[lin + (15 - c if h else c)]
+				if t == 0: continue
+				xs.append(pc[q + 2] + c); ys.append(pc[q + 3] + r); vs.append(pal | t)
+	return [xs, ys, vs]
+
+## formato "de chefe": folha de 4 bits com 256 de largura; linha = (flags&3)*256 + (tile>>4)*16, coluna = (tile&15)*16,
+## paleta = (flags>>2)&3
+var _fl := {}
+func pontos_c(g: String, p, gi: int, i: int, si: int, hf: bool, vf: bool) -> Array:
+	var pk := pacote(g, p)
+	var k := "%s|%s|%d" % [g, str(_p(p)), si]
+	if not _fl.has(k):
+		var raw: PackedByteArray = pk.folhas[si]
+		var nb := PackedByteArray(); nb.resize(raw.size() * 2)
+		for j in raw.size():
+			nb[j * 2] = raw[j] & 15; nb[j * 2 + 1] = raw[j] >> 4
+		_fl[k] = nb
+	var nib: PackedByteArray = _fl[k]
+	var linhas := nib.size() / 256
+	var xs := PackedInt32Array(); var ys := PackedInt32Array(); var vs := PackedInt32Array()
+	var G: Array = pk.grupos
+	if gi >= G.size() or i >= G[gi].size(): return [xs, ys, vs]
+	var pc: PackedInt32Array = G[gi][i]
+	for q in range(0, pc.size(), 4):
+		if (pc[q] & 3) * 256 + (pc[q + 1] >> 4) * 16 + 16 > linhas: return [PackedInt32Array(), PackedInt32Array(), PackedInt32Array()]
+	for q in range(0, pc.size(), 4):
+		var fl := pc[q]; var ti := pc[q + 1]
+		var r0 := (fl & 3) * 256 + (ti >> 4) * 16; var c0 := (ti & 15) * 16
+		var h := hf and (fl & 0x40) != 0; var v := vf and (fl & 0x80) != 0
+		var pal := ((fl >> 2) & 3) << 4
+		for r in 16:
+			var lin := (r0 + (15 - r if v else r)) * 256 + c0
+			for c in 16:
+				var t := nib[lin + (15 - c if h else c)]
+				if t == 0: continue
+				xs.append(pc[q + 2] + c); ys.append(pc[q + 3] + r); vs.append(pal | t)
+	return [xs, ys, vs]
+
+## 16 cores: ["b", jogo, pacote, n] banco do pacote; ["f", jogo, pacote, n] paleta de trabalho (tipo 5) de um pacote do DAT;
+## ["a", arquivo, n] paleta de trabalho de um arquivo ARC do X4 (COLxx)
+var _pal := {}
+func paleta(ref: Array) -> PackedInt32Array:
+	var k := JSON.stringify(ref)
+	if _pal.has(k): return _pal[k]
+	var out := PackedInt32Array()
+	match str(ref[0]):
+		"b": out = pacote(str(ref[1]), ref[2]).banco.slice(int(ref[3]) * 16, int(ref[3]) * 16 + 16)
+		"f": out = _linha([ref[1], ref[2], "fase", ref[3]])
+		"a":
+			var d = discos["x4"]
+			var a: Array = d.arquivos()[str(ref[1])]
+			var es := entradas_arc(d.dados(a[0], (int(a[1]) + 2047) / 2048).slice(0, a[1]))
+			out = _u16(es[0][1]).slice(int(ref[2]) * 16, int(ref[2]) * 16 + 16)
+	_pal[k] = out
+	return out
+
+static func cor_escala(c: int) -> int:   # 5 bits -> 8 bits por c*255/31 (os efeitos do X4)
+	c &= 0x7fff
+	return ((c & 31) * 255 / 31) | ((((c >> 5) & 31) * 255 / 31) << 8) | ((((c >> 10) & 31) * 255 / 31) << 16) | (255 << 24)
+
+func monta_generico(e: Dictionary, frames: Array, mascara: PackedByteArray) -> PackedInt32Array:
+	var W := int(e.tam[0]); var H := int(e.tam[1])
+	var px := PackedInt32Array(); px.resize(W * H)
+	var esc := str(e.get("cor", "")) == "escala"
+	for q in e.quadros:
+		var c := int(q[0]); var src: Array = q[1]
+		var f: Dictionary = frames[c]
+		var fx := int(f.x); var fy := int(f.y); var fw := int(f.w); var fh := int(f.h); var ox := int(f.ox); var oy := int(f.oy)
+		var masc := int(q[3]) == 1
+		var pm := {}
+		for par in q[2]: pm[int(par[0])] = paleta(par[1])
+		var pt: Array
+		if src[0] == "j": pt = pontos_j(str(src[1]), src[2], int(src[3]), int(src[4]), int(src[5]), int(src[6]) == 1, int(src[7]) == 1)
+		else: pt = pontos_c(str(src[1]), src[2], int(src[3]), int(src[4]), int(src[5]), int(src[6]) == 1, int(src[7]) == 1)
+		var xs: PackedInt32Array = pt[0]; var ys: PackedInt32Array = pt[1]; var vs: PackedInt32Array = pt[2]
+		var loc := PackedInt32Array(); loc.resize(fw * fh); loc.fill(-1)
+		for j in xs.size():
+			var ax := xs[j] + ox; var ay := ys[j] + oy
+			if ax < 0 or ay < 0 or ax >= fw or ay >= fh: continue
+			loc[ay * fw + ax] = vs[j]
+		for ay in fh:
+			for ax in fw:
+				var v := loc[ay * fw + ax]
+				if v < 0: continue
+				var o := (fy + ay) * W + fx + ax
+				if masc and mascara[o] == 0: continue
+				var pal: PackedInt32Array = pm[v >> 4]
+				px[o] = cor_escala(pal[v & 15]) if esc else cor(pal[v & 15])
+	return px
+
+## zero_recolor.py: cada cor da paleta normal vira a mistura (por canal de 5 bits, arredondada) com a paleta alvo
+func mistura(px: PackedInt32Array, normal: PackedInt32Array, alvo: PackedInt32Array, w: int) -> PackedInt32Array:
+	var m := {}
+	for i in range(1, 16):
+		var a := normal[i]; var b := alvo[i]; var o := 0
+		for sh: int in [0, 5, 10]:
+			var x: int = (a >> sh) & 31; var y: int = (b >> sh) & 31
+			o |= ((x * (100 - w) + y * w + 50) / 100) << sh
+		var de := cor(a) & 0xffffff; var para := cor(o) & 0xffffff
+		m[de] = para   # (cor repetida na paleta normal: vale a última, como no dicionário do Python)
+	var out := px.duplicate()
+	for j in px.size():
+		var c := px[j]
+		if c == 0 or ((c >> 24) & 255) == 0: continue
+		var rgb := c & 0xffffff
+		if m.has(rgb): out[j] = (c & ~0xffffff) | m[rgb]
+	return out
+
 # ---------------- cores da carga (recolor.py) ----------------
 var _lut := {}
 func _linha(spec: Array) -> PackedInt32Array:
@@ -303,29 +431,23 @@ static func le_png(caminho: String) -> Array:
 	im.convert(Image.FORMAT_RGBA8)
 	return [im.get_data().to_int32_array(), im.get_width(), im.get_height()]
 
-## monta tudo em JOGO/assets/x/parts; base = pasta tools/extrator/pecas
+## monta tudo em JOGO/assets (x/parts, x/fx, zero); base = pasta tools/extrator/pecas
 func roda(jogo: String, base: String, prog: Callable) -> int:
 	var rec = JSON.parse_string(FileAccess.get_file_as_string(base.path_join("receita.json")))
-	if not rec is Dictionary: printerr("receita das peças estragada"); return -1
-	var dst := jogo.path_join("assets/x/parts")
+	var rex = JSON.parse_string(FileAccess.get_file_as_string(base.path_join("receita_extra.json")))
+	if not rec is Dictionary or not rex is Dictionary: printerr("receita das peças estragada"); return -1
+	var meta := base.path_join("assets")   # os nossos .json (quadros, mapas, tabelas da decompilação pública)
+	var A := jogo.path_join("assets")
+	var dst := A.path_join("x/parts")
 	var n := 0
-	# 1) metadados nossos (quadros, mapa canônico...)
-	var js := base.path_join("json")
-	var pilha := [""]
-	while not pilha.is_empty():
-		var rel: String = pilha.pop_back()
-		for sd in DirAccess.get_directories_at(js.path_join(rel)): pilha.append(rel.path_join(sd))
-		for f in DirAccess.get_files_at(js.path_join(rel)):
-			DirAccess.make_dir_recursive_absolute(dst.path_join(rel))
-			DirAccess.copy_absolute(js.path_join(rel).path_join(f), dst.path_join(rel).path_join(f)); n += 1
-	# 2) atlas desenhados dos pacotes
-	var nomes: Array = rec.atlas.keys()
+	var total: int = rec.atlas.size() + rec.cores.size() + rex.atlas.size() + rex.derivados.size()
+	var passo := 0
+	# 1) peças das armaduras
 	var feitos := {}
-	for k in nomes.size():
-		var nm: String = nomes[k]
+	for nm in rec.atlas:
 		var e: Dictionary = rec.atlas[nm]
-		prog.call(k, nomes.size() + rec.cores.size(), "peças: " + nm)
-		var frames := le_frames(dst.path_join(nm).path_join("frames.json"))
+		prog.call(passo, total, "peças: " + nm); passo += 1
+		var frames := le_frames(meta.path_join("x/parts").path_join(nm).path_join("frames.json"))
 		var masc := PackedByteArray()
 		if e.has("mascara"):
 			var mi := Image.load_from_file(base.path_join(e.mascara))
@@ -334,12 +456,10 @@ func roda(jogo: String, base: String, prog: Callable) -> int:
 		if not grava_png(px, int(e.tam[0]), int(e.tam[1]), dst.path_join(nm).path_join("atlas.png")): return -1
 		feitos[nm] = [px, int(e.tam[0]), int(e.tam[1])]
 		n += 1
-	# 3) cores da carga (c1..c3) de cada armadura
-	var ks: Array = rec.cores.keys()
-	for k in ks.size():
-		var arm: String = ks[k]
+	# 2) cores da carga (c1..c3) de cada armadura
+	for arm in rec.cores:
 		var ce: Dictionary = rec.cores[arm]
-		prog.call(nomes.size() + k, nomes.size() + ks.size(), "cores da carga: " + arm)
+		prog.call(passo, total, "cores da carga: " + arm); passo += 1
 		var pals := paletas(ce)
 		for a in ce.atlas:
 			var orig: String; var saida: String
@@ -354,4 +474,45 @@ func roda(jogo: String, base: String, prog: Callable) -> int:
 			for v in range(1, pals.size()):
 				if not grava_png(recolore(im[0], pals, v), im[1], im[2], dst.path_join(saida % v)): return -1
 				n += 1
+	# 3) Zero e efeitos do X4
+	var gerados := {}
+	for e in rex.atlas:
+		prog.call(passo, total, "sprites: " + str(e.saida)); passo += 1
+		var frames := le_frames(meta.path_join(e.frames))
+		var masc := PackedByteArray()
+		if e.has("mascara"):
+			var mi := Image.load_from_file(base.path_join(e.mascara))
+			mi.convert(Image.FORMAT_L8); masc = mi.get_data()
+		var px := monta_generico(e, frames, masc)
+		if not grava_png(px, int(e.tam[0]), int(e.tam[1]), A.path_join(e.saida)): return -1
+		gerados[e.saida] = [px, int(e.tam[0]), int(e.tam[1])]
+		n += 1
+	for d in rex.derivados:
+		prog.call(passo, total, "sprites: " + str(d.saida)); passo += 1
+		var src: Array = gerados.get(d.de, [])
+		if src.is_empty(): src = le_png(A.path_join(d.de))
+		if src.is_empty(): printerr("falta ", d.de); return -1
+		var out: Array
+		if d.tipo == "recorte":
+			var f: Dictionary = le_frames(meta.path_join(d.frames))[int(d.quadro)]
+			var fw := int(f.w); var fh := int(f.h)
+			var c := PackedInt32Array(); c.resize(fw * fh)
+			for y in fh:
+				for x in fw: c[y * fw + x] = src[0][(int(f.y) + y) * src[1] + int(f.x) + x]
+			out = [c, fw, fh]
+		else:
+			out = [mistura(src[0], paleta(d.normal), paleta(d.alvo), int(d.peso)), src[1], src[2]]
+		if not grava_png(out[0], out[1], out[2], A.path_join(d.saida)): return -1
+		gerados[d.saida] = out
+		n += 1
+	# 4) os .json nossos: os de pasta só onde o atlas foi feito (sem atlas o jogo não pode achar o frames.json)
+	var pilha := [""]
+	while not pilha.is_empty():
+		var rel: String = pilha.pop_back()
+		for sd in DirAccess.get_directories_at(meta.path_join(rel)): pilha.append(rel.path_join(sd))
+		var tem_atlas := FileAccess.file_exists(A.path_join(rel).path_join("atlas.png"))
+		for f in DirAccess.get_files_at(meta.path_join(rel)):
+			if (f == "frames.json" or f == "match.json") and not tem_atlas: continue
+			DirAccess.make_dir_recursive_absolute(A.path_join(rel))
+			DirAccess.copy_absolute(meta.path_join(rel).path_join(f), A.path_join(rel).path_join(f)); n += 1
 	return n
