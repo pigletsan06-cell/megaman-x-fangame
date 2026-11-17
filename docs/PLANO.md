@@ -101,6 +101,8 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
   pasta nova darem resultados diferentes (a nova não tem os .ogv e pula). Com X4_SEM_VIDEO=1: quadro 300 estado 3/9 (conversa
   do QG), 1822 primitivas. Falta: apertar cross a cada 40 quadros (como tests/x4ms.gd: m.forced = 1<<6) até a seleção, então
   mem(8,0) / mem(9,cursor), gravar v/p e desenhar (JOGO=x4); comparar com e sem "5bits".
+  CUIDADO: forçar mem(8,0) em TODOS os quadros 60-700 + cross derrubou o x4core (SIGSEGV). Escrever unkE uma vez só, no
+  momento certo (ver no x4ms quando 3/8 → 3/1), ou achar no x4core/runtime.c como o hub chegou na seleção do X4.
 - `titulo_x6`: não é quadro do X6OP.STR nem do boot no psxcore (cores contínuas 0..255) — talvez do recomp. Fica aproximado.
 - `titulo_fusion` (66x12, "FUSION" laranja itálico): montado por nós com letras de alguma fonte do jogo — achar as letras
   (provavelmente a fonte dos nomes de fase das telas de seleção X5/X6) e a posição de cada uma.
