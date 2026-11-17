@@ -1,5 +1,5 @@
 {
- "versao_receita": 21,
+ "versao_receita": 22,
  "nota": "Etapas que o launcher roda no PC do jogador, a partir dos discos dele. Cada etapa só roda de novo se mudar o disco, os arquivos dela ou uma etapa de antes.",
  "etapas": [
   {
@@ -916,6 +916,34 @@
    ],
    "arquivos": [
     "{tools}/extrator"
+   ]
+  },
+  {
+   "id": "efeitos_x",
+   "nome": "Efeitos das armaduras do X",
+   "discos": [
+    "x5",
+    "x6"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "efeitos_x",
+    "disco_x5={disco_x5}",
+    "disco_x6={disco_x6}",
+    "captura={captura}",
+    "bios={tools}/captura/openbios.bin"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{tools}/captura/openbios.bin",
+    "{captura}"
    ]
   },
   {
