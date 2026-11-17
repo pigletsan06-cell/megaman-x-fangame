@@ -1,0 +1,12 @@
+{
+ "nota": "Música da seleção de chefes do X4 pelo x4core: música XA lida do disco, misturada pelo núcleo, 735 quadros de som por quadro do jogo desde o quadro 0; corte do laço no mesmo ponto do PC do dono (quadro 660) e Vorbis q5 (conferido: o som decodificado é idêntico ao do PC do dono).",
+ "jogo": "x4",
+ "disco": "x4",
+ "motor": "x4core",
+ "x4env": {"MMX4_ORACLE_SCENE": "mission-briefing", "MMX4_DIRECT_STAGE": "1", "MMX4_DIRECT_CHARACTER": "0"},
+ "mem": "8:0:3",
+ "quadros": 3760,
+ "botoes": "",
+ "fotos": {},
+ "audio": {"de": 0, "inicio": 485100, "amostras": 2276160, "saida": "assets/musica/x4_selecao.ogg"}
+}

@@ -4,6 +4,8 @@ extends SceneTree
 ## desenhar, igual às fotos do núcleo de PS1.
 ## Ambiente: SAIDA (pasta), QUADROS ("394,514"), TOTAL (quadros), BOTOES ("right:480-482,cross:500-503"),
 ## MEM ("8:0:3" = X4Core.mem(8, 0) no quadro 3), X4ENV ("CHAVE=valor;CHAVE=valor" vai para X4R.env).
+## Som: AUDIO (arquivo cru 44,1 kHz estéreo 16 bits) a partir do quadro AUDIO_FROM, com a música XA lida do disco X4_BIN
+## (735 quadros de som por quadro do jogo; float -> 16 bits como o gravador do Godot: int(x * 32767), cortando para o zero).
 const BOTAO := {"l2": 0, "r2": 1, "l1": 2, "r1": 3, "triangle": 4, "circle": 5, "cross": 6, "square": 7, "select": 8,
 	"start": 11, "up": 12, "right": 13, "down": 14, "left": 15}
 
@@ -27,6 +29,12 @@ func _init() -> void:
 	for c in OS.get_environment("MEM").split(",", false):
 		var a := c.split(":"); mem.append([int(a[0]), int(a[1]), int(a[2])])
 	var feitos := 0
+	var som: FileAccess = null; var bin: FileAccess = null
+	var som_de := int(OS.get_environment("AUDIO_FROM")) if OS.get_environment("AUDIO_FROM") != "" else 0
+	if OS.get_environment("AUDIO") != "":
+		som = FileAccess.open(OS.get_environment("AUDIO"), FileAccess.WRITE)
+		bin = FileAccess.open(OS.get_environment("X4_BIN"), FileAccess.READ)
+		if som == null or bin == null: printerr("x4_fotos: não abriu o som ou o disco"); quit(1); return
 	for f in total:
 		for c in mem:
 			if f == c[2]: ClassDB.class_call_static("X4Core", "mem", c[0], c[1], -1)
@@ -35,10 +43,23 @@ func _init() -> void:
 			if f >= b[1] and f <= b[2]: forced |= 1 << b[0]
 		m.forced = forced
 		m.step_frame(quadros.has(f))
+		if som:
+			for i in 96:   # setores da música XA que o núcleo pedir (como o jogo faz)
+				var lba: int = ClassDB.class_call_static("X4Core", "xa_need")
+				if lba < 0: break
+				bin.seek(lba * 2352)
+				ClassDB.class_call_static("X4Core", "xa_feed", bin.get_buffer(2352))
+			var buf: PackedVector2Array = ClassDB.class_call_static("X4Core", "audio", 735)
+			if f >= som_de:
+				var pcm := PackedByteArray(); pcm.resize(buf.size() * 4)
+				for i in buf.size():
+					pcm.encode_s16(i * 4, int(buf[i].x * 32767.0)); pcm.encode_s16(i * 4 + 2, int(buf[i].y * 32767.0))
+				som.store_buffer(pcm)
 		if quadros.has(f):
 			var fv := FileAccess.open(saida.path_join("v_%d.bin" % f), FileAccess.WRITE); fv.store_buffer(X4R.vram_draw); fv.close()
 			var fp := FileAccess.open(saida.path_join("p_%d.bin" % f), FileAccess.WRITE)
 			fp.store_buffer(PackedInt32Array(m.stream).to_byte_array()); fp.close()
 			feitos += 1
+	if som: som.close()
 	print("x4_fotos: %d quadro(s) gravado(s) em %d" % [feitos, total])
 	quit(0 if feitos == quadros.size() else 1)

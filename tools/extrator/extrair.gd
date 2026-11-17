@@ -163,10 +163,10 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 		OS.set_environment("X4ENV", ";".join(x4env)); OS.set_environment("X4_SEM_VIDEO", "1")
 		OS.set_environment("SAIDA", dir); OS.set_environment("QUADROS", ",".join(quadros))
 		OS.set_environment("TOTAL", str(int(r.quadros))); OS.set_environment("BOTOES", str(r.botoes))
-		OS.set_environment("MEM", str(r.get("mem", "")))
+		OS.set_environment("MEM", str(r.get("mem", ""))); OS.set_environment("X4_BIN", d.caminho)
 		code = OS.execute(opcao("godot", "FUSION_GODOT", OS.get_executable_path()),
 			["--headless", "--path", jogo, "-s", "res://tests/x4_fotos.gd"], out, true)
-		for k in ["X4ENV", "X4_SEM_VIDEO", "SAIDA", "QUADROS", "TOTAL", "BOTOES", "MEM"]: OS.unset_environment(k)
+		for k in ["X4ENV", "X4_SEM_VIDEO", "SAIDA", "QUADROS", "TOTAL", "BOTOES", "MEM", "X4_BIN"]: OS.unset_environment(k)
 	else:
 		code = OS.execute(cap, ["x", bios, "DISC=" + d.caminho, str(int(r.quadros)), str(r.botoes)], out, true)
 	for k in quadros:
@@ -627,6 +627,7 @@ const GRUPOS := {
 	"intro_x5": {"discos": ["x5"], "captura": true}, "intro_x6": {"discos": ["x6"], "captura": true},
 	"musica_x5": {"discos": ["x5"], "captura": true},
 	"menus_x4": {"discos": ["x4"], "captura": true}, "intro_x4": {"discos": ["x4"], "captura": true},
+	"musica_x4": {"discos": ["x4"], "captura": true},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
 	"codigo_x4": {"discos": []}, "codigo_psx": {"discos": []}, "ferramentas": {"discos": []},
 }
