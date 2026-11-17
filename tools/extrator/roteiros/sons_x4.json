@@ -1,0 +1,20 @@
+{
+ "nota": "Sons do menu de pausa do X4 (cursor e confirmar) e da chegada do X na fase, pelo x4core: fase do X4 sem música, 735 amostras por quadro; pausa no quadro 600, baixo no 700 e cruz no 900. Os do PC do dono têm até 5 de diferença em 32768 (outra conversão na gravação): mesmo som.",
+ "jogo": "x4",
+ "disco": "x4",
+ "motor": "x4core",
+ "x4env": {"MMX4_ORACLE_SCENE": "initial-stage", "MMX4_DIRECT_STAGE": "1", "MMX4_DIRECT_CHARACTER": "0"},
+ "mem": "",
+ "quadros": 960,
+ "botoes": "start:600-602,down:700-702,cross:900-902",
+ "fotos": {},
+ "audio": {
+  "de": 0,
+  "sem_musica": true,
+  "cortes": [
+   {"inicio": 514569, "amostras": 19842, "saida": "assets/sfx/menu_move.wav"},
+   {"inicio": 661560, "amostras": 31643, "saida": "assets/sfx/menu_ok.wav"},
+   {"inicio": 136116, "amostras": 58309, "saida": "assets/sfx/fg_tele_in.wav"}
+  ]
+ }
+}

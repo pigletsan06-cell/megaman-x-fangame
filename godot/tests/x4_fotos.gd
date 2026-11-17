@@ -33,8 +33,8 @@ func _init() -> void:
 	var som_de := int(OS.get_environment("AUDIO_FROM")) if OS.get_environment("AUDIO_FROM") != "" else 0
 	if OS.get_environment("AUDIO") != "":
 		som = FileAccess.open(OS.get_environment("AUDIO"), FileAccess.WRITE)
-		bin = FileAccess.open(OS.get_environment("X4_BIN"), FileAccess.READ)
-		if som == null or bin == null: printerr("x4_fotos: não abriu o som ou o disco"); quit(1); return
+		if OS.get_environment("AUDIO_SEM_XA") == "": bin = FileAccess.open(OS.get_environment("X4_BIN"), FileAccess.READ)
+		if som == null or (bin == null and OS.get_environment("AUDIO_SEM_XA") == ""): printerr("x4_fotos: não abriu o som ou o disco"); quit(1); return
 	for f in total:
 		for c in mem:
 			if f == c[2]: ClassDB.class_call_static("X4Core", "mem", c[0], c[1], -1)
@@ -43,12 +43,13 @@ func _init() -> void:
 			if f >= b[1] and f <= b[2]: forced |= 1 << b[0]
 		m.forced = forced
 		m.step_frame(quadros.has(f))
-		if som:
+		if som and bin:
 			for i in 96:   # setores da música XA que o núcleo pedir (como o jogo faz)
 				var lba: int = ClassDB.class_call_static("X4Core", "xa_need")
 				if lba < 0: break
 				bin.seek(lba * 2352)
 				ClassDB.class_call_static("X4Core", "xa_feed", bin.get_buffer(2352))
+		if som:
 			var buf: PackedVector2Array = ClassDB.class_call_static("X4Core", "audio", 735)
 			if f >= som_de:
 				var pcm := PackedByteArray(); pcm.resize(buf.size() * 4)

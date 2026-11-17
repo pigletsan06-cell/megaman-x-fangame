@@ -166,9 +166,10 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 		OS.set_environment("SAIDA", dir); OS.set_environment("QUADROS", ",".join(quadros))
 		OS.set_environment("TOTAL", str(int(r.quadros))); OS.set_environment("BOTOES", str(r.botoes))
 		OS.set_environment("MEM", str(r.get("mem", ""))); OS.set_environment("X4_BIN", d.caminho)
+		if au.get("sem_musica", false): OS.set_environment("AUDIO_SEM_XA", "1")
 		code = OS.execute(opcao("godot", "FUSION_GODOT", OS.get_executable_path()),
 			["--headless", "--path", jogo, "-s", "res://tests/x4_fotos.gd"], out, true)
-		for k in ["X4ENV", "X4_SEM_VIDEO", "SAIDA", "QUADROS", "TOTAL", "BOTOES", "MEM", "X4_BIN"]: OS.unset_environment(k)
+		for k in ["X4ENV", "X4_SEM_VIDEO", "SAIDA", "QUADROS", "TOTAL", "BOTOES", "MEM", "X4_BIN", "AUDIO_SEM_XA"]: OS.unset_environment(k)
 	else:
 		code = OS.execute(cap, ["x", bios, "DISC=" + d.caminho, str(int(r.quadros)), str(r.botoes)], out, true)
 	for k in quadros:
@@ -182,7 +183,14 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 			if not som_da_spu(ram, int(so.addr), int(so.pitch), int(so.vl), int(so.vr), float(r.get("ganho", 1.0)), jogo.path_join(str(so.saida))):
 				printerr("som não gravado: ", so.saida); return -1
 			n += 1
-	if not au.is_empty():
+	if au.has("cortes"):   # pedaços do som como WAV (44,1 kHz, estéreo, 16 bits)
+		var raw := FileAccess.get_file_as_bytes(dir.path_join("som.raw"))
+		for c in au.cortes:
+			var ini := int(c.inicio) * 4; var tam := int(c.amostras) * 4
+			if raw.size() < ini + tam: printerr("som curto demais para ", c.saida); return -1
+			if not grava_wav(jogo.path_join(str(c.saida)), raw.slice(ini, ini + tam), 44100, 2): return -1
+			n += 1
+	elif not au.is_empty():
 		var raw := FileAccess.get_file_as_bytes(dir.path_join("som.raw"))
 		var ini := int(au.inicio) * 4; var tam := int(au.amostras) * 4
 		if raw.size() < ini + tam: printerr("som curto demais: %d bytes" % raw.size()); return -1
@@ -574,6 +582,19 @@ func codigo_recomp(g: String, jogo: String, discos: Dictionary, prog: Callable) 
 	prog.call(10, 10, "pronto")
 	return 1
 
+## WAV PCM de 16 bits (o mesmo cabeçalho de 44 bytes do módulo wave do Python)
+func grava_wav(saida: String, dados: PackedByteArray, taxa: int, canais: int) -> bool:
+	var cab := PackedByteArray(); cab.resize(44)
+	cab.encode_u32(0, 0x46464952); cab.encode_u32(4, 36 + dados.size()); cab.encode_u32(8, 0x45564157)
+	cab.encode_u32(12, 0x20746d66); cab.encode_u32(16, 16); cab.encode_u16(20, 1); cab.encode_u16(22, canais)
+	cab.encode_u32(24, taxa); cab.encode_u32(28, taxa * 2 * canais); cab.encode_u16(32, 2 * canais); cab.encode_u16(34, 16)
+	cab.encode_u32(36, 0x61746164); cab.encode_u32(40, dados.size())
+	DirAccess.make_dir_recursive_absolute(saida.get_base_dir())
+	var w := FileAccess.open(saida, FileAccess.WRITE)
+	if w == null: printerr("não consegui escrever ", saida); return false
+	w.store_buffer(cab); w.store_buffer(dados); w.close()
+	return true
+
 ## arquivo de resposta do ligador: um caminho por linha, entre aspas (os caminhos podem ter espaços)
 func lista_resposta(caminho: String, objs: Array) -> String:
 	var f := FileAccess.open(caminho, FileAccess.WRITE)
@@ -764,7 +785,7 @@ const GRUPOS := {
 	"musica_x5": {"discos": ["x5"], "captura": true},
 	"menus_x4": {"discos": ["x4"], "captura": true}, "intro_x4": {"discos": ["x4"], "captura": true},
 	"musica_x4": {"discos": ["x4"], "captura": true}, "musica_x6": {"discos": ["x6"], "captura": true},
-	"musica_titulo": {"discos": ["x5"], "captura": true},
+	"musica_titulo": {"discos": ["x5"], "captura": true}, "sons_x4": {"discos": ["x4"], "captura": true},
 	"sons_x5": {"discos": ["x5"], "roteiros": ["sons_x5_x", "sons_x5_a2", "sons_x5_a3"]},
 	"sons_x6": {"discos": ["x6"], "roteiros": ["sons_x6_x", "sons_x6_zero", "sons_x6_a1", "sons_x6_a2", "sons_x6_a3"]},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
