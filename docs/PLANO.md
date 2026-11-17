@@ -92,6 +92,9 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
   y = (SP_DRAW_BUFFER^1)*240, cores 5 bits << 3) quando MMX4_ORACLE_SCENE bate ("mission-briefing" = engine.state 3).
   As x4_N devem ter saído daí, via /home/claude/x4core/test_main(.c). O X4Core no Godot NÃO devolve a VRAM ("vram" vem vazio).
   Caminho: rodar o test_main (ou igual) com o x4core compilado no PC do amigo, cena mission-briefing, unkE=0, cursor unk3.
+  CORREÇÃO: o test_main não grava telas. Mais provável: X4Machine (game x4) roda o x4core e o step_frame pega
+  `X4Core.vram` (só vem quando a VRAM muda: guardar a última não vazia) + `X4Core.prims`; gravar v_N/p_N como o harness e
+  desenhar com tests/render_dump.gd (JOGO=x4), depois testar com e sem "5bits". Script de partida: /tmp/x4_vram_busca.gd.
 - `titulo_x6`: não é quadro do X6OP.STR nem do boot no psxcore (cores contínuas 0..255) — talvez do recomp. Fica aproximado.
 - `titulo_fusion` (66x12, "FUSION" laranja itálico): montado por nós com letras de alguma fonte do jogo — achar as letras
   (provavelmente a fonte dos nomes de fase das telas de seleção X5/X6) e a posição de cada uma.
