@@ -5,8 +5,10 @@ G=/home/claude/godot/Godot_v4.7.2-stable_linux.x86_64; REPO=/home/claude/megaman
 rm -rf /tmp/amigo; mkdir -p "$P/discos"
 cd $REPO && git archive HEAD godot | tar -x -C "$P"
 cp -r $REPO/launcher "$P/launcher"; rm -rf "$P/launcher/.godot"
-mkdir -p "$P/tools"; cp -r $REPO/tools/extrator "$P/tools/"; rm -rf "$P/tools/extrator/.godot"; cp $REPO/tools/receita.json "$P/tools/"; cp -r $REPO/tools/captura "$P/tools/"
+mkdir -p "$P/tools"; cp -r $REPO/tools/extrator "$P/tools/"; rm -rf "$P/tools/extrator/.godot"; cp $REPO/tools/receita.json "$P/tools/"; cp -r $REPO/tools/captura $REPO/tools/x4core "$P/tools/"
 echo '{"versao": 54}' > "$P/versao.json"
+# aqui o GitHub não deixa baixar os zips da decompilação: põe os zips (feitos com git archive) onde o extrator procura
+mkdir -p "$P/gerado/fontes"; cp /tmp/zip_mmx4.zip "$P/gerado/fontes/mmx4.zip"; cp /tmp/zip_psyz.zip "$P/gerado/fontes/psyz.zip"
 ln -s "/home/claude/x4/Mega Man X4 (USA).bin" "$P/discos/"; ln -s "/home/claude/x5/Mega Man X5 (USA).bin" "$P/discos/"; ln -s "/home/claude/ext/MegaManX6Recomp/mmx6/Mega Man X6 (USA) (v1.1).bin" "$P/discos/"
 rm -f /tmp/real_*.png; T0=$(date +%s)
 [ -x /tmp/captura_bin/captura ] || $REPO/tools/captura/compilar.sh /tmp/captura_bin > /dev/null

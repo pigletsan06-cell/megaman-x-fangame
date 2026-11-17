@@ -74,6 +74,14 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
 - Falta no pacote: o llvm-mingw (191 MB) — melhor o extrator baixar do GitHub na 1ª vez só o necessário (clang, ld.lld,
   DLLs do LLVM, lib/clang/23/include). Variáveis do launcher {clang} {lld} já existem.
 
+- Teste completo (tools/testes/teste_discos_reais.sh, pasta nova + discos): 13 etapas em 146 s, tudo ok. 101 arquivos gerados
+  que existem no PC do dono, 52 idênticos byte a byte (o resto: vídeos com a mesma imagem, miniaturas e título do X5 com os
+  mesmos pontos, título do X6 aproximado).
+- PRÓXIMOS: (1) X4: telas x4_N + título + mini_x4 (achar o roteiro com o x4core; ver tests/x4ms.gd e a diferença de pasta);
+  (2) loading x5/x6, press_start, menu_*, titulo_fusion; (3) intro (317); (4) sfx/musica; (5) sprites x/parts, zero;
+  (6) psxcore no pacote (+ testar fase do X5/X6 pelo psxcore com X4_PSXCORE=1); (7) llvm-mingw baixado na 1ª vez;
+  (8) Mesa no pacote; (9) recomp X5/X6.
+
 ## Ordem de trabalho
 
 1. [x] `captura` para Linux e Windows a partir das fontes do `psxcore` (mesmo resultado do harness).

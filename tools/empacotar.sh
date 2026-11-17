@@ -12,7 +12,7 @@ FZ=$CACHE/ffmpeg-master-latest-win64-gpl.zip
 [ -s "$FZ" ] || curl -sSfL -o "$FZ" "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
 T=$(mktemp -d); P="$T/Mega Man X Fusion"
 mkdir -p "$P/engine" "$P/ferramentas" "$P/discos" "$P/gerado"
-(cd "$REPO" && git archive HEAD godot launcher tools/extrator tools/receita.json versao.json) | tar -x -C "$P"
+(cd "$REPO" && git archive HEAD godot launcher tools/extrator tools/receita.json tools/captura tools/x4core versao.json) | tar -x -C "$P"
 cp "$REPO/tools/LEIA-ME.txt" "$P/LEIA-ME.txt"
 echo "Coloque aqui os 3 discos (.bin): Mega Man X4 (USA).bin, Mega Man X5 (USA).bin, Mega Man X6 (USA) (v1.1).bin" > "$P/discos/COLOQUE OS DISCOS AQUI.txt"
 unzip -q -o -j "$GZ" "Godot_v${GV}-stable_win64.exe" -d "$P/engine"; mv "$P/engine/Godot_v${GV}-stable_win64.exe" "$P/engine/godot.exe"
