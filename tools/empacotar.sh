@@ -10,6 +10,9 @@ GZ=$CACHE/Godot_v${GV}-stable_win64.exe.zip
 FZ=$CACHE/ffmpeg-master-latest-win64-gpl.zip
 [ -s "$GZ" ] || curl -sSfL -o "$GZ" "https://github.com/godotengine/godot/releases/download/${GV}-stable/Godot_v${GV}-stable_win64.exe.zip"
 [ -s "$FZ" ] || curl -sSfL -o "$FZ" "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+# desenhista por software (Mesa llvmpipe, MIT): as fotos dos jogos saem iguais em qualquer placa de vídeo
+MV=25.2.7; MZ=$CACHE/mesa-llvmpipe-x64-$MV.7z; Z7=${Z7:-/home/claude/7z/7zz}
+[ -s "$MZ" ] || curl -sSfL -o "$MZ" "https://github.com/mmozeiko/build-mesa/releases/download/$MV/mesa-llvmpipe-x64-$MV.7z"
 T=$(mktemp -d); P="$T/Mega Man X Fusion"
 mkdir -p "$P/engine" "$P/ferramentas" "$P/discos" "$P/gerado"
 (cd "$REPO" && git archive HEAD godot launcher tools/extrator tools/receita.json tools/captura tools/x4core tools/psxcore versao.json) | tar -x -C "$P"
@@ -18,10 +21,14 @@ echo "Coloque aqui os 3 discos (.bin): Mega Man X4 (USA).bin, Mega Man X5 (USA).
 unzip -q -o -j "$GZ" "Godot_v${GV}-stable_win64.exe" -d "$P/engine"; mv "$P/engine/Godot_v${GV}-stable_win64.exe" "$P/engine/godot.exe"
 cp "$REPO/tools/windows/LICENCA_GODOT.txt" "$P/engine/" 2>/dev/null || true
 unzip -q -o -j "$FZ" "*/bin/ffmpeg.exe" "*/LICENSE.txt" -d "$P/ferramentas"; mv "$P/ferramentas/LICENSE.txt" "$P/ferramentas/LICENCA_FFMPEG.txt"
+mkdir -p "$P/ferramentas/render"; "$Z7" e -y -o"$P/ferramentas/render" "$MZ" opengl32.dll > /dev/null
+cp "$REPO/tools/windows/LICENCA_MESA.txt" "$P/ferramentas/render/"
+# captura (nosso núcleo de PS1 + SPU do psyz, MPL 2.0: código em github.com/sozud/psyz)
+CB=$(mktemp -d); "$REPO/tools/captura/compilar.sh" "$CB" > /dev/null; cp "$CB/captura.exe" "$P/ferramentas/captura.exe"; rm -rf "$CB"
 "$REPO/tools/windows/compilar.sh" "$P/Mega Man X Fusion.exe" > /dev/null
 [ -n "$CHAVE" ] && tr -d ' \r\n' < "$CHAVE" > "$P/chave.txt"
 # confere: nada dos discos (sem .bin/.iso/.STR/.sec, sem assets gerados) e nenhum arquivo fora da lista do repositório
-if find "$P" -iname "*.bin" -o -iname "*.iso" -o -iname "*.str" -o -iname "*.sec" -o -iname "*.ogv" | grep -q .; then echo "ERRO: arquivo de disco no pacote"; exit 1; fi
+if find "$P" \( -iname "*.bin" -o -iname "*.iso" -o -iname "*.str" -o -iname "*.sec" -o -iname "*.ogv" -o -iname "*.xa" \) ! -path "*/tools/captura/openbios.bin" | grep -q .; then echo "ERRO: arquivo de disco no pacote"; exit 1; fi
 rm -f "$SAIDA"; (cd "$T" && zip -qr -9 "$SAIDA" "Mega Man X Fusion")
 rm -rf "$T"
 ls -la "$SAIDA"; unzip -l "$SAIDA" | tail -1

@@ -201,8 +201,16 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	for k in fotos: bases.append(dir.path_join(k))
 	OS.set_environment("JOGO", str(r.jogo)); OS.set_environment("DUMPS", ",".join(bases))
 	out = []
-	code = OS.execute(render, ["--path", jogo, "--rendering-method", "gl_compatibility", "--rendering-driver", "opengl3",
-		"-s", "res://tests/render_dump.gd"], out, true)
+	var args := ["--path", jogo, "--rendering-method", "gl_compatibility", "--rendering-driver", "opengl3", "-s", "res://tests/render_dump.gd"]
+	code = OS.execute(render, args, out, true)
+	var faltou := false
+	for k in fotos: faltou = faltou or not FileAccess.file_exists(dir.path_join("tela_%s.png" % k))
+	var gd := opcao("godot", "FUSION_GODOT", OS.get_executable_path())
+	if faltou and gd != render and FileAccess.file_exists(gd):
+		# o desenhista por software não abriu neste PC: desenha com a placa de vídeo (pode mudar algum ponto)
+		printerr("o desenho por software falhou (saída %d): %s — tentando pela placa de vídeo" % [code, str(out).right(300)])
+		out = []
+		code = OS.execute(gd, args, out, true)
 	for k in fotos:
 		var t := dir.path_join("tela_%s.png" % k)
 		if not FileAccess.file_exists(t): printerr("não desenhou o quadro %s (saída %d): %s" % [k, code, str(out).right(400)]); return -1
