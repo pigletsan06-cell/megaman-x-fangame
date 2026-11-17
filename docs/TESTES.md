@@ -49,5 +49,5 @@ kernel32/user32 — **ainda não testado num Windows de verdade**, nem o `godot.
 
 ## Capturas do núcleo de PS1 (para o próximo grupo do extrator)
 
-Tela de seleção do X5 refeita pelo `psxcore` + `render_dump.gd` com o controle de verdade (esquerda, cima):
-60 quadros seguidos com o **mesmo SHA-1** do `assets/menus/x5_1.png` do PC do dono.
+As 8 telas de seleção do X5 refeitas pelo `psxcore` + `render_dump.gd` andando com o controle de verdade, numa captura de 30 s:
+**as 8 com o mesmo SHA-1** dos arquivos do PC do dono (`assets/menus/x5_1.png` … `x5_8.png`).

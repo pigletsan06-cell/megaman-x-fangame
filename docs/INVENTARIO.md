@@ -21,7 +21,7 @@ Alvo: deixar a pasta `godot/` do jogador igual à do PC do dono (lista de refer�
 |---|---:|---:|---|---|
 | `x4c_disc_arc.sec` | 1 | 26,5 | 12947 primeiros setores do disco do X4 | **pronto, idêntico byte a byte** |
 | `movies` (vídeos) | 15 | 115,5 | .STR do disco → ffmpeg (Theora q8 / Vorbis q5, 44,1 kHz) | **pronto, mesma imagem** (o .ogv muda alguns bytes a cada conversão: número de série do Ogg; tamanhos ±0,11%) |
-| `menus` (telas de seleção, títulos, botões) | 36 | 1,8 | capturas do nosso núcleo de PS1 (`psxcore`) + `render_dump.gd` | falta. **Teste: `x5_1.png` sai idêntica byte a byte** (mesmo SHA-1) andando com o controle de verdade (ver abaixo) |
+| `menus` (telas de seleção, títulos, botões) | 36 | 1,8 | capturas do nosso núcleo de PS1 (`psxcore`) + `render_dump.gd` | falta no extrator. **Teste: as 8 telas do X5 (`x5_1`…`x5_8`) saem idênticas byte a byte** numa captura de 30 s (ver abaixo) |
 | `menus/intro` | 317 | 7,1 | capturas (quadros das aberturas) | falta |
 | `menus/mini`, `donos`, `loading` | 76 | 0,2 | recortes das capturas | falta |
 | `musica` | 4 | 4,1 | som capturado do núcleo + laço (`tools/loop.py`) → Vorbis | falta |
@@ -36,8 +36,12 @@ Alvo: deixar a pasta `godot/` do jogador igual à do PC do dono (lista de refer�
 `fusion/sel5.sh` (harness do `psxcore` + `tests/render_dump.gd`, disco do X5): entrada até a seleção de chefes, depois
 **esquerda no quadro 3300 e cima no 3360** (sem escrever o cursor na memória) → os quadros 3363 a 3422 saem com o mesmo
 SHA-1 do `assets/menus/x5_1.png` do PC do dono. Escrevendo o cursor direto na memória a tela sai igual menos a janelinha de
-prévia da fase (64×48), que só carrega quando o cursor anda pelo controle. Conclusão: o caminho das capturas é determinístico
-e dá para refazer as telas no PC do jogador, idênticas.
+prévia da fase (64×48), que só carrega quando o cursor anda pelo controle.
+
+Roteiro que dá as 8 telas do X5 numa passada só (`CT=9999` desliga a escrita do cursor; quadros 3290–4000):
+`left:3300 up:3360 down:3440 down:3520 down:3600 right:3680 up:3760 up:3840 up:3920` (5 quadros apertado cada) →
+x5_5 3303–3362 · x5_1 3363–3442 · x5_6 3523–3602 · x5_3 3603–3682 · x5_4 3683–3762 · x5_2 3763–3842 · x5_7 3843–3922 · x5_8 3923–3999,
+todas com o mesmo SHA-1 do PC do dono. Conclusão: o caminho das capturas é determinístico e refaz as telas idênticas.
 
 ## Código dos jogos (pasta `godot/bin`, compilado no PC do jogador)
 
