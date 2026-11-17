@@ -255,6 +255,10 @@ func roda(jogo: String, base: String, prog: Callable) -> int:
 			var lst: Dictionary = precisa.get(f[0], {})
 			lst[int(f[2])] = true; lst[int(f[3])] = true
 			precisa[f[0]] = lst
+	for fx in rec.get("faixas", []):
+		var lst: Dictionary = precisa.get(fx.captura, {})
+		lst[int(fx.quadro)] = true
+		precisa[fx.captura] = lst
 	var total: int = rec.capturas.size() + rec.atlas.size() + 3
 	var passo := 0
 	var n := 0
@@ -286,6 +290,26 @@ func roda(jogo: String, base: String, prog: Callable) -> int:
 					if c != 0: px[(int(fr.y) + yy) * W + int(fr.x) + xx] = c
 		if not pecas.grava_png(px, W, H, A.path_join(rel).path_join("atlas.png")): return -1
 		feitos[rel] = [px, W, H]
+		n += 1
+	# faixas da tela (o fundo roxo dos Gigas do X6): todas as peças escolhidas na tela inteira, recortadas
+	for fx in rec.get("faixas", []):
+		var dir := tmp.path_join(fx.captura)
+		var prs: Array = prims(dir.path_join("p_%d.bin" % int(fx.quadro)))
+		var v := FileAccess.get_file_as_bytes(dir.path_join("v_%d.bin" % int(fx.quadro)))
+		var CW := 448; var mx := 64; var my := 20
+		var img := PackedInt32Array(); img.resize(CW * CW)
+		var bb := PackedInt32Array([CW, CW, -1, -1])
+		for pr in prs:
+			if sel_ok(pr, rec.selecoes[fx.sel]): raster(img, CW, v, pr, mx, my, false, bb)
+		var w := int(fx.w); var hh := int(fx.h)
+		var out := PackedByteArray(); out.resize(w * hh * 3)
+		for yy in hh:
+			for xx in w:
+				var c := img[(my + int(fx.y) + yy) * CW + mx + int(fx.x) + xx]
+				out[(yy * w + xx) * 3] = c & 255; out[(yy * w + xx) * 3 + 1] = (c >> 8) & 255; out[(yy * w + xx) * 3 + 2] = (c >> 16) & 255
+		var im := Image.create_from_data(w, hh, false, Image.FORMAT_RGB8, out)
+		DirAccess.make_dir_recursive_absolute(A.path_join(str(fx.saida)).get_base_dir())
+		if im.save_png(A.path_join(str(fx.saida))) != OK: return -1
 		n += 1
 	# cópias (o mesmo efeito em várias armaduras)
 	prog.call(passo, total, "efeitos: cópias"); passo += 1
