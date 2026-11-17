@@ -444,6 +444,7 @@ const GRUPOS := {
 	"menus_x6": {"discos": ["x6"], "captura": true},
 	"titulo_x5": {"discos": ["x5"], "captura": true}, "titulo_x6": {"discos": ["x6"], "captura": true},
 	"textos_x5": {"discos": ["x5"], "captura": true},
+	"loading_x5": {"discos": ["x5"], "captura": true}, "loading_x6": {"discos": ["x6"], "captura": true},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
 	"codigo_x4": {"discos": []},
 }

@@ -1,0 +1,14 @@
+{
+ "nota": "Telas 'Now Loading' do X6 (texto aceso e apagado): título -> GAME START -> pula a conversa -> carregando. Cores 5 bits << 3. Conferido: mesmos pontos do PC do dono.",
+ "jogo": "x6",
+ "disco": "x6",
+ "quadros": 1485,
+ "botoes": "start:900-905,cross:1000-1006,start:1400-1403,start:1460-1463",
+ "poke": "ccedc:0001:1440-1900",
+ "fotos": {
+  "1484": "assets/menus/loading/x6_a.png",
+  "1480": "assets/menus/loading/x6_b.png"
+ },
+ "cores": "5bits",
+ "formato": "rgb"
+}

@@ -1,0 +1,14 @@
+{
+ "nota": "Telas 'Now Loading' do X5 (texto aceso e apagado), do jeito que o hub entra na fase: título -> TRAINING -> personagem -> carregando. Cores 5 bits << 3. Conferido: mesmos pontos do PC do dono.",
+ "jogo": "x5",
+ "disco": "x5",
+ "quadros": 1301,
+ "botoes": "start:700-710,down:830-835,down:870-875,down:910-915,cross:960-966,cross:1210-1216",
+ "poke": "",
+ "fotos": {
+  "1288": "assets/menus/loading/x5_a.png",
+  "1300": "assets/menus/loading/x5_b.png"
+ },
+ "cores": "5bits",
+ "formato": "rgb"
+}
