@@ -95,6 +95,8 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
   CORREÇÃO: o test_main não grava telas. Mais provável: X4Machine (game x4) roda o x4core e o step_frame pega
   `X4Core.vram` (só vem quando a VRAM muda: guardar a última não vazia) + `X4Core.prims`; gravar v_N/p_N como o harness e
   desenhar com tests/render_dump.gd (JOGO=x4), depois testar com e sem "5bits". Script de partida: /tmp/x4_vram_busca.gd.
+  Tentado (17/nov ~04h): X4R.vram_draw vem com 1 MB, mas `m.stream` fica vazio mesmo com step_frame(true) no jogo x4 →
+  ver em x4_machine.gd (step_frame, ~linhas 387-438) de onde vêm as primitivas do x4 nativo antes de repetir.
 - `titulo_x6`: não é quadro do X6OP.STR nem do boot no psxcore (cores contínuas 0..255) — talvez do recomp. Fica aproximado.
 - `titulo_fusion` (66x12, "FUSION" laranja itálico): montado por nós com letras de alguma fonte do jogo — achar as letras
   (provavelmente a fonte dos nomes de fase das telas de seleção X5/X6) e a posição de cada uma.
