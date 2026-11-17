@@ -215,6 +215,179 @@ func miniaturas(jg: String, jogo: String, prog: Callable) -> int:
 		prog.call(n, ks.size() * 2, "miniaturas do " + jg.to_upper())
 	return n
 
+# ---------------- código do X4: decompilação pública (sozud/mmx4) + nossas mudanças, compilada aqui ----------------
+const MMX4_COMMIT := "4e16dfc7c06597fd5719dd112654d8cf85d343c2"
+const PSYZ_COMMIT := "da55621adf3b293a1f9693d401dc21aab5ef971d"   # submódulo tools/psyz (sozud/psyz, ramo mmx4)
+
+func pasta_x4core() -> String:
+	return ProjectSettings.globalize_path("res://").path_join("../x4core").simplify_path()
+
+## baixa um arquivo por HTTPS seguindo redirecionamentos (o GitHub manda para codeload.github.com)
+func baixa(url: String, destino: String) -> bool:
+	for tentativa in 5:
+		var u := url.trim_prefix("https://")
+		var host := u.get_slice("/", 0); var caminho := u.substr(host.length())
+		var c := HTTPClient.new()
+		if c.connect_to_host(host, 443, TLSOptions.client()) != OK: return false
+		while c.get_status() in [HTTPClient.STATUS_CONNECTING, HTTPClient.STATUS_RESOLVING]: c.poll(); OS.delay_msec(20)
+		if c.get_status() != HTTPClient.STATUS_CONNECTED: printerr("sem conexão com ", host); return false
+		c.request(HTTPClient.METHOD_GET, caminho, ["User-Agent: MegaManXFusion"])
+		while c.get_status() == HTTPClient.STATUS_REQUESTING: c.poll(); OS.delay_msec(20)
+		var cod := c.get_response_code()
+		if cod in [301, 302, 303, 307, 308]:
+			url = str(c.get_response_headers_as_dictionary().get("Location", c.get_response_headers_as_dictionary().get("location", "")))
+			continue
+		if cod != 200: printerr("baixar %s: erro %d" % [url, cod]); return false
+		var f := FileAccess.open(destino, FileAccess.WRITE)
+		while c.get_status() == HTTPClient.STATUS_BODY:
+			c.poll()
+			var ch := c.read_response_body_chunk()
+			if ch.size() > 0: f.store_buffer(ch)
+			else: OS.delay_msec(5)
+		f.close()
+		return true
+	return false
+
+## extrai um zip do GitHub (tira a pasta de cima) em pasta
+func extrai(zip: String, pasta: String) -> bool:
+	var z := ZIPReader.new()
+	if z.open(zip) != OK: return false
+	for f in z.get_files():
+		var rel := f.substr(f.find("/") + 1)
+		if rel == "" or rel.ends_with("/"): continue
+		var dst := pasta.path_join(rel)
+		DirAccess.make_dir_recursive_absolute(dst.get_base_dir())
+		var w := FileAccess.open(dst, FileAccess.WRITE)
+		if w: w.store_buffer(z.read_file(f))
+	z.close()
+	return true
+
+## aplica um "git diff" (as nossas mudanças) numa árvore de fontes
+func aplica_patch(raiz: String, texto: String) -> bool:
+	var ls := texto.split("\n")
+	if ls.size() > 0 and ls[ls.size() - 1] == "": ls.remove_at(ls.size() - 1)
+	var i := 0
+	while i < ls.size():
+		if not ls[i].begins_with("--- "): i += 1; continue
+		var alvo := ls[i + 1].substr(6)   # "+++ b/caminho"
+		i += 2
+		var arq := raiz.path_join(alvo)
+		var orig := FileAccess.get_file_as_string(arq).split("\n") if FileAccess.file_exists(arq) else PackedStringArray()
+		var linhas := Array(orig)
+		var desloc := 0
+		while i < ls.size() and ls[i].begins_with("@@"):
+			var ini := int(ls[i].get_slice(" ", 1).get_slice(",", 0).substr(1)) - 1
+			i += 1
+			var velhas := []; var novas := []
+			while i < ls.size() and not ls[i].begins_with("@@") and not ls[i].begins_with("diff --git"):
+				var l: String = ls[i]
+				if l.begins_with(" "): velhas.append(l.substr(1)); novas.append(l.substr(1))
+				elif l.begins_with("-"): velhas.append(l.substr(1))
+				elif l.begins_with("+"): novas.append(l.substr(1))
+				i += 1
+			var pos := -1
+			for d in range(0, 200):
+				for p2 in [ini + desloc + d, ini + desloc - d]:
+					if p2 < 0 or p2 + velhas.size() > linhas.size(): continue
+					if linhas.slice(p2, p2 + velhas.size()) == velhas: pos = p2; break
+				if pos >= 0: break
+			if pos < 0: printerr("o patch não encaixou em ", alvo); return false
+			linhas = linhas.slice(0, pos) + novas + linhas.slice(pos + velhas.size())
+			desloc += novas.size() - velhas.size()
+		var w := FileAccess.open(arq, FileAccess.WRITE)
+		w.store_string("\n".join(PackedStringArray(linhas)))
+		w.close()
+	return true
+
+func codigo_x4(jogo: String, prog: Callable) -> int:
+	var x4 := pasta_x4core()
+	var base := opcao("fontes", "FUSION_FONTES", jogo.path_join("../gerado/fontes")).simplify_path()
+	var src := base.path_join("mmx4")
+	if not FileAccess.file_exists(src.path_join(".pronto")):
+		prog.call(0, 10, "baixando a decompilação do X4 (pública)")
+		DirAccess.make_dir_recursive_absolute(base)
+		var zm := opcao("zip_mmx4", "", base.path_join("mmx4.zip")); var zp := opcao("zip_psyz", "", base.path_join("psyz.zip"))
+		if not FileAccess.file_exists(zm) and not baixa("https://github.com/sozud/mmx4/archive/%s.zip" % MMX4_COMMIT, zm): return -1
+		if not FileAccess.file_exists(zp) and not baixa("https://github.com/sozud/psyz/archive/%s.zip" % PSYZ_COMMIT, zp): return -1
+		if not extrai(zm, src) or not extrai(zp, src.path_join("tools/psyz")): printerr("zip estragado"); return -1
+		if not aplica_patch(src, FileAccess.get_file_as_string(x4.path_join("mmx4.patch"))): return -1
+		if not aplica_patch(src.path_join("tools/psyz"), FileAccess.get_file_as_string(x4.path_join("psyz.patch"))): return -1
+		DirAccess.make_dir_recursive_absolute(src.path_join("src/godot"))
+		DirAccess.copy_absolute(x4.path_join("frame.c"), src.path_join("src/godot/frame.c"))
+		FileAccess.open(src.path_join(".pronto"), FileAccess.WRITE).store_string(MMX4_COMMIT)
+	# compila (mesmas opções do build.sh do PC do dono)
+	var cc := opcao("clang", "FUSION_CLANG", "clang")
+	var ld := opcao("lld", "FUSION_LLD", "ld.lld")
+	var win := opcao("alvo", "", "windows" if OS.get_name() == "Windows" else "linux") == "windows"
+	var out := []
+	OS.execute(cc, ["-print-resource-dir"], out)
+	var cinc := str(out[0]).strip_edges().path_join("include")
+	var fl := ["-O2", "-w", "-std=gnu11", "-ffreestanding", "-fno-strict-aliasing", "-fno-stack-protector", "-fno-exceptions",
+		"-fno-asynchronous-unwind-tables", "-nostdinc", "-isystem", cinc, "-isystem", x4.path_join("sysroot"), "-DMMX4_PC=1", "-D__psyz=1",
+		"-DSKIP_MDEC=1", "-DVERSION_US=1", "-DX4CORE=1", "-Wno-error=incompatible-function-pointer-types", "-Wno-error=int-conversion",
+		"-Wno-error=implicit-function-declaration", "-Wno-error=implicit-int", "-Wno-error=return-type",
+		"-Wno-error=incompatible-pointer-types"]   # (o clang novo trata estes avisos da decompilação como erro)
+	fl += ["--target=x86_64-pc-windows-msvc", "-mno-stack-arg-probe", "-fms-extensions"] if win else ["--target=x86_64-linux-gnu", "-fPIC", "-fvisibility=hidden"]
+	var inc := ["-I" + src.path_join("include"), "-I" + src.path_join("tools/psyz/psyz/include")]
+	var ainc := ["-I" + src.path_join("tools/psyz/psyz/include"), "-I" + src.path_join("tools/psyz/decomp/include")]
+	var lista := []   # [fonte, opções]
+	for l in FileAccess.get_file_as_string(x4.path_join("srclist.txt")).split("\n", false):
+		var extra := ["-Dfunc_80018000=func_80018000_original"] if l.ends_with("/55C4.c") else []
+		lista.append([src.path_join(l), fl + inc + extra])
+	for f in ["marca_inicio.c", "marca_fim.c", "runtime.c", "fangame.c", "stubs_gen.c", "gdext.c", "memcard_x4.c"]:
+		lista.append([x4.path_join(f), fl + inc + ["-I" + x4]])
+	for l in FileAccess.get_file_as_string(x4.path_join("audio_srcs.txt")).split("\n", false):
+		lista.append([src.path_join(l), fl + ainc])
+	var obj := base.path_join("obj_" + ("win" if win else "linux"))
+	DirAccess.make_dir_recursive_absolute(obj)
+	var erros := []; var feitos := [0]; var mx := Mutex.new()
+	var trabalho := func(ini: int, passo: int) -> void:
+		for k in range(ini, lista.size(), passo):
+			var f: String = lista[k][0]
+			var o := obj.path_join(f.trim_prefix(src).trim_prefix(x4).replace("/", "_").replace("\\", "_") + ".o")
+			var r := []
+			var cod := OS.execute(cc, lista[k][1] + ["-c", f, "-o", o], r, true)
+			mx.lock(); feitos[0] += 1
+			if cod != 0: erros.append(f + ": " + str(r).left(300))
+			mx.unlock()
+	var ths := []
+	var n := maxi(2, OS.get_processor_count())
+	for t in n:
+		var th := Thread.new(); th.start(trabalho.bind(t, n)); ths.append(th)
+	while true:
+		var vivos := 0
+		for th in ths: if th.is_alive(): vivos += 1
+		prog.call(1 + int(8.0 * feitos[0] / lista.size()), 10, "compilando o X4 (%d/%d)" % [feitos[0], lista.size()])
+		if vivos == 0: break
+		OS.delay_msec(250)
+	for th in ths: th.wait_to_finish()
+	if not erros.is_empty(): printerr("erros ao compilar:\n", "\n".join(erros.slice(0, 5))); return -1
+	prog.call(9, 10, "juntando")
+	var objs := []
+	for k in lista:
+		var f: String = k[0]
+		objs.append(obj.path_join(f.trim_prefix(src).trim_prefix(x4).replace("/", "_").replace("\\", "_") + ".o"))
+	# gdext primeiro e as marcas em volta (o estado salvo usa o intervalo entre marca_inicio e marca_fim)
+	var gd: String = objs.filter(func(o): return o.ends_with("_gdext.c.o"))[0]
+	var mi: String = objs.filter(func(o): return o.ends_with("_marca_inicio.c.o"))[0]
+	var mf: String = objs.filter(func(o): return o.ends_with("_marca_fim.c.o"))[0]
+	var meio := objs.filter(func(o): return o != gd and o != mi and o != mf)
+	var ordem := [gd, mi] + meio + [mf]
+	DirAccess.make_dir_recursive_absolute(jogo.path_join("bin"))
+	var r2 := []
+	var cod2: int
+	if win:
+		cod2 = OS.execute(ld, ["-flavor", "link", "/dll", "/noentry", "/nodefaultlib", "/out:" + jogo.path_join("bin/x4core.dll"),
+			"/base:0x10000000", "/dynamicbase:no", "/opt:ref"] + ordem + ["/export:x4core_init"], r2, true)
+	else:
+		cod2 = OS.execute(ld, ["-shared", "-o", jogo.path_join("bin/libx4core.so")] + ordem + ["--gc-sections", "-z", "defs"], r2, true)
+	if cod2 != 0: printerr("erro ao juntar: ", str(r2).left(800)); return -1
+	var ge := FileAccess.open(jogo.path_join("bin/x4core.gdextension"), FileAccess.WRITE)
+	ge.store_string('[configuration]\nentry_symbol = "x4core_init"\ncompatibility_minimum = "4.4"\n\n[libraries]\nwindows.x86_64 = "res://bin/x4core.dll"\nlinux.x86_64 = "res://bin/libx4core.so"\n')
+	ge.close()
+	prog.call(10, 10, "pronto")
+	return 1
+
 const GRUPOS := {
 	"x4_arc": {"discos": ["x4"]},
 	"videos_x4": {"discos": ["x4"]}, "videos_x5": {"discos": ["x5"]}, "videos_x6": {"discos": ["x6"]},
@@ -222,10 +395,12 @@ const GRUPOS := {
 	"menus_x6": {"discos": ["x6"], "captura": true},
 	"titulo_x5": {"discos": ["x5"], "captura": true}, "titulo_x6": {"discos": ["x6"], "captura": true},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
+	"codigo_x4": {"discos": []},
 }
 func roda_grupo(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> int:
 	if GRUPOS.get(nm, {}).get("captura", false): return captura(nm, jogo, discos, prog)
 	if nm.begins_with("mini_"): return miniaturas(nm.substr(5), jogo, prog)
+	if nm == "codigo_x4": return codigo_x4(jogo, prog)
 	match nm:
 		"x4_arc": return x4_arc(jogo, discos, prog)
 		"videos_x4": return videos("x4", jogo, discos, prog)

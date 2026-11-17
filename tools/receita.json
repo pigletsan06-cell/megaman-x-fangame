@@ -1,5 +1,5 @@
 {
- "versao_receita": 6,
+ "versao_receita": 7,
  "nota": "Etapas que o launcher roda no PC do jogador, a partir dos discos dele. Cada etapa só roda de novo se mudar o disco, os arquivos dela ou uma etapa de antes.",
  "etapas": [
   {
@@ -94,6 +94,28 @@
    ]
   },
   {
+   "id": "codigo_x4",
+   "nome": "Código do X4 (compilando)",
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "codigo_x4",
+    "clang={clang}",
+    "lld={lld}",
+    "fontes={gerado}/fontes"
+   ],
+   "arquivos": [
+    "{tools}/x4core",
+    "{tools}/extrator/extrair.gd"
+   ]
+  },
+  {
    "id": "godot_inicial",
    "nome": "Preparar o Godot (1ª vez)",
    "cmd": [
@@ -108,6 +130,9 @@
     "{jogo}/scripts",
     "{jogo}/scenes",
     "{jogo}/shaders"
+   ],
+   "depois_de": [
+    "codigo_x4"
    ]
   },
   {

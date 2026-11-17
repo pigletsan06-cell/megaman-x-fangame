@@ -1,0 +1,1096 @@
+diff --git a/src/main/1E1BC.c b/src/main/1E1BC.c
+index 2d83718..f4ac632 100644
+--- a/src/main/1E1BC.c
++++ b/src/main/1E1BC.c
+@@ -231,7 +231,7 @@ ret_u8 func_8002D9BC(void* object)
+     damage_type = (s8)shot->unk62;
+     switch (damage_type) {
+     case 0:
+-        if ((player->unk2 == 0) && (((u8)player->armor_parts) & 2)) {
++        if (((player->unk2 == 0) && (((u8)player->armor_parts) & 2)) || ({ extern int fg_bz; player->unk2 != 0 && (fg_bz & 2); })) {
+             player->hurt_type = 4;
+         } else if (shot->unk60 < 5) {
+             player->hurt_type = 1;
+@@ -247,6 +247,9 @@ ret_u8 func_8002D9BC(void* object)
+ 
+     contact_damage = (u8)shot->unk60;
+     damage_type = (s8)contact_damage;
++#ifdef X4CORE
++    { extern int fg_reduce_damage(int); int r = fg_reduce_damage(damage_type); if (r >= 0) { player->hp = (u8)(player->hp - r); damage_type = 0; } }
++#endif
+     if (damage_type != 0) {
+         if (((u8)player->armor_parts) & 2) {
+             if (damage_type < 3) {
+@@ -274,12 +277,18 @@ ret_u8 func_8002D9BC(void* object)
+         }
+     }
+     if (player->unk2 == 0) {
++#ifdef X4CORE
++        { extern int fg_has_giga(void); if (fg_has_giga()) goto fg_giga_fill; }
++#endif
+         if (!(((u8)player->armor_parts) & 2)) {
+             return 1;
+         }
+     } else if (!(((u8)player->boss_flags) & 0x20)) {
+         return 1;
+     }
++#ifdef X4CORE
++fg_giga_fill:
++#endif
+     if (player->weapon_energy[0] != 0x30) {
+         energy = ((s8)player->weapon_energy[0]) + 6;
+         player->weapon_energy[0] = energy;
+@@ -330,6 +339,9 @@ ret_s8 func_8002DD04(struct MainObj* object)
+                 &((s16*)&weapon->unk80)[0], &((s16*)&weapon->unk80)[1]))
+             continue;
+         result = (s8)func_8002DE30(object, weapon);
++#ifdef X4CORE
++        { extern int fg_coop_ghost_id(struct WeaponObj*); if (fg_coop_ghost_id(weapon) >= 0) weapon->id = 0x12; }   // (fantasma do co-op: a rotina é a da arma 0x12)
++#endif
+         if (result == 0x7E)
+             return 0;
+         if (result != 0)
+@@ -352,6 +364,9 @@ s32 func_8002DE30(struct MainObj* arg0, struct WeaponObj* arg1)
+ 
+     hit = arg1->unk64;
+     id = arg1->id;
++#ifdef X4CORE
++    { extern int fg_coop_ghost_id(struct WeaponObj*); int gi = fg_coop_ghost_id(arg1); if (gi >= 0) id = (u8)gi; }   // co-op: golpe do parceiro
++#endif
+     if (hit != 0) {
+         if (hit == arg0->unk65) {
+             return 0x7E;
+@@ -367,6 +382,9 @@ s32 func_8002DE30(struct MainObj* arg0, struct WeaponObj* arg1)
+     if ((s8)kind == 2) {
+         return 0;
+     }
++#ifdef X4CORE
++    { extern int fg_coop_ghost_id(struct WeaponObj*); if (fg_coop_ghost_id(arg1) >= 0) goto coop_ghost; }
++#endif
+     switch ((s8)id) {
+     case 0x1A:
+     case 0x1B:
+@@ -383,15 +401,43 @@ s32 func_8002DE30(struct MainObj* arg0, struct WeaponObj* arg1)
+         g_Player.update_delay_request = 1;
+         break;
+     }
++#ifdef X4CORE
++coop_ghost:
++    { extern int fg_coop_ghost_id(struct WeaponObj*); if (fg_coop_ghost_id(arg1) >= 0) arg1->id = id; }   // co-op: faísca/som do acerto da arma do parceiro (func_8002DF7C); volta a 0x12 no func_8002DD04
++    { extern int fg_coop_hit(struct MainObj*, struct WeaponObj*); int r = fg_coop_hit(arg0, arg1);   // fangame: co-op (golpe final do parceiro no chefe)
++      if (r == -2) return 0;
++      if (r >= 0) { arg0->unk63 = 0; arg0->hp = (u8)arg0->hp - r; arg0->unk42 |= 0x8000;
++        if (arg0->hp <= 0) { arg0->hp = 0; { extern void fg_kill(void); fg_kill(); } func_8002DF7C(arg1, 1); return -1; }
++        func_8002DF7C(arg1, 0); return (s8)(id + 1); } }
++    { extern int fg_nz_hit(struct MainObj*, struct WeaponObj*, int, int); int r = fg_nz_hit(arg0, arg1, (s8)id, table[((s8)id * 2) + 1]);   // fangame: Nightmare Zero
++      if (r >= 0) { arg0->unk63 = 0; arg0->hp = (u8)arg0->hp - r; arg0->unk42 |= 0x8000;
++        if (arg0->hp <= 0) { arg0->hp = 0; { extern void fg_nz_kill(struct MainObj*); fg_nz_kill(arg0); } { extern void fg_kill(void); fg_kill(); } func_8002DF7C(arg1, 1); return -1; }
++        func_8002DF7C(arg1, 0); return (s8)(id + 1); } }
++    { extern int fg_coop_ghost_id(struct WeaponObj*); extern int fg_bz_hit(struct MainObj*, int, int);
++      int r = fg_coop_ghost_id(arg1) >= 0 ? -1 : fg_bz_hit(arg0, (s8)id, table[((s8)id * 2) + 1]);   // fangame: Black Zero (não no fantasma do co-op)
++      if (r >= 0) { arg0->unk63 = 0; arg0->hp = (u8)arg0->hp - r; arg0->unk42 |= 0x8000;
++        if (arg0->hp <= 0) { arg0->hp = 0; { extern void fg_bz_kill(struct MainObj*); fg_bz_kill(arg0); } { extern void fg_kill(void); fg_kill(); } func_8002DF7C(arg1, 1); return -1; }
++        func_8002DF7C(arg1, 0); return (s8)(id + 1); } }
++#endif
+     if (arg0->unk63 == -1) {
+         func_8002DF7C(arg1, -1);
+         return 0x7F;
+     }
+ 
++#ifdef X4CORE
++    { int dmg = table[((s8)id * 2) + 1];   // fangame: Shadow +0,5 / Falcon X6 no ar +50% / Marca da presa x2
++      extern int fg_hit_damage(struct MainObj*, struct WeaponObj*, int); dmg = fg_hit_damage(arg0, arg1, dmg);
++      arg0->hp = (u8)arg0->hp - dmg; }
++#else
+     arg0->hp = (u8)arg0->hp - table[((s8)id * 2) + 1];
++#endif
+     arg0->unk42 |= 0x8000;
+     if (arg0->hp <= 0) {
+         arg0->hp = 0;
++#ifdef X4CORE
++        { extern void fg_kill(void); fg_kill(); }   // fangame: inimigo destruído (desafio de combo)
++        { extern void fg_hab_kill(struct MainObj*); fg_hab_kill(arg0); }   // fangame: Reação em cadeia (capacete Fourth X5)
++#endif
+         func_8002DF7C(arg1, 1);
+         return -1;
+     }
+diff --git a/src/main/55C4.c b/src/main/55C4.c
+index dda3b47..8476595 100644
+--- a/src/main/55C4.c
++++ b/src/main/55C4.c
+@@ -596,6 +596,9 @@ void stop_sound(u8 arg0, u8 arg1)
+     u8 var_s1;
+     s8 var_s2;
+     s8 temp_v0;
++#ifdef X4CORE
++    { extern void fg_sound_stop(int, int); fg_sound_stop(arg0, arg1); }   // fangame: carga do X5/X6
++#endif
+ 
+     if (arg0 == 0xFF) {
+         for (var_s1 = 0; var_s1 < 0x18; var_s1++) {
+diff --git a/src/main/E47C.c b/src/main/E47C.c
+index 3699c74..806bc33 100644
+--- a/src/main/E47C.c
++++ b/src/main/E47C.c
+@@ -409,12 +409,45 @@ extern u8 D_800F2474_jp[4];
+ 
+ #ifdef MMX4_PC
+ u8 direct_u8(const char* name);
++char* getenv(const char* name);
++unsigned long strtoul(const char* s, char** e, int b);
++
++static void fg_apply_save(u8 stage)
++{   // fangame: save único (vida máxima, itens pegos, chefes vencidos, sub tanks) no lugar do "tudo liberado"
++        const char* sv = getenv("MMX4_SAVE");
++        unsigned v[6]; int n = 0;
++        while (sv != NULL && *sv && n < 6) { char* e; v[n++] = (unsigned)strtoul(sv, &e, 0); sv = (*e == ',') ? e + 1 : e; if (e == sv && *e != ',') break; }
++        if (n == 6) {
++            unsigned mh = v[0], up = v[1], bo = v[2], t0 = v[3], t1 = v[4], t2 = v[5];
++            engine_obj.max_hp = (s8)mh; engine_obj.checkpoint_hp = (u8)mh;
++            engine_obj.collected_upgrades = (u16)up;
++            engine_obj.palette_flags = (s8)bo;
++            if (stage >= 1 && stage <= 8) engine_obj.palette_flags &= (u8) ~(1 << (stage - 1));
++            engine_obj.sub_tanks[0] = (s8)t0; engine_obj.sub_tanks[1] = (s8)t1; engine_obj.sub_tanks[2] = (s8)t2;
++        }
++    }
++
++static void fg_apply_armor(u8 character)
++{   // fangame: armadura montada no hub (MMX4_DIRECT_ARMOR = peças do X4, MMX4_DIRECT_SKILL/MMX4_PARTS = habilidades)
++    extern int fg_armor, fg_arm, fg_caps; extern void fg_parts_init(void);
++    fg_caps = -1;   // relê MMX4_CAPS nesta fase
++    { extern void fg_voz_reset(void); fg_voz_reset(); }
++    const char* ap = getenv("MMX4_DIRECT_ARMOR");
++    const char* sk = getenv("MMX4_DIRECT_SKILL");
++    fg_armor = (sk != NULL && sk[0]) ? (int)strtoul(sk, NULL, 0) : 0;
++    fg_parts_init();
++    if (character != CHARACTER_X || ap == NULL || !ap[0]) return;
++    engine_obj.armor_parts = (u8)strtoul(ap, NULL, 0);
++    engine_obj.arm_type = 2;
++    if (fg_arm >= 1 && fg_arm <= 8) engine_obj.arm_type = (fg_arm == 3 || fg_arm == 4 || fg_arm == 8) ? 2 : 0;   // Fourth/Ultimate do X5 = Plasma; as outras: tiro carregado comum
++    else { const char* at = getenv("MMX4_ARMTYPE"); if (at != NULL && at[0]) engine_obj.arm_type = (u8)strtoul(at, NULL, 0); }   // braço do X4: 1 Stock, 2 Plasma
++}
+ 
+ static void apply_direct_progress(u8 stage, u8 character, u8 loadout, u8 story)
+ {
+     engine_obj.unk5F = story;
+-    if (loadout != 1 && loadout != 2)
+-        return;
++    { const char* sec = getenv("MMX4_DIRECT_SECRET"); engine_obj.unk37 = (sec != NULL && sec[0] == '1') ? 1 : 0; }
++    if (loadout != 1 && loadout != 2) { fg_apply_save(stage); fg_apply_armor(character); return; }
+     engine_obj.player_lives = 4;
+     engine_obj.checkpoint_hp = 0x30;
+     engine_obj.max_hp = 0x30;
+@@ -425,10 +458,9 @@ static void apply_direct_progress(u8 stage, u8 character, u8 loadout, u8 story)
+     engine_obj.sub_tanks[0] = 0xA0;
+     engine_obj.sub_tanks[1] = 0xA0;
+     engine_obj.sub_tanks[2] = 0x20;
+-    if (character == CHARACTER_X) {
+-        engine_obj.armor_parts = 0x0F;
+-        engine_obj.arm_type = 2;
+-    }
++    if (character == CHARACTER_X) { engine_obj.armor_parts = 0x0F; engine_obj.arm_type = 2; }
++    fg_apply_armor(character);
++    fg_apply_save(stage);
+ }
+ #endif
+ 
+diff --git a/src/main/charge_glow.c b/src/main/charge_glow.c
+index 583c7fc..dc6fc32 100644
+--- a/src/main/charge_glow.c
++++ b/src/main/charge_glow.c
+@@ -10,6 +10,9 @@ void func_800AE790(struct BazObj* arg0, struct PlayerObj* arg1);
+ 
+ void func_800AE6B4(struct BazObj* arg0)
+ {
++#ifdef X4CORE
++    { extern int fg_is_x5(void); if (fg_is_x5()) { arg0->on_screen = 0; arg0->state = 0; return; } }   // X5 não tem a esfera de carga (o X pisca)
++#endif
+     struct PlayerObj* ptr = &g_Player;
+     arg0->x_pos.val = g_Player.x_pos.val;
+     arg0->y_pos.val = g_Player.y_pos.val;
+diff --git a/src/main/game_info.c b/src/main/game_info.c
+index 84e30be..a9d3107 100644
+--- a/src/main/game_info.c
++++ b/src/main/game_info.c
+@@ -68,11 +68,43 @@ static u8 direct_u8(const char* name)
+     return value == NULL ? 0 : (u8)strtoul(value, NULL, 0);
+ }
+ 
++static void fg_apply_save(u8 stage)
++{   // fangame: save único (vida máxima, itens pegos, chefes vencidos, sub tanks) no lugar do "tudo liberado"
++        const char* sv = getenv("MMX4_SAVE");
++        unsigned v[6]; int n = 0;
++        while (sv != NULL && *sv && n < 6) { char* e; v[n++] = (unsigned)strtoul(sv, &e, 0); sv = (*e == ',') ? e + 1 : e; if (e == sv && *e != ',') break; }
++        if (n == 6) {
++            unsigned mh = v[0], up = v[1], bo = v[2], t0 = v[3], t1 = v[4], t2 = v[5];
++            engine_obj.max_hp = (s8)mh; engine_obj.checkpoint_hp = (u8)mh;
++            engine_obj.collected_upgrades = (u16)up;
++            engine_obj.palette_flags = (s8)bo;
++            if (stage >= 1 && stage <= 8) engine_obj.palette_flags &= (u8) ~(1 << (stage - 1));
++            engine_obj.sub_tanks[0] = (s8)t0; engine_obj.sub_tanks[1] = (s8)t1; engine_obj.sub_tanks[2] = (s8)t2;
++        }
++    }
++
++static void fg_apply_armor(u8 character)
++{   // fangame: armadura montada no hub (MMX4_DIRECT_ARMOR = peças do X4, MMX4_DIRECT_SKILL/MMX4_PARTS = habilidades)
++    extern int fg_armor, fg_arm, fg_caps; extern void fg_parts_init(void);
++    fg_caps = -1;   // relê MMX4_CAPS nesta fase
++    { extern void fg_voz_reset(void); fg_voz_reset(); }
++    const char* ap = getenv("MMX4_DIRECT_ARMOR");
++    const char* sk = getenv("MMX4_DIRECT_SKILL");
++    fg_armor = (sk != NULL && sk[0]) ? (int)strtoul(sk, NULL, 0) : 0;
++    fg_parts_init();
++    if (character != CHARACTER_X || ap == NULL || !ap[0]) return;
++    engine_obj.armor_parts = (u8)strtoul(ap, NULL, 0);
++    engine_obj.arm_type = 2;
++    if (fg_arm >= 1 && fg_arm <= 8) engine_obj.arm_type = (fg_arm == 3 || fg_arm == 4 || fg_arm == 8) ? 2 : 0;   // Fourth/Ultimate do X5 = Plasma; as outras: tiro carregado comum
++    else { const char* at = getenv("MMX4_ARMTYPE"); if (at != NULL && at[0]) engine_obj.arm_type = (u8)strtoul(at, NULL, 0); }   // braço do X4: 1 Stock, 2 Plasma
++}
++
+ static void apply_direct_progress(u8 stage, u8 character, u8 loadout, u8 story)
+ {
+     engine_obj.unk5F = story;
+-    if (loadout != 1 && loadout != 2)
+-        return;
++    { extern void fg_zero_start(void); fg_zero_start(); }   // fangame: desafios e peças do Black Zero
++    { const char* sec = getenv("MMX4_DIRECT_SECRET"); engine_obj.unk37 = (sec != NULL && sec[0] == '1') ? 1 : 0; }
++    if (loadout != 1 && loadout != 2) { fg_apply_save(stage); fg_apply_armor(character); return; }
+     engine_obj.player_lives = 4;
+     engine_obj.checkpoint_hp = 0x30;
+     engine_obj.max_hp = 0x30;
+@@ -83,10 +115,9 @@ static void apply_direct_progress(u8 stage, u8 character, u8 loadout, u8 story)
+     engine_obj.sub_tanks[0] = 0xA0;
+     engine_obj.sub_tanks[1] = 0xA0;
+     engine_obj.sub_tanks[2] = 0x20;
+-    if (character == CHARACTER_X) {
+-        engine_obj.armor_parts = 0x0F;
+-        engine_obj.arm_type = 2;
+-    }
++    if (character == CHARACTER_X) { engine_obj.armor_parts = 0x0F; engine_obj.arm_type = 2; }
++    fg_apply_armor(character);
++    fg_apply_save(stage);
+ }
+ #endif
+ 
+diff --git a/src/main/items/item_02_pickup.c b/src/main/items/item_02_pickup.c
+index a189fb0..bbad394 100644
+--- a/src/main/items/item_02_pickup.c
++++ b/src/main/items/item_02_pickup.c
+@@ -683,6 +683,7 @@ void func_800C00BC(struct ItemObj* arg0)
+     }
+ 
+     arg0->unk5 = 0;
++    { extern int fg_zst[10]; int t = arg0->unk7C.value; if (t == 0 || t == 1 || t == 5) fg_zst[7]++; }   // fangame: item de vida pego (desafio do Zero)
+     switch (arg0->unk7C.value) {
+     case 0:
+         pickup_collect_health(arg0, 4, 1);
+diff --git a/src/main/items/item_26_light_capsule.c b/src/main/items/item_26_light_capsule.c
+index 93e7521..a18c491 100644
+--- a/src/main/items/item_26_light_capsule.c
++++ b/src/main/items/item_26_light_capsule.c
+@@ -41,6 +41,7 @@ extern u8 light_capsule_dialogue_ids[8];
+ #endif
+ 
+ void func_800164D8(void);
++int fg_caps_mode(void); int fg_caps_has(int); void fg_caps_grant(int);
+ 
+ void light_capsule_update(struct ItemObj* self)
+ {
+@@ -99,6 +100,9 @@ void func_800C63BC(struct ItemObj* arg0)
+     if (engine_obj.unk37 != 0) {
+         if ((u8)player->armor_parts != 0)
+             discard = 1;
++    } else if (fg_caps_mode()) {   // fangame: a cápsula some só se a peça já foi pega (no save), não importa a armadura vestida
++        if (fg_caps_has(arg0->unk2))
++            discard = 1;
+     } else {
+         if ((u8)player->armor_parts & light_capsule_part_bits[arg0->unk2])
+             discard = 1;
+@@ -467,6 +471,8 @@ void func_800C6EDC(struct VisualObj* arg0)
+                 g_Player.armor_parts = 0xF;
+                 g_Player.arm_type = 2;
+                 engine_obj.arm_type = 2;
++            } else if (fg_caps_mode()) {
++                fg_caps_grant(arg0->unk2);   // fangame: libera a peça no save; só veste se aquele lugar estava sem armadura
+             } else {
+                 u8 bit = light_capsule_part_bits[arg0->unk2];
+ 
+diff --git a/src/main/pause_menu.c b/src/main/pause_menu.c
+index 4d3adaa..e541811 100644
+--- a/src/main/pause_menu.c
++++ b/src/main/pause_menu.c
+@@ -142,7 +142,12 @@ void func_8002FD70(struct BarObj* self)
+     self->unk14 = 0;
+     if (g_Player.unk2 == 0) {
+         self->options.fields.player[0] = 1;
++#ifdef X4CORE
++        extern int fg_has_giga(void); extern int fg_nova_ok(void);
++        if (((((u8)g_Player.armor_parts) & 2) && fg_nova_ok()) || fg_has_giga()) {
++#else
+         if (((u8)g_Player.armor_parts) & 2) {
++#endif
+             self->options.fields.player[1] = 1;
+         } else {
+             self->options.fields.player[1] = 0;
+diff --git a/src/main/player.c b/src/main/player.c
+index b1a11ca..abacd9a 100644
+--- a/src/main/player.c
++++ b/src/main/player.c
+@@ -241,7 +241,7 @@ void player_jump(struct PlayerObj* self)
+     if (self->unk88.bytes.collision_flags & PLAYER_COLLIDE_CEILING) {
+         self->y_vel.val = 0;
+     }
+-    if (!(self->input.buttons.held & PLAYER_INPUT_JUMP)) {
++    if (!(self->input.buttons.held & PLAYER_INPUT_JUMP) && !({ extern int fg_bz_giga_rising(void); fg_bz_giga_rising(); })) {   // fangame: o salto do Giga do Black Zero sobe sozinho
+         self->y_vel.val = 0;
+     }
+     if (player_check_shoot_air(self) == 0 && player_zero_check_jump_slash(self) == 0) {
+diff --git a/src/main/player_check.c b/src/main/player_check.c
+index a30a7ca..be234bf 100644
+--- a/src/main/player_check.c
++++ b/src/main/player_check.c
+@@ -1,5 +1,25 @@
+ // 80033414..800343A4
+ #include "common.h"
++#ifdef X4CORE
++extern int fg_armor;   // fangame: física da Gaea Armor (X5 func_8003B65C)
++extern int fg_legs;
++#define FG_GAEA_V(v, g) (fg_legs == 2 ? FIXED(g) : FIXED(v))   // pernas da Gaea (X5)
++extern s32 fg_spd(s32 v);   // corpo Falcon X5 (+20%) / Gaea (-20%): velocidade de andar e de dash
++#define FG_SPD(x) fg_spd(x)
++#else
++#define FG_GAEA_V(v, g) FIXED(v)
++#define FG_SPD(x) (x)
++#endif
++
++#ifdef X4CORE
++extern int fg_armor;
++static inline int fg_falcon(void) { return 0; }   // (aproximação antiga do voo da Falcon X6; agora em fangame.c)
++extern int fg_legs;
++static inline int fg_spikeproof(void) { return fg_legs == 2 || fg_legs == 7; }   // pernas da Gaea/Shadow
++#else
++#define fg_falcon() 0
++#define fg_spikeproof() 0
++#endif
+ #include "main/objects.h"
+ #include "main/player.h"
+ #include "main/1CF60.h"
+@@ -13,6 +33,7 @@
+ 
+ #if defined(MMX4_PC) || defined(MMX4_SATURN)
+ #include "main/55C4.h"
++
+ #endif
+ 
+ extern u8 player_leap_fall_animations[];
+@@ -224,13 +245,13 @@ s32 player_check_walk(struct PlayerObj* self)
+         if (self->unk88.bytes.collision_flags & PLAYER_COLLIDE_RIGHT) {
+             return 0;
+         }
+-        self->x_vel.val = FIXED(2);
++        self->x_vel.val = FG_SPD(FIXED(2));
+     } else {
+         self->unk15 = 0;
+         if (self->unk88.bytes.collision_flags & PLAYER_COLLIDE_LEFT) {
+             return 0;
+         }
+-        self->x_vel.val = FIXED(-2);
++        self->x_vel.val = FG_SPD(FIXED(-2));
+     }
+ 
+     return 1;
+@@ -266,12 +287,12 @@ s32 player_check_dash_input(struct PlayerObj* self)
+         if (self->unk88.bytes.collision_flags & PLAYER_COLLIDE_RIGHT) {
+             return 0;
+         }
+-        self->x_vel.val = FIXED(6.5);
++        self->x_vel.val = FG_SPD(FIXED(6.5));
+     } else {
+         if (self->unk88.bytes.collision_flags & PLAYER_COLLIDE_LEFT) {
+             return 0;
+         }
+-        self->x_vel.val = FIXED(-6.5);
++        self->x_vel.val = FG_SPD(FIXED(-6.5));
+     }
+ 
+     return 1;
+@@ -310,12 +331,16 @@ s32 player_dash_should_end(struct PlayerObj* self)
+     }
+ 
+     move_with_gravity(ANIMATED_OBJECT(self));
++    if (fg_falcon() && self->unk5 == PLAYER_AIR_DASH) {   // fangame: voo da Falcon (cima/baixo durante o dash no ar)
++        if (self->input.buttons.held & PLAYER_INPUT_UP) self->y_pos.val -= FIXED(2.0);
++        else if (self->input.buttons.held & PLAYER_INPUT_DOWN) self->y_pos.val += FIXED(2.0);
++    }
+     if (self->unk15 != 0) {
+-        if (self->x_vel.val <= FIXED(4.125) - 1) {
+-            self->x_vel.val = FIXED(4.125);
++        if (self->x_vel.val <= FG_SPD(FG_GAEA_V(4.125, 3.09375)) - 1) {
++            self->x_vel.val = FG_SPD(FG_GAEA_V(4.125, 3.09375));
+         }
+-    } else if (self->x_vel.val > FIXED(-4.125)) {
+-        self->x_vel.val = FIXED(-4.125);
++    } else if (self->x_vel.val > FG_SPD(FG_GAEA_V(-4.125, -3.09375))) {
++        self->x_vel.val = FG_SPD(FG_GAEA_V(-4.125, -3.09375));
+     }
+ 
+     timer = self->dash_timer - 1;
+@@ -387,6 +412,16 @@ s32 player_check_air_move(struct PlayerObj* self)
+     if (self->input_locked != 0) {
+         return 0;
+     }
++#ifdef X4CORE
++    { extern int fg_bz, fg_bz_ad;   // fangame: pernas do Black Zero = dois dashes no ar (sem precisar do Hienkyaku)
++      if (self->unk2 != 0 && (fg_bz & 8) && self->air_action == 3 && self->unk5 != PLAYER_AIR_DASH && fg_bz_ad < 2 && player_check_dash_input(self) != 0) {
++          player_enter_air_dash(self); return 1; }
++      // pernas melhoradas: um pulo a mais no ar que mantém o embalo do dash (depois do dash no ar ou do pulo duplo)
++      { extern int fg_bz_aj; extern void fg_bz_air_jump(struct PlayerObj*);
++        if (self->unk2 != 0 && (fg_bz & 0x80) && !fg_bz_aj && (self->air_action <= 3 || self->air_action == 6)
++            && self->unk5 != PLAYER_AIR_DASH && (self->pressed_input & PLAYER_INPUT_JUMP)
++) { fg_bz_air_jump(self); return 1; } } }
++#endif
+     if (self->air_action != 0) {
+         return 0;
+     }
+@@ -405,7 +440,7 @@ s32 player_check_air_move(struct PlayerObj* self)
+         if ((self->armor_parts & 8) == 0) {
+             return 0;
+         }
+-    } else if ((self->boss_flags & 0x10) == 0) {
++    } else if ((self->boss_flags & 0x10) == 0 && !({ extern int fg_bz; fg_bz & 8; })) {
+         return 0;
+     }
+ 
+@@ -475,7 +510,7 @@ void player_check_damage(struct PlayerObj* self)
+             EASY_HP_SET(0);
+             self->hp = -0x80;
+         }
+-        if (self->touching_spikes != 0 && self->invincibility_timer == 0 && self->spike_immune == 0) {
++        if (self->touching_spikes != 0 && self->invincibility_timer == 0 && self->spike_immune == 0 && !fg_spikeproof()) {
+             EASY_HP_SET(0);
+             self->hp = -0x80;
+         }
+@@ -536,7 +571,13 @@ void func_80033D54(struct PlayerObj* arg0)
+     if (arg0->unk5 == 0x11) {
+         return;
+     }
++#ifdef X4CORE
++    { extern int fg_bz; if (arg0->unk2 != 0 && (fg_bz & 2) && arg0->hp > 0 && arg0->hurt_type != 3) arg0->hurt_type = 1; }   // Black Zero: animação do golpe leve do Zero (a 4 é só do X)
++#endif
+ 
++#ifdef X4CORE
++    { extern int fg_hurt_skip(struct PlayerObj*); if (fg_hurt_skip(arg0)) return; }   // Escudo (Fourth X4) / Firmeza (capacete Gaea)
++#endif
+     arg0->hurt_phase = 1;
+     player_reset_actions(arg0);
+     index = arg0->hurt_type;
+@@ -550,6 +591,10 @@ void func_80033D54(struct PlayerObj* arg0)
+     if (arg0->unk15 != 0) {
+         arg0->x_vel.val = -arg0->x_vel.val;
+     }
++#ifdef X4CORE
++    { extern int fg_bz;   // fangame: corpo do Black Zero = animação de dano no lugar, sem ser empurrado
++      if (arg0->unk2 != 0 && (fg_bz & 2)) { arg0->x_vel.val = 0; arg0->unk28 = 0; if (arg0->y_vel.val > 0) arg0->y_vel.val = 0; } }
++#endif
+     arg0->invincibility_timer = player_hurt_invincibility[index];
+     if ((u8)(index - 2) < 2) {
+         arg0->air_state = 1;
+diff --git a/src/main/player_common.c b/src/main/player_common.c
+index 82978d6..d28b631 100644
+--- a/src/main/player_common.c
++++ b/src/main/player_common.c
+@@ -1,5 +1,16 @@
+ // 800350A4..80036E98
+ #include "common.h"
++#ifdef X4CORE
++extern int fg_armor;   // fangame: física da Gaea Armor (X5 func_8003B65C)
++extern int fg_legs;
++#define FG_GAEA_V(v, g) (fg_legs == 2 ? FIXED(g) : FIXED(v))   // pernas da Gaea (X5)
++extern s32 fg_spd(s32 v);   // corpo Falcon X5 (+20%) / Gaea (-20%): velocidade de andar e de dash
++#define FG_SPD(x) fg_spd(x)
++#else
++#define FG_GAEA_V(v, g) FIXED(v)
++#define FG_SPD(x) (x)
++#endif
++
+ #include "main/objects.h"
+ #include "main/player.h"
+ #include "main/player_common.h"
+@@ -36,6 +47,7 @@ extern void (*player_death_funcs[])(struct PlayerObj*);
+ 
+ #ifdef MMX4_SATURN
+ #include "saturn/player_resources.h"
++
+ #else
+ #define PLAYER_TEXTURE_BASE 0x500
+ #define PLAYER_CLONE_TEXTURE_BASE 0x540
+@@ -972,6 +984,9 @@ void player_copy_palette(struct PlayerObj* self, s32 source, s32 dest)
+     src = SP_PALETTE_BANK[source];
+     dst = SP_PALETTES[dest];
+ 
++#ifdef X4CORE
++    { extern int fg_bz_palette(u16*, s32); if (self->unk2 != 0 && fg_bz_palette(dst, source)) return; }   // fangame: Black Zero escurecendo a cada peça
++#endif
+     for (i = 0; i < 16; i++) {
+         *dst++ = *src++;
+     }
+@@ -1058,6 +1073,9 @@ void player_damage(s8 damage)
+ 
+     player = &g_Player;
+     g_Player.stun_timer = -1;
++#ifdef X4CORE
++    { extern int fg_reduce_damage(int); int r = fg_reduce_damage(damage); if (r >= 0) { g_Player.hp = (u8)(g_Player.hp - r); damage = 0; } }
++#endif
+     if (damage != 0) {
+         if (g_Player.armor_parts & 2) {
+             if (damage < 3) {
+@@ -1115,9 +1133,9 @@ void player_air_steer(struct PlayerObj* self)
+             self->unk15 = PLAYER_FACING_RIGHT;
+             if (!(self->unk88.bytes.collision_flags & PLAYER_COLLIDE_RIGHT)) {
+                 if (self->dash_momentum != 0) {
+-                    self->x_vel.val = FIXED(4.125);
++                    self->x_vel.val = FG_SPD(FG_GAEA_V(4.125, 3.09375));
+                 } else {
+-                    self->x_vel.val = FIXED(2);
++                    self->x_vel.val = FG_SPD(FIXED(2));
+                 }
+             } else {
+                 self->x_vel.val = 0;
+@@ -1126,9 +1144,9 @@ void player_air_steer(struct PlayerObj* self)
+             self->unk15 = 0;
+             if (!(self->unk88.bytes.collision_flags & PLAYER_COLLIDE_LEFT)) {
+                 if (self->dash_momentum != 0) {
+-                    self->x_vel.val = FIXED(-4.125);
++                    self->x_vel.val = FG_SPD(FG_GAEA_V(-4.125, -3.09375));
+                 } else {
+-                    self->x_vel.val = FIXED(-2);
++                    self->x_vel.val = FG_SPD(FIXED(-2));
+                 }
+             } else {
+                 self->x_vel.val = 0;
+diff --git a/src/main/player_enter.c b/src/main/player_enter.c
+index 7834900..e0d1108 100644
+--- a/src/main/player_enter.c
++++ b/src/main/player_enter.c
+@@ -10,6 +10,19 @@
+ #include "main/player_special.h"
+ #include "main/player_weapon.h"
+ #include "main/xa_sequence_data.h"
++#ifdef X4CORE
++extern int fg_armor;   // fangame: física da Gaea Armor (X5 func_8003B65C)
++extern int fg_legs;
++#define FG_GAEA_V(v, g) (fg_legs == 2 ? FIXED(g) : FIXED(v))   // pernas da Gaea (X5)
++extern s32 fg_spd(s32 v);   // corpo Falcon X5 (+20%) / Gaea (-20%): velocidade de andar e de dash
++#define FG_SPD(x) fg_spd(x)
++#define FG_WALL_V(v) ((fg_legs == 2 || fg_legs == 7) ? 0 : FIXED(v))   // Gaea (X5) e Shadow (X6): grudam na parede
++#else
++#define FG_GAEA_V(v, g) FIXED(v)
++#define FG_WALL_V(v) FIXED(v)
++#define FG_SPD(x) (x)
++#endif
++
+ 
+ extern u8 player_jump_voices[][4];
+ 
+@@ -234,6 +247,9 @@ void player_enter_walk(struct PlayerObj* self)
+ 
+ void player_enter_jump(struct PlayerObj* self)
+ {
++#ifdef X4CORE
++    { extern s32 fg_shadow_hijump(struct PlayerObj*); if (fg_shadow_hijump(self)) return; }   // Shadow (X6): cima + pulo = pulo alto até o teto
++#endif
+     self->air_state = 1;
+     self->x_vel.val = 0;
+     self->unk28 = 0;
+@@ -300,7 +316,7 @@ void player_enter_dash(struct PlayerObj* self)
+         return;
+     }
+     player_set_animation_shooting(self, 0x10);
+-    self->unk28 = FIXED(-0.1875);
++    self->unk28 = FG_SPD(FG_GAEA_V(-0.1875, -0.234375));
+     self->y_vel.val = 0;
+     self->unk2C = 0;
+     self->dash_timer = 0x1E;
+@@ -315,11 +331,11 @@ void player_enter_dash_end(struct PlayerObj* self)
+     stop_sound(1, 5);
+ #endif
+     if (self->unk15 != 0) {
+-        self->x_vel.val = FIXED(4.125);
++        self->x_vel.val = FG_SPD(FG_GAEA_V(4.125, 3.09375));
+     } else {
+-        self->x_vel.val = FIXED(-4.125);
++        self->x_vel.val = FG_SPD(FG_GAEA_V(-4.125, -3.09375));
+     }
+-    self->unk28 = FIXED(-0.1875);
++    self->unk28 = FG_SPD(FG_GAEA_V(-0.1875, -0.234375));
+     self->dash_momentum = 0;
+     self->air_action = 0;
+     self->afterimage = -1;
+@@ -328,12 +344,20 @@ void player_enter_dash_end(struct PlayerObj* self)
+ 
+ void player_enter_air_dash(struct PlayerObj* self)
+ {
++#ifdef X4CORE
++    { extern s32 fg_dive_try(struct PlayerObj*); if (fg_dive_try(self)) return; }   // Mergulho (capacete Falcon X6): baixo + dash
++    { extern int fg_legs; extern void fg_falcon6_enter(struct PlayerObj*); if (fg_legs == 5) { fg_falcon6_enter(self); return; }
++      { extern void fg_blade_enter(struct PlayerObj*); if (fg_legs == 6) { fg_blade_enter(self); return; } } }   // Falcon X6: dash no ar = voo
++#endif
+     player_set_animation(self, 0x12);
+-    self->unk28 = FIXED(-0.1875);
++    self->unk28 = FG_SPD(FG_GAEA_V(-0.1875, -0.234375));
+     self->y_vel.val = 0;
+     self->unk2C = 0;
+     self->dash_momentum = -1;
+     self->dash_timer = 0x12;
++#ifdef X4CORE
++    { extern int fg_bz_ad; fg_bz_ad++; }
++#endif
+     self->air_action = 3;
+     player_clear_attack(self);
+     self->unk5 = PLAYER_AIR_DASH;
+@@ -413,15 +437,15 @@ void func_800349F4(struct PlayerObj* arg0)
+     if (arg0->unk88.bytes.collision_flags & 1) {
+         arg0->unk15 = PLAYER_FACING_RIGHT;
+         if (arg0->dash_momentum != 0)
+-            arg0->x_vel.val = FIXED(-4.125);
++            arg0->x_vel.val = FG_SPD(FG_GAEA_V(-4.125, -3.09375));
+         else
+-            arg0->x_vel.val = FIXED(-2);
++            arg0->x_vel.val = FG_SPD(FIXED(-2));
+     } else {
+         arg0->unk15 = 0;
+         if (arg0->dash_momentum != 0)
+-            arg0->x_vel.val = FIXED(4.125);
++            arg0->x_vel.val = FG_SPD(FG_GAEA_V(4.125, 3.09375));
+         else
+-            arg0->x_vel.val = FIXED(2);
++            arg0->x_vel.val = FG_SPD(FIXED(2));
+     }
+     arg0->unk28 = 0;
+     arg0->y_vel.val = FIXED(5.625);
+@@ -439,7 +463,7 @@ void player_enter_wall_slide(struct PlayerObj* self)
+     self->air_state = -1;
+     self->x_vel.val = 0;
+     self->unk28 = 0;
+-    self->y_vel.val = FIXED(-1.4375);
++    self->y_vel.val = FG_WALL_V(-1.4375);
+     self->unk2C = 0;
+     player_clear_dash(self);
+     self->unk5 = PLAYER_WALL_SLIDE;
+@@ -452,9 +476,9 @@ void func_80034B64(struct PlayerObj* player)
+     player_set_animation_shooting(player, 0xB);
+ 
+     if (player->unk88.bytes.collision_flags & 1) {
+-        player->x_vel.val = FIXED(-2);
++        player->x_vel.val = FG_SPD(FIXED(-2));
+     } else {
+-        player->x_vel.val = FIXED(2);
++        player->x_vel.val = FG_SPD(FIXED(2));
+     }
+ 
+     player->unk2C = 0x4200;
+@@ -473,7 +497,7 @@ void player_enter_ladder_grab(struct PlayerObj* self)
+     self->y_pos.u.lo = 0;
+     self->x_vel.val = 0;
+     self->unk28 = 0;
+-    self->y_vel.val = FIXED(1);
++    self->y_vel.val = FG_GAEA_V(1, 1.5);
+     self->unk2C = 0;
+     self->air_state = 1;
+     player_clear_dash(self);
+@@ -522,7 +546,7 @@ void player_enter_ladder_up(struct PlayerObj* self)
+     self->y_pos.i.lo = 0;
+     self->x_vel.val = 0;
+     self->unk28 = 0;
+-    self->y_vel.val = FIXED(1.5);
++    self->y_vel.val = FG_GAEA_V(1.5, 2.25);
+     self->unk2C = 0;
+     player_clear_dash(self);
+     self->unk5 = PLAYER_LADDER_UP;
+@@ -536,7 +560,7 @@ void player_enter_ladder_down(struct PlayerObj* self)
+     self->y_pos.i.lo = 0;
+     self->x_vel.val = 0;
+     self->unk28 = 0;
+-    self->y_vel.val = FIXED(-1.5);
++    self->y_vel.val = FG_GAEA_V(-1.5, -2.25);
+     self->unk2C = 0;
+     player_clear_dash(self);
+     self->unk5 = PLAYER_LADDER_DOWN;
+diff --git a/src/main/player_special.c b/src/main/player_special.c
+index eca8743..404dd18 100644
+--- a/src/main/player_special.c
++++ b/src/main/player_special.c
+@@ -666,6 +666,17 @@ void player_ladder_shoot(struct PlayerObj* self)
+ 
+ void player_hover(struct PlayerObj* self)
+ {
++#ifdef X4CORE
++    {
++        extern int fg_fly_on; extern void fg_falcon_fly(struct PlayerObj*);
++        if (fg_fly_on) {   // fangame: voo da Falcon (X5) no lugar do flutuar do X4
++            if (self->input_locked != 0) { fg_fly_on = 0; self->spike_immune = 0; player_enter_fall(self); return; }
++            animate_object(ANIMATED_OBJECT(self));   // no X5 não dá para atirar voando (o estado 0x23 não chama o tiro)
++            fg_falcon_fly(self);
++            return;
++        }
++    }
++#endif
+     if (self->input_locked != 0) {
+         player_enter_fall(self);
+     } else if (player_check_shoot_air(self) == 0) {
+@@ -876,6 +887,9 @@ void player_hover_set_direction(struct PlayerObj* self, s32 direction)
+ 
+ void player_nova_strike(struct PlayerObj* self)
+ {
++#ifdef X4CORE
++    { extern int fg_giga_on; extern void fg_falcon_giga(struct PlayerObj*); if (fg_giga_on) { fg_falcon_giga(self); return; } }
++#endif
+     if (self->input_locked != 0) {
+         self->spike_immune = 0;
+         self->nova_strike_active = 0;
+@@ -1369,6 +1383,10 @@ s32 player_zero_check_raijingeki(struct PlayerObj* self)
+ 
+ s32 player_zero_check_hyouretsuzan(struct PlayerObj* self)
+ {
++#ifdef X4CORE
++    { extern int fg_bz_giga_check(struct PlayerObj*); if (fg_bz_giga_check(self)) return 1; }
++    { extern int fg_nz_giga_check(struct PlayerObj*); if (fg_nz_giga_check(self)) return 1; }   // fangame: Giga do Nightmare Zero
++#endif
+     if (!(self->boss_flags & 2)) {
+         return 0;
+     }
+@@ -1453,6 +1471,10 @@ s32 func_80039F28(struct PlayerObj* arg)
+ {
+     struct PlayerObj* player = arg;
+ 
++#ifdef X4CORE
++    { extern int fg_bz_giga_check(struct PlayerObj*); if (fg_bz_giga_check(player)) return 1; }   // fangame: Giga do Black Zero (baixo + Giga)
++    { extern int fg_nz_giga_check(struct PlayerObj*); if (fg_nz_giga_check(player)) return 1; }   // fangame: Giga do Nightmare Zero (baixo + Giga)
++#endif
+     if ((player->boss_flags & 0x20) && (player->weapon_energy[0] >= 0xC) && (player->pressed_input & 0x40)) {
+         if (player->attacking != 0) {
+             return 0;
+@@ -1561,6 +1583,9 @@ s32 func_8003A1DC(struct PlayerObj* arg0)
+         func_8001540C(1, player_zero_combo_sounds[arg0->combo][0], arg0);
+         player_play_voice(arg0, player_zero_combo_sounds[arg0->combo][1]);
+         player_zero_spawn_saber(arg0, (s8)(arg0->combo + 0x18));
++#ifdef X4CORE
++        { extern void fg_bz_combo(struct PlayerObj*); fg_bz_combo(arg0); }   // fangame: onda do Black Zero
++#endif
+         return 1;
+     }
+     arg0->attacking = 0;
+@@ -1880,7 +1905,7 @@ void player_zero_hyouretsuzan(struct PlayerObj* self)
+ 
+ void player_zero_hyouretsuzan_start(struct PlayerObj* self)
+ {
+-    player_zero_saber_on_event(self, 0x21);
++    player_zero_saber_on_event(self, ({ extern int fg_bz_giga_diving(void); fg_bz_giga_diving(); }) ? 0x1B : 0x21);   // fangame: Giga do Black Zero sem o gelo
+ 
+     if (self->input_locked == 0) {
+         if (self->input.buttons.held & PLAYER_INPUT_LEFT) {
+@@ -1909,6 +1934,9 @@ void player_zero_hyouretsuzan_drop(struct PlayerObj* self)
+ 
+     if (self->unk88.bytes.collision_flags & PLAYER_COLLIDE_GROUND) {
+         player_set_animation(self, 0x62);
++#ifdef X4CORE
++        { extern int fg_bz_giga_land(struct PlayerObj*); if (fg_bz_giga_land(self)) { self->unk6++; return; } }
++#endif
+         i = 0;
+         self->air_state = 0;
+         self->dash_momentum = 0;
+diff --git a/src/main/player_weapon.c b/src/main/player_weapon.c
+index 851f9fa..47446d3 100644
+--- a/src/main/player_weapon.c
++++ b/src/main/player_weapon.c
+@@ -646,6 +646,9 @@ s32 player_check_shoot_air(struct PlayerObj* self)
+         return 1;
+     }
+     player_update_shooting(self);
++#ifdef X4CORE
++    { extern int fg_shot_took_state(void); if (fg_shot_took_state()) return 1; }   // Engetsurin da Shadow: o golpe já pôs o X no estado dele
++#endif
+     if (self->shot_fired == 0) {
+         return 0;
+     }
+@@ -670,6 +673,9 @@ s32 player_check_shoot_ladder(struct PlayerObj* self)
+         return 1;
+     }
+     player_update_shooting(self);
++#ifdef X4CORE
++    { extern int fg_shot_took_state(void); if (fg_shot_took_state()) return 1; }   // Engetsurin da Shadow: o golpe já pôs o X no estado dele
++#endif
+     if (self->shot_fired == 0) {
+         return 0;
+     }
+@@ -707,6 +713,14 @@ void func_80037484(struct PlayerObj* arg0, s32 arg1)
+ }
+ s32 player_check_hover(struct PlayerObj* self)
+ {
++#ifdef X4CORE
++    { extern int fg_legs, fg_fly_on; extern s32 fg_falcon_enter(struct PlayerObj*);
++      if (self->unk5 != PLAYER_HOVER) fg_fly_on = 0;   // (o Engetsurin da Shadow no ar já pôs o X no estado do voo)
++      if (fg_legs == 1) return fg_falcon_enter(self);   // fangame: voo da Falcon do X5 (fangame.c)
++      { extern s32 fg_falcon6_jump(struct PlayerObj*); if (fg_legs == 5) return fg_falcon6_jump(self); }
++      { extern s32 fg_blade_jump(struct PlayerObj*); if (fg_legs == 6) return fg_blade_jump(self); }   // Blade X6: pulo no ar = dash   // Falcon X6: pulo no ar também voa
++      if (fg_legs != 0 && fg_legs != 9 && fg_legs != 3 && fg_legs != 4 && fg_legs != 8) return 0; }   // só pernas do X4/Fourth/Ultimate flutuam   // só Fourth/Ultimate flutuam
++#endif
+     if (!(self->armor_parts & 8)) {
+         return 0;
+     }
+@@ -728,9 +742,21 @@ s32 player_check_hover(struct PlayerObj* self)
+     return 1;
+ }
+ 
++#ifdef X4CORE
++extern int fg_armor;
++extern int fg_body;
++static inline int fg_nova_free(void) { return fg_body == 8; }   // Ultimate do X6: Nova Strike sem gastar a barra
++#else
++#define fg_nova_free() 0
++#endif
+ s32 player_check_nova_strike(struct PlayerObj* self)
+ {
+     u8 wall_side;
++#ifdef X4CORE
++    { extern int fg_armor; extern s32 fg_falcon_giga_enter(struct PlayerObj*);
++      if (fg_armor == 1 || fg_armor == 2 || fg_armor == 5 || fg_armor == 6 || fg_armor == 7) return fg_falcon_giga_enter(self);
++      }   // sem as 4 peças: o Giga não existe; o Nova só com o corpo do X4/Ultimate (bit 2 de armor_parts)   // Fourth do X5 não tem Giga/Nova   // fangame: Giga Attack da Falcon/Gaea (X5)
++#endif
+ 
+     if (self->shot_cooldown) {
+         return 0;
+@@ -738,7 +764,10 @@ s32 player_check_nova_strike(struct PlayerObj* self)
+     if (!(self->armor_parts & 2)) {
+         return 0;
+     }
+-    if (self->weapon_energy[0] != 0x30) {
++#ifdef X4CORE
++    { extern int fg_nova_ok(void); if (!fg_nova_ok()) return 0; }   // fangame: Nova Strike só com as 4 peças da mesma armadura
++#endif
++    if (self->weapon_energy[0] != 0x30 && !fg_nova_free()) {
+         return 0;
+     }
+     if (self->air_action) {
+@@ -761,7 +790,7 @@ s32 player_check_nova_strike(struct PlayerObj* self)
+     self->invincibility_timer = 0;
+     self->hurt_phase = 0;
+     self->air_state = 1;
+-    if (engine_obj.unk37 == 0) {
++    if (engine_obj.unk37 == 0 && !fg_nova_free()) {
+         self->weapon_energy[0] = 0;
+     }
+     self->spike_immune = 1;
+@@ -844,6 +873,10 @@ void player_check_shoot_button(struct PlayerObj* self)
+         self->shot_type = self->shot_types[0];
+     } else if (!(self->input.buttons.held & PLAYER_INPUT_SHOOT) && (self->input.buttons.previous & PLAYER_INPUT_SHOOT)) {
+         s8 temp = self->shot_types[0];
++#ifdef X4CORE
++        { extern int fg_armor, fg_prev_charge;   // Gaea (X5): soltar depois de 13 quadros sem carga cheia também atira
++          extern int fg_arm; if (fg_arm == 2 && temp == 0 && self->weapon == 0 && fg_prev_charge >= 13) { self->shot_type = 0; return; } }
++#endif
+         if ((temp != 0) && (player_shot_is_special_weapon[temp] == 0) && (temp != 0x13)) {
+             if (self->weapon != 0) {
+                 self->stock_charge = 0;
+@@ -882,6 +915,9 @@ s32 player_has_weapon_energy(struct PlayerObj* self)
+     }
+ 
+     charge_type = self->shot_types[0];
++#ifdef X4CORE
++    { extern int fg_hab_on(void); if (fg_hab_on()) return charge_level >= player_weapon_energy.shot_costs[charge_type]; }   // capacete novo: sem arma de graça
++#endif
+     if (player_shot_is_special_weapon[charge_type] != 0 && (self->armor_parts & 1) != 0) {
+         return 1;
+     }
+@@ -894,6 +930,12 @@ void player_use_weapon_energy(struct PlayerObj* self, s8 shot_type)
+     s8 animation_cost;
+ 
+     animation_cost = player_weapon_energy.shot_costs[shot_type];
++#ifdef X4CORE
++    { extern int fg_energy_cost(int, int); if (self->weapon != 0) animation_cost = fg_energy_cost(self->weapon, animation_cost); }
++#endif
++#ifdef X4CORE
++    { extern int fg_hab_on(void); if (fg_hab_on()) { if (animation_cost != 0) self->weapon_energy[self->weapon] -= animation_cost; return; } }
++#endif
+     if ((animation_cost != 0) && ((player_shot_is_special_weapon[shot_type] == 0) || !(self->armor_parts & 1))) {
+         self->weapon_energy[self->weapon] -= animation_cost;
+     }
+@@ -910,6 +952,9 @@ void player_fire_weapon(struct PlayerObj* self)
+ 
+ void player_fire_charged_buster(struct PlayerObj* self)
+ {
++#ifdef X4CORE
++    { extern int fg_falcon_charge_fire(struct PlayerObj*); if (fg_falcon_charge_fire(self)) return; }   // fangame: lança da Falcon (X5)
++#endif
+     player_spawn_visual(0x21, 2, self->shot_type, 0);
+     if ((self->shot_type == 0x12) && (get_random() & 1)) {
+         player_play_voice(self, 8);
+@@ -1041,6 +1086,9 @@ void player_enter_double_cyclone_pose(struct PlayerObj* self)
+ void player_update_charge(struct PlayerObj* self)
+ {
+     s8 action; // probably fake
++#ifdef X4CORE
++    { extern void fg_tick(struct PlayerObj*); fg_tick(self); }
++#endif
+ 
+     if ((self->unk2 == 0) && (self->is_clone == 0) && (self->nova_strike_active == 0) && (action = self->unk5, (self->unk5 != PLAYER_BEAM_IN)) && (self->unk5 != PLAYER_BEAM_OUT) && (self->unk5 != PLAYER_STAGE_CLEAR) && (action != PLAYER_SCRIPT_VICTORY) && (self->ride_state == 0)) {
+         if (player_charge_released(self) != 0) {
+@@ -1054,6 +1102,9 @@ void player_update_charge(struct PlayerObj* self)
+         }
+         player_charge_shoot_button(self);
+         player_charge_special_button(self);
++#ifdef X4CORE
++        { extern int fg_hab_h(void); if (fg_hab_h() == 2) { player_charge_shoot_button(self); player_charge_special_button(self); } }   // Saque rápido (capacete Blade): carga 2x
++#endif
+         if (player_set_charge_flash(self, 0) == 0) {
+             player_set_charge_flash(self, 1);
+         }
+@@ -1133,6 +1184,9 @@ void player_charge_shoot_button(struct PlayerObj* self)
+         if (self->charge_timer == 0x19) {
+             func_8001540C(1, 7, self);
+             self->charge_state[0] = PLAYER_CHARGE_PARTIAL;
++#ifdef X4CORE
++            { extern int fg_arm; if (fg_arm == 2) self->charge_state[0] = PLAYER_CHARGE_FULL; }   // Gaea (X5): carga cheia em 25 quadros
++#endif
+             return;
+         }
+         if (self->charge_timer == full_charge_time) {
+diff --git a/src/main/visuals/visual_02_charge_muzzle_flash.c b/src/main/visuals/visual_02_charge_muzzle_flash.c
+index 3c186c8..fc3b7f5 100644
+--- a/src/main/visuals/visual_02_charge_muzzle_flash.c
++++ b/src/main/visuals/visual_02_charge_muzzle_flash.c
+@@ -90,6 +90,9 @@ void charge_muzzle_flash_spawn_shot(struct VisualObj* arg0)
+             temp_v0->unk40 = arg0->unk40;
+             temp_v0->unk42 = arg0->unk42;
+             temp_v0->unk16 = arg0->unk16;
++#ifdef X4CORE
++            temp_v0->pad99[0] = 0;
++#endif
+         }
+         arg0->unk5++;
+     }
+diff --git a/src/main/weapons/weapon_00_lemon.c b/src/main/weapons/weapon_00_lemon.c
+index fd3afc5..0f431da 100644
+--- a/src/main/weapons/weapon_00_lemon.c
++++ b/src/main/weapons/weapon_00_lemon.c
+@@ -48,6 +48,9 @@ struct Unk_unk68 nova_strike_hit_box[] = {
+ 
+ void lemon_update(struct WeaponObj* arg0)
+ {
++#ifdef X4CORE
++    { extern int fg_lemon_update(struct WeaponObj*); if (fg_lemon_update(arg0)) return; }   // fangame: tiro normal da Gaea (X5)
++#endif
+     lemon_state_funcs[arg0->state](arg0);
+ }
+ 
+diff --git a/src/main/weapons/weapon_09_charge_shot.c b/src/main/weapons/weapon_09_charge_shot.c
+index defcfdb..d587aff 100644
+--- a/src/main/weapons/weapon_09_charge_shot.c
++++ b/src/main/weapons/weapon_09_charge_shot.c
+@@ -18,6 +18,9 @@ extern struct Unk_unk68 D_80108708[];
+ 
+ void charge_shot_update(struct WeaponObj* arg0)
+ {
++#ifdef X4CORE
++    { extern int fg_weapon_update(struct WeaponObj*); if (fg_weapon_update(arg0)) return; }   // fangame: lança/raios da Falcon
++#endif
+     charge_shot_state_funcs[arg0->state](arg0);
+ }
+ 
+diff --git a/src/main/weapons/weapon_20_plasma_shot.c b/src/main/weapons/weapon_20_plasma_shot.c
+index 412d210..82a7162 100644
+--- a/src/main/weapons/weapon_20_plasma_shot.c
++++ b/src/main/weapons/weapon_20_plasma_shot.c
+@@ -27,6 +27,9 @@ extern struct Unk_unk68 D_80108720[];
+ 
+ void plasma_shot_update(struct WeaponObj* arg0)
+ {
++#ifdef X4CORE
++    { extern void fg_plasma_tick(struct WeaponObj*); fg_plasma_tick(arg0); }   // Plasma do X5 (Fourth/Ultimate)
++#endif
+     plasma_shot_state_funcs[arg0->state](arg0);
+ }
+ 
+diff --git a/src/main/weapons/weapon_22_nova_strike_hitbox.c b/src/main/weapons/weapon_22_nova_strike_hitbox.c
+index 1f724b3..533916e 100644
+--- a/src/main/weapons/weapon_22_nova_strike_hitbox.c
++++ b/src/main/weapons/weapon_22_nova_strike_hitbox.c
+@@ -3,6 +3,7 @@
+ #include "common.h"
+ #include "main/weapons/weapon_22_nova_strike_hitbox.h"
+ #include "main/objects.h"
++#include "main/player_special.h"
+ #include "main/sprite_animations.h"
+ #include "main/weapons/weapon_00_lemon.h"
+ 
+@@ -14,6 +15,24 @@ void nova_strike_hitbox_update(struct WeaponObj* arg0)
+     struct PlayerObj* player = &g_Player;
+     u8 temp_v0;
+ 
++#ifdef X4CORE
++    extern int fg_fly_on; extern struct Unk_unk68 fg_falcon_fly_box[];
++    if (fg_fly_on && g_Player.unk5 == PLAYER_HOVER) {   // fangame: ataque do voo da Falcon (X5)
++        if (arg0->state == 0) { arg0->unk50 = fg_falcon_fly_box; arg0->unk64 = 1U; arg0->ext.raw[0] = 4U; arg0->state++; }
++        else if (arg0->ext.raw[0] == 0) { arg0->ext.raw[0] = 4U; arg0->unk64++; }
++        else arg0->ext.raw[0]--;
++        arg0->x_pos.val = player->x_pos.val; arg0->y_pos.val = player->y_pos.val; arg0->unk15 = player->unk15;
++        return;
++    }
++    { extern int fg_bz_dash_hit;
++      if (fg_bz_dash_hit) {   // fangame: dash do Black Zero (pernas melhoradas) fere quem atravessar
++        if (g_Player.unk5 != PLAYER_DASH && g_Player.unk5 != PLAYER_AIR_DASH) { fg_bz_dash_hit = 0; ZeroObjectState(OBJECT_HEADER(arg0)); return; }
++        if (arg0->state == 0) { arg0->unk50 = fg_falcon_fly_box; arg0->unk64 = 1U; arg0->ext.raw[0] = 6U; arg0->state++; }
++        else if (arg0->ext.raw[0] == 0) { arg0->ext.raw[0] = 6U; arg0->unk64++; }
++        else arg0->ext.raw[0]--;
++        arg0->x_pos.val = player->x_pos.val; arg0->y_pos.val = player->y_pos.val; arg0->unk15 = player->unk15;
++        return; } }
++#endif
+     if (g_Player.unk17 != 0x6A) {
+         ZeroObjectState(OBJECT_HEADER(arg0));
+         return;
+diff --git a/src/pc/placeholder.c b/src/pc/placeholder.c
+index 1bc702c..ed92927 100644
+--- a/src/pc/placeholder.c
++++ b/src/pc/placeholder.c
+@@ -24,6 +24,9 @@ s32 func_800157AC(u8 type, s32 unused, struct BaseObj* source);
+ 
+ s32 func_8001540C(s32 arg0, s32 arg1, void* arg2)
+ {
++#ifdef X4CORE
++    { extern int fg_sound_hook(int, int); if (fg_sound_hook(arg0, arg1)) return 0; }   // fangame: sons do X5/X6
++#endif
+     u32 bank = arg0 & 0x7F;
+     u32 group = arg0 & 0xF;
+     u32 index = arg1 & 0xFF;
+@@ -452,6 +455,18 @@ void func_80024334(struct VisualObj* object)
+     if (SP_SPRITE_COUNT >= 1000)
+         return;
+ 
++#ifdef X4CORE
++    {   // fangame: o Zero no Giga do Nightmare Zero (o Godot desenha)
++        extern int fg_nz_hide_player(void);
++        if (object == (struct VisualObj*)&g_Player && fg_nz_hide_player()) return;
++    }
++    {   // fangame: armas desenhadas pelo Godot (atlas do jogo original)
++        extern struct WeaponObj weapon_objects[0x10];
++        if ((u8*)object >= (u8*)weapon_objects && (u8*)object < (u8*)(weapon_objects + 0x10)
++            && (u8)((struct WeaponObj*)object)->pad99[0] == 0xF9)
++            return;
++    }
++#endif
+     if (!get_pc_sprite_frame(object, &frame))
+         return;
+ 
+@@ -465,6 +480,12 @@ void func_80024334(struct VisualObj* object)
+         origin_y = object->y_pos.i.hi - background->y_pos.i.hi;
+     }
+ 
++#ifdef X4CORE
++    if (object == (struct VisualObj*)&g_Player) {   // fangame: o que foi desenhado do X neste quadro
++        extern int x4_pl_frame, x4_pl_x, x4_pl_y, x4_pl_flip, x4_pl_drawn;
++        x4_pl_frame = frame.index; x4_pl_x = origin_x; x4_pl_y = origin_y; x4_pl_flip = object->unk15; x4_pl_drawn = 1;
++    }
++#endif
+     primitive = SP_PRIM_CURSOR;
+     draw_mode = SP_DRAW_MODE_CURSOR;
+     first_draw_mode = (P_TAG*)draw_mode;

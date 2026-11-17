@@ -63,6 +63,17 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
   caminho novo (perguntar ao dono) — aí os dois PCs ficam iguais entre si.
 - Ferramenta de busca de quadros: /tmp/procura.sh (captura + desenho + compara com um alvo).
 
+- FEITO grupo `codigo_x4` (extrair.gd): baixa a decompilação pública (sozud/mmx4 4e16dfc + sozud/psyz da55621; aqui os
+  zips vêm de `git archive` porque o codeload é bloqueado: /tmp/zip_mmx4.zip /tmp/zip_psyz.zip), aplica `tools/x4core/*.patch`
+  (aplicador de diff em GDScript), põe `frame.c`, compila com clang (llvm-mingw 23; precisou de -Wno-error=incompatible-pointer-types)
+  e junta: Linux `libx4core.so` e Windows `x4core.dll` (ld.lld -flavor link, base 0x10000000, exporta x4core_init) — 9 s aqui.
+  O x4core novo (clang 23) se comporta igual ao antigo (clang 18) no teste tests/x4ms.gd. Depois de compilar é preciso
+  importar de novo (o Godot só carrega a extensão listada em .godot/extension_list.cfg).
+- ATENÇÃO: o mesmo teste do X4 dá resultado diferente na pasta do dono (/home/claude/game) e numa pasta nova (/tmp/mx5/godot)
+  com a MESMA biblioteca → algum arquivo de assets muda o caminho do X4 (achar qual quando os assets estiverem completos).
+- Falta no pacote: o llvm-mingw (191 MB) — melhor o extrator baixar do GitHub na 1ª vez só o necessário (clang, ld.lld,
+  DLLs do LLVM, lib/clang/23/include). Variáveis do launcher {clang} {lld} já existem.
+
 ## Ordem de trabalho
 
 1. [x] `captura` para Linux e Windows a partir das fontes do `psxcore` (mesmo resultado do harness).
