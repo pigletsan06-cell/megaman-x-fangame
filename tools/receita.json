@@ -1,5 +1,5 @@
 {
- "versao_receita": 10,
+ "versao_receita": 11,
  "nota": "Etapas que o launcher roda no PC do jogador, a partir dos discos dele. Cada etapa só roda de novo se mudar o disco, os arquivos dela ou uma etapa de antes.",
  "etapas": [
   {
@@ -94,6 +94,25 @@
    ]
   },
   {
+   "id": "ferramentas",
+   "nome": "Compilador (só na 1ª vez)",
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "ferramentas",
+    "clang={clang}"
+   ],
+   "arquivos": [
+    "{tools}/extrator/extrair.gd"
+   ]
+  },
+  {
    "id": "codigo_x4",
    "nome": "Código do X4 (compilando)",
    "cmd": [
@@ -113,6 +132,35 @@
    "arquivos": [
     "{tools}/x4core",
     "{tools}/extrator/extrair.gd"
+   ],
+   "depois_de": [
+    "ferramentas"
+   ]
+  },
+  {
+   "id": "codigo_psx",
+   "nome": "Núcleo de PS1 (compilando)",
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "codigo_psx",
+    "clang={clang}",
+    "lld={lld}",
+    "fontes={gerado}/fontes"
+   ],
+   "arquivos": [
+    "{tools}/psxcore",
+    "{tools}/x4core",
+    "{tools}/captura/openbios.bin"
+   ],
+   "depois_de": [
+    "codigo_x4"
    ]
   },
   {
@@ -132,7 +180,8 @@
     "{jogo}/shaders"
    ],
    "depois_de": [
-    "codigo_x4"
+    "codigo_x4",
+    "codigo_psx"
    ]
   },
   {

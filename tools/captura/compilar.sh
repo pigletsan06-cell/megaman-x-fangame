@@ -3,7 +3,7 @@
 # Fontes do núcleo: PSXCORE (padrão /home/claude/psxcore), PSYZ (SPU), X4CORE (marcas e sysroot do núcleo).
 set -e
 O=$(realpath -m "${1:-/tmp/captura_bin}"); mkdir -p "$O"
-X=${PSXCORE:-/home/claude/psxcore}; PS=${PSYZ:-/home/claude/ext/mmx4/tools/psyz}; XC=${X4CORE:-/home/claude/x4core}
+X=${PSXCORE:-$(cd "$(dirname $0)/../psxcore" && pwd)}; PS=${PSYZ:-/home/claude/ext/mmx4/tools/psyz}; XC=${X4CORE:-$(cd "$(dirname $0)/../x4core" && pwd)}
 MW=${LLVM_MINGW:-/home/claude/llvm-mingw}
 D=$(cd "$(dirname $0)" && pwd)
 LIVRE="-O2 -w -std=gnu11 -ffreestanding -fno-strict-aliasing -fno-stack-protector -fno-exceptions -fno-asynchronous-unwind-tables -nostdinc -isystem $(clang -print-resource-dir)/include -isystem $XC/sysroot"

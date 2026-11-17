@@ -468,6 +468,110 @@ func monta_fusion(dir: String, spec_path: String, saida: String) -> bool:
 	DirAccess.make_dir_recursive_absolute(saida.get_base_dir())
 	return Image.create_from_data(W, H, false, Image.FORMAT_RGBA8, img).save_png(saida) == OK
 
+## compila uma lista [[fonte, opções], ...] em paralelo; devolve os .o na mesma ordem (ou [] se der erro)
+func compila(lista: Array, obj: String, cc: String, prog: Callable, rotulo: String) -> Array:
+	DirAccess.make_dir_recursive_absolute(obj)
+	var saidas := []
+	for k in lista.size(): saidas.append(obj.path_join("%03d_%s.o" % [k, str(lista[k][0]).get_file()]))
+	var erros := []; var feitos := [0]; var mx := Mutex.new()
+	var trabalho := func(ini: int, passo: int) -> void:
+		for k in range(ini, lista.size(), passo):
+			var r := []
+			var cod := OS.execute(cc, lista[k][1] + ["-c", lista[k][0], "-o", saidas[k]], r, true)
+			mx.lock(); feitos[0] += 1
+			if cod != 0: erros.append(str(lista[k][0]) + ": " + str(r).left(300))
+			mx.unlock()
+	var ths := []
+	var n := maxi(2, OS.get_processor_count())
+	for t in n:
+		var th := Thread.new(); th.start(trabalho.bind(t, n)); ths.append(th)
+	while true:
+		var vivos := 0
+		for th in ths: if th.is_alive(): vivos += 1
+		prog.call(1 + int(8.0 * feitos[0] / maxi(1, lista.size())), 10, "%s (%d/%d)" % [rotulo, feitos[0], lista.size()])
+		if vivos == 0: break
+		OS.delay_msec(250)
+	for th in ths: th.wait_to_finish()
+	if not erros.is_empty(): printerr("erros ao compilar:\n", "\n".join(erros.slice(0, 5))); return []
+	return saidas
+
+## núcleo de PS1 (nosso: tools/psxcore) como extensão do Godot; o SPU vem do psyz baixado junto com a decompilação do X4
+func codigo_psx(jogo: String, prog: Callable) -> int:
+	var x4 := pasta_x4core(); var px := x4.path_join("../psxcore").simplify_path()
+	var base := opcao("fontes", "FUSION_FONTES", jogo.path_join("../gerado/fontes")).simplify_path()
+	var ps := base.path_join("mmx4/tools/psyz")
+	if not FileAccess.file_exists(ps.path_join("psyz/src/psyz/libspu.c")): printerr("falta o psyz (rode o código do X4 antes)"); return -1
+	var cc := opcao("clang", "FUSION_CLANG", "clang")
+	var ld := opcao("lld", "FUSION_LLD", "ld.lld")
+	var win := opcao("alvo", "", "windows" if OS.get_name() == "Windows" else "linux") == "windows"
+	var out := []
+	OS.execute(cc, ["-print-resource-dir"], out)
+	var cinc := str(out[0]).strip_edges().path_join("include")
+	var fl := ["-O2", "-w", "-std=gnu11", "-ffreestanding", "-fno-strict-aliasing", "-fno-stack-protector", "-fno-exceptions",
+		"-fno-asynchronous-unwind-tables", "-nostdinc", "-isystem", cinc, "-isystem", x4.path_join("sysroot")]
+	fl += ["--target=x86_64-pc-windows-msvc", "-mno-stack-arg-probe", "-fms-extensions"] if win else ["--target=x86_64-linux-gnu", "-fPIC", "-fvisibility=hidden"]
+	# as definições com aspas vão num cabeçalho (aspas na linha de comando se perdem no caminho até o compilador)
+	DirAccess.make_dir_recursive_absolute(base)
+	var hdef := base.path_join("psxcore_def.h")
+	var fh := FileAccess.open(hdef, FileAccess.WRITE)
+	fh.store_string('#define GDEXT_CLASS "PsxCore"\n#define GDEXT_ENTRY psxcore_init\n#define PSXCORE 1\n'); fh.close()
+	var lista := [[x4.path_join("gdext.c"), fl + ["-I" + x4, "-include", hdef]],
+		[x4.path_join("marca_inicio.c"), fl + ["-I" + px]]]
+	for f in ["cpu.c", "gte.c", "hw.c", "api.c"]: lista.append([px.path_join(f), fl + ["-I" + px]])
+	for f in ["psyz/src/psyz/psyz_spu.c", "psyz/src/psyz/libspu.c"]:
+		lista.append([ps.path_join(f), fl + ["-D__psyz=1", "-I" + ps.path_join("psyz/include"), "-I" + ps.path_join("decomp/include")]])
+	lista.append([x4.path_join("marca_fim.c"), fl + ["-I" + px]])
+	var objs := compila(lista, base.path_join("obj_psx_" + ("win" if win else "linux")), cc, prog, "compilando o núcleo de PS1")
+	if objs.is_empty(): return -1
+	prog.call(9, 10, "juntando")
+	DirAccess.make_dir_recursive_absolute(jogo.path_join("bin"))
+	var r := []; var cod: int
+	if win:
+		var k32 := opcao("kernel32", "", cc.get_base_dir().path_join("../x86_64-w64-mingw32/lib/libkernel32.a").simplify_path())
+		cod = OS.execute(ld, ["-flavor", "link", "/dll", "/noentry", "/nodefaultlib", "/out:" + jogo.path_join("bin/psxcore.dll"), "/opt:ref"]
+			+ objs + [k32, "/export:psxcore_init"], r, true)
+	else:
+		cod = OS.execute(ld, ["-shared", "-o", jogo.path_join("bin/libpsxcore.so")] + objs + ["--gc-sections"], r, true)
+	if cod != 0: printerr("erro ao juntar: ", str(r).left(800)); return -1
+	var ge := FileAccess.open(jogo.path_join("bin/psxcore.gdextension"), FileAccess.WRITE)
+	ge.store_string('[configuration]\nentry_symbol = "psxcore_init"\ncompatibility_minimum = "4.4"\n\n[libraries]\nwindows.x86_64 = "res://bin/psxcore.dll"\nlinux.x86_64 = "res://bin/libpsxcore.so"\n')
+	ge.close()
+	var cap := x4.path_join("../captura").simplify_path()
+	DirAccess.copy_absolute(cap.path_join("openbios.bin"), jogo.path_join("bin/openbios.bin"))
+	DirAccess.copy_absolute(cap.path_join("OpenBIOS.LICENSE.txt"), jogo.path_join("bin/OpenBIOS.LICENSE.txt"))
+	prog.call(10, 10, "pronto")
+	return 1
+
+## compilador para o PC do jogador (Windows): llvm-mingw (GitHub mstorsjo/llvm-mingw), só o que precisamos dele
+const LLVM_MINGW := "20261104"
+func ferramentas(prog: Callable) -> int:
+	var cl := opcao("clang", "FUSION_CLANG", "")
+	if (OS.get_name() != "Windows" and opcao("forcar", "", "") == "") or cl == "" or FileAccess.file_exists(cl): return 0
+	var pasta := cl.get_base_dir().get_base_dir()   # .../ferramentas/llvm
+	var zip := opcao("zip_llvm", "", pasta + ".zip")
+	if not FileAccess.file_exists(zip):
+		prog.call(0, 10, "baixando o compilador (llvm-mingw, ~190 MB)")
+		var nome := "llvm-mingw-%s-ucrt-x86_64.zip" % LLVM_MINGW
+		if not baixa("https://github.com/mstorsjo/llvm-mingw/releases/download/%s/%s" % [LLVM_MINGW, nome], zip): return -1
+	prog.call(5, 10, "abrindo o compilador")
+	var z := ZIPReader.new()
+	if z.open(zip) != OK: printerr("zip do compilador estragado"); return -1
+	var n := 0
+	for f in z.get_files():
+		var rel := f.substr(f.find("/") + 1)
+		var quer := rel in ["bin/clang.exe", "bin/clang-23.exe", "bin/ld.lld.exe", "x86_64-w64-mingw32/lib/libkernel32.a"]
+		quer = quer or (rel.begins_with("bin/") and rel.ends_with(".dll") and not "python" in rel and not "lldb" in rel)
+		quer = quer or (rel.begins_with("lib/clang/") and "/include/" in rel and not rel.ends_with("/"))
+		if not quer: continue
+		var dst := pasta.path_join(rel)
+		DirAccess.make_dir_recursive_absolute(dst.get_base_dir())
+		var w := FileAccess.open(dst, FileAccess.WRITE)
+		if w: w.store_buffer(z.read_file(f)); w.close(); n += 1
+	z.close()
+	if opcao("zip_llvm", "", "") == "": DirAccess.remove_absolute(zip)
+	prog.call(10, 10, "pronto")
+	return n
+
 const GRUPOS := {
 	"x4_arc": {"discos": ["x4"]},
 	"videos_x4": {"discos": ["x4"]}, "videos_x5": {"discos": ["x5"]}, "videos_x6": {"discos": ["x6"]},
@@ -477,12 +581,14 @@ const GRUPOS := {
 	"textos_x5": {"discos": ["x5"], "captura": true},
 	"loading_x5": {"discos": ["x5"], "captura": true}, "loading_x6": {"discos": ["x6"], "captura": true},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
-	"codigo_x4": {"discos": []},
+	"codigo_x4": {"discos": []}, "codigo_psx": {"discos": []}, "ferramentas": {"discos": []},
 }
 func roda_grupo(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> int:
 	if GRUPOS.get(nm, {}).get("captura", false): return captura(nm, jogo, discos, prog)
 	if nm.begins_with("mini_"): return miniaturas(nm.substr(5), jogo, prog)
+	if nm == "ferramentas": return ferramentas(prog)
 	if nm == "codigo_x4": return codigo_x4(jogo, prog)
+	if nm == "codigo_psx": return codigo_psx(jogo, prog)
 	match nm:
 		"x4_arc": return x4_arc(jogo, discos, prog)
 		"videos_x4": return videos("x4", jogo, discos, prog)
