@@ -17,4 +17,7 @@ for alvo in linux windows; do
   if [ $alvo = linux ]; then $CC -o "$SAI" $OBJS; else $CC -static -o "$SAI" $OBJS; fi
   rm -rf $T
 done
+# captura pela recompilação do X6 (abre a DLL que o launcher monta no PC do jogador)
+clang -O2 -w -o "$O/captura_rc" $D/captura_rc.c -ldl
+$MW/bin/x86_64-w64-mingw32-clang -O2 -w -o "$O/captura_rc.exe" $D/captura_rc.c -lshell32
 ls -la "$O"

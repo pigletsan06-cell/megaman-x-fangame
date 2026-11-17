@@ -11,7 +11,9 @@ echo '{"versao": 54}' > "$P/versao.json"
 mkdir -p "$P/gerado/fontes"; cp /tmp/zip_mmx4.zip "$P/gerado/fontes/mmx4.zip"; cp /tmp/zip_psyz.zip "$P/gerado/fontes/psyz.zip"
 ln -s "/home/claude/x4/Mega Man X4 (USA).bin" "$P/discos/"; ln -s "/home/claude/x5/Mega Man X5 (USA).bin" "$P/discos/"; ln -s "/home/claude/ext/MegaManX6Recomp/mmx6/Mega Man X6 (USA) (v1.1).bin" "$P/discos/"
 rm -f /tmp/real_*.png; T0=$(date +%s)
-[ -x /tmp/captura_bin/captura ] || $REPO/tools/captura/compilar.sh /tmp/captura_bin > /dev/null
+[ -x /tmp/captura_bin/captura_rc ] || $REPO/tools/captura/compilar.sh /tmp/captura_bin > /dev/null
+# (no Linux o launcher não monta a recompilação do X6: o dash da Blade usa a do PC do dono)
+export FUSION_CAPTURA_RC=/tmp/captura_bin/captura_rc FUSION_RECOMP_X6=/home/claude/game/bin/libx6recomp.so FUSION_GAMEDIR_X6=/home/claude/recomp_x6
 DISPLAY=:99 FUSION_GODOT=$G FUSION_CAPTURA=/tmp/captura_bin/captura timeout 3000 $G --path "$P/launcher" -- --auto --sem-jogo --foto=/tmp/real > /tmp/amigo/saida.txt 2>&1
 echo "saída $? em $(( $(date +%s) - T0 ))s"
 python3 -c "

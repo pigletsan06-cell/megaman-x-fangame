@@ -28,7 +28,7 @@ cp "$REPO/tools/windows/LICENCA_MESA.txt" "$P/ferramentas/render/"
 [ -s "${RCWIN:-/tmp/rcwin}/psxrecomp-game.exe" ] || "$REPO/tools/recomp/recompilador.sh" "${RCWIN:-/tmp/rcwin}" > /dev/null
 python3 "$REPO/tools/recomp/kit.py" "$P/ferramentas/recomp" "${RCWIN:-/tmp/rcwin}/psxrecomp-game.exe" > /dev/null
 # captura (nosso núcleo de PS1 + SPU do psyz, MPL 2.0: código em github.com/sozud/psyz)
-CB=$(mktemp -d); "$REPO/tools/captura/compilar.sh" "$CB" > /dev/null; cp "$CB/captura.exe" "$P/ferramentas/captura.exe"; rm -rf "$CB"
+CB=$(mktemp -d); "$REPO/tools/captura/compilar.sh" "$CB" > /dev/null; cp "$CB/captura.exe" "$CB/captura_rc.exe" "$P/ferramentas/"; rm -rf "$CB"
 "$REPO/tools/windows/compilar.sh" "$P/Mega Man X Fusion.exe" > /dev/null
 [ -n "$CHAVE" ] && tr -d ' \r\n' < "$CHAVE" > "$P/chave.txt"
 # confere: nada dos discos (sem .bin/.iso/.STR/.sec, sem assets gerados) e nenhum arquivo fora da lista do repositório

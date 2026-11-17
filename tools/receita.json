@@ -947,6 +947,33 @@
    ]
   },
   {
+   "id": "dash_x6",
+   "nome": "Dash da Blade (X6)",
+   "discos": [
+    "x6"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "dash_x6",
+    "disco_x6={disco_x6}",
+    "captura_rc={captura_rc}"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{captura_rc}"
+   ],
+   "depois_de": [
+    "recomp_x6"
+   ]
+  },
+  {
    "id": "importar",
    "nome": "Preparar no Godot",
    "cmd": [
@@ -990,7 +1017,8 @@
     "sons_x6",
     "sons_x4",
     "pecas_x",
-    "efeitos_x"
+    "efeitos_x",
+    "dash_x6"
    ]
   }
  ]

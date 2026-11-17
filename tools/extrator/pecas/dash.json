@@ -1,0 +1,15 @@
+{
+ "nota": "Dash da Blade do X6 pela recompilação do X6 (dash.gd). Roteiros achados para dar as mesmas fotos do PC do dono: espera, pulo (cross 4000), dash (circle 2000) segurado 40 quadros, solta com a direção (cima 0010, baixo 0040).",
+ "armadura": 3,
+ "atraso": 2,
+ "janela": [150, 130],
+ "hud": [50, 135],
+ "limiar": 30,
+ "largura": 1024,
+ "corridas": [
+  {"nome": "frente", "seq": "88:0,6:4000,4:0,40:2000,40:0", "base": 520, "fotos": [99, 157]},
+  {"nome": "cima", "seq": "40:0,6:4000,4:0,40:2000,40:0010", "base": 540, "fotos": [51, 109]},
+  {"nome": "baixo", "seq": "40:0,10:4000,4:0,40:2000,40:0040", "base": 560, "fotos": [55, 105]}
+ ],
+ "saidas": {"op": "x/parts/Blade_X6/dash6", "ad": "x/parts/Blade_X6/dash6_add"}
+}
