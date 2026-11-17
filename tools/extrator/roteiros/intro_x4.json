@@ -1,0 +1,419 @@
+{
+ "nota": "Abertura da seleção de chefes do X4 pelo x4core (30 quadros/s: um a cada 2 quadros do jogo, do 90 ao 368; a curta é do 196 em diante). APROXIMADA: as do PC do dono são WebP com perdas de outro codificador; aqui o Godot (qualidade 0,85). Mesma imagem de origem (conferido quadro a quadro).",
+ "jogo": "x4",
+ "disco": "x4",
+ "motor": "x4core",
+ "x4env": {
+  "MMX4_ORACLE_SCENE": "mission-briefing",
+  "MMX4_DIRECT_STAGE": "1",
+  "MMX4_DIRECT_CHARACTER": "0"
+ },
+ "mem": "8:0:3",
+ "quadros": 369,
+ "botoes": "",
+ "fotos": {
+  "90": "assets/menus/intro/x4/000.webp",
+  "92": "assets/menus/intro/x4/001.webp",
+  "94": "assets/menus/intro/x4/002.webp",
+  "96": "assets/menus/intro/x4/003.webp",
+  "98": "assets/menus/intro/x4/004.webp",
+  "100": "assets/menus/intro/x4/005.webp",
+  "102": "assets/menus/intro/x4/006.webp",
+  "104": "assets/menus/intro/x4/007.webp",
+  "106": "assets/menus/intro/x4/008.webp",
+  "108": "assets/menus/intro/x4/009.webp",
+  "110": "assets/menus/intro/x4/010.webp",
+  "112": "assets/menus/intro/x4/011.webp",
+  "114": "assets/menus/intro/x4/012.webp",
+  "116": "assets/menus/intro/x4/013.webp",
+  "118": "assets/menus/intro/x4/014.webp",
+  "120": "assets/menus/intro/x4/015.webp",
+  "122": "assets/menus/intro/x4/016.webp",
+  "124": "assets/menus/intro/x4/017.webp",
+  "126": "assets/menus/intro/x4/018.webp",
+  "128": "assets/menus/intro/x4/019.webp",
+  "130": "assets/menus/intro/x4/020.webp",
+  "132": "assets/menus/intro/x4/021.webp",
+  "134": "assets/menus/intro/x4/022.webp",
+  "136": "assets/menus/intro/x4/023.webp",
+  "138": "assets/menus/intro/x4/024.webp",
+  "140": "assets/menus/intro/x4/025.webp",
+  "142": "assets/menus/intro/x4/026.webp",
+  "144": "assets/menus/intro/x4/027.webp",
+  "146": "assets/menus/intro/x4/028.webp",
+  "148": "assets/menus/intro/x4/029.webp",
+  "150": "assets/menus/intro/x4/030.webp",
+  "152": "assets/menus/intro/x4/031.webp",
+  "154": "assets/menus/intro/x4/032.webp",
+  "156": "assets/menus/intro/x4/033.webp",
+  "158": "assets/menus/intro/x4/034.webp",
+  "160": "assets/menus/intro/x4/035.webp",
+  "162": "assets/menus/intro/x4/036.webp",
+  "164": "assets/menus/intro/x4/037.webp",
+  "166": "assets/menus/intro/x4/038.webp",
+  "168": "assets/menus/intro/x4/039.webp",
+  "170": "assets/menus/intro/x4/040.webp",
+  "172": "assets/menus/intro/x4/041.webp",
+  "174": "assets/menus/intro/x4/042.webp",
+  "176": "assets/menus/intro/x4/043.webp",
+  "178": "assets/menus/intro/x4/044.webp",
+  "180": "assets/menus/intro/x4/045.webp",
+  "182": "assets/menus/intro/x4/046.webp",
+  "184": "assets/menus/intro/x4/047.webp",
+  "186": "assets/menus/intro/x4/048.webp",
+  "188": "assets/menus/intro/x4/049.webp",
+  "190": "assets/menus/intro/x4/050.webp",
+  "192": "assets/menus/intro/x4/051.webp",
+  "194": "assets/menus/intro/x4/052.webp",
+  "196": [
+   "assets/menus/intro/x4/053.webp",
+   "assets/menus/intro/x4_curta/000.webp"
+  ],
+  "198": [
+   "assets/menus/intro/x4/054.webp",
+   "assets/menus/intro/x4_curta/001.webp"
+  ],
+  "200": [
+   "assets/menus/intro/x4/055.webp",
+   "assets/menus/intro/x4_curta/002.webp"
+  ],
+  "202": [
+   "assets/menus/intro/x4/056.webp",
+   "assets/menus/intro/x4_curta/003.webp"
+  ],
+  "204": [
+   "assets/menus/intro/x4/057.webp",
+   "assets/menus/intro/x4_curta/004.webp"
+  ],
+  "206": [
+   "assets/menus/intro/x4/058.webp",
+   "assets/menus/intro/x4_curta/005.webp"
+  ],
+  "208": [
+   "assets/menus/intro/x4/059.webp",
+   "assets/menus/intro/x4_curta/006.webp"
+  ],
+  "210": [
+   "assets/menus/intro/x4/060.webp",
+   "assets/menus/intro/x4_curta/007.webp"
+  ],
+  "212": [
+   "assets/menus/intro/x4/061.webp",
+   "assets/menus/intro/x4_curta/008.webp"
+  ],
+  "214": [
+   "assets/menus/intro/x4/062.webp",
+   "assets/menus/intro/x4_curta/009.webp"
+  ],
+  "216": [
+   "assets/menus/intro/x4/063.webp",
+   "assets/menus/intro/x4_curta/010.webp"
+  ],
+  "218": [
+   "assets/menus/intro/x4/064.webp",
+   "assets/menus/intro/x4_curta/011.webp"
+  ],
+  "220": [
+   "assets/menus/intro/x4/065.webp",
+   "assets/menus/intro/x4_curta/012.webp"
+  ],
+  "222": [
+   "assets/menus/intro/x4/066.webp",
+   "assets/menus/intro/x4_curta/013.webp"
+  ],
+  "224": [
+   "assets/menus/intro/x4/067.webp",
+   "assets/menus/intro/x4_curta/014.webp"
+  ],
+  "226": [
+   "assets/menus/intro/x4/068.webp",
+   "assets/menus/intro/x4_curta/015.webp"
+  ],
+  "228": [
+   "assets/menus/intro/x4/069.webp",
+   "assets/menus/intro/x4_curta/016.webp"
+  ],
+  "230": [
+   "assets/menus/intro/x4/070.webp",
+   "assets/menus/intro/x4_curta/017.webp"
+  ],
+  "232": [
+   "assets/menus/intro/x4/071.webp",
+   "assets/menus/intro/x4_curta/018.webp"
+  ],
+  "234": [
+   "assets/menus/intro/x4/072.webp",
+   "assets/menus/intro/x4_curta/019.webp"
+  ],
+  "236": [
+   "assets/menus/intro/x4/073.webp",
+   "assets/menus/intro/x4_curta/020.webp"
+  ],
+  "238": [
+   "assets/menus/intro/x4/074.webp",
+   "assets/menus/intro/x4_curta/021.webp"
+  ],
+  "240": [
+   "assets/menus/intro/x4/075.webp",
+   "assets/menus/intro/x4_curta/022.webp"
+  ],
+  "242": [
+   "assets/menus/intro/x4/076.webp",
+   "assets/menus/intro/x4_curta/023.webp"
+  ],
+  "244": [
+   "assets/menus/intro/x4/077.webp",
+   "assets/menus/intro/x4_curta/024.webp"
+  ],
+  "246": [
+   "assets/menus/intro/x4/078.webp",
+   "assets/menus/intro/x4_curta/025.webp"
+  ],
+  "248": [
+   "assets/menus/intro/x4/079.webp",
+   "assets/menus/intro/x4_curta/026.webp"
+  ],
+  "250": [
+   "assets/menus/intro/x4/080.webp",
+   "assets/menus/intro/x4_curta/027.webp"
+  ],
+  "252": [
+   "assets/menus/intro/x4/081.webp",
+   "assets/menus/intro/x4_curta/028.webp"
+  ],
+  "254": [
+   "assets/menus/intro/x4/082.webp",
+   "assets/menus/intro/x4_curta/029.webp"
+  ],
+  "256": [
+   "assets/menus/intro/x4/083.webp",
+   "assets/menus/intro/x4_curta/030.webp"
+  ],
+  "258": [
+   "assets/menus/intro/x4/084.webp",
+   "assets/menus/intro/x4_curta/031.webp"
+  ],
+  "260": [
+   "assets/menus/intro/x4/085.webp",
+   "assets/menus/intro/x4_curta/032.webp"
+  ],
+  "262": [
+   "assets/menus/intro/x4/086.webp",
+   "assets/menus/intro/x4_curta/033.webp"
+  ],
+  "264": [
+   "assets/menus/intro/x4/087.webp",
+   "assets/menus/intro/x4_curta/034.webp"
+  ],
+  "266": [
+   "assets/menus/intro/x4/088.webp",
+   "assets/menus/intro/x4_curta/035.webp"
+  ],
+  "268": [
+   "assets/menus/intro/x4/089.webp",
+   "assets/menus/intro/x4_curta/036.webp"
+  ],
+  "270": [
+   "assets/menus/intro/x4/090.webp",
+   "assets/menus/intro/x4_curta/037.webp"
+  ],
+  "272": [
+   "assets/menus/intro/x4/091.webp",
+   "assets/menus/intro/x4_curta/038.webp"
+  ],
+  "274": [
+   "assets/menus/intro/x4/092.webp",
+   "assets/menus/intro/x4_curta/039.webp"
+  ],
+  "276": [
+   "assets/menus/intro/x4/093.webp",
+   "assets/menus/intro/x4_curta/040.webp"
+  ],
+  "278": [
+   "assets/menus/intro/x4/094.webp",
+   "assets/menus/intro/x4_curta/041.webp"
+  ],
+  "280": [
+   "assets/menus/intro/x4/095.webp",
+   "assets/menus/intro/x4_curta/042.webp"
+  ],
+  "282": [
+   "assets/menus/intro/x4/096.webp",
+   "assets/menus/intro/x4_curta/043.webp"
+  ],
+  "284": [
+   "assets/menus/intro/x4/097.webp",
+   "assets/menus/intro/x4_curta/044.webp"
+  ],
+  "286": [
+   "assets/menus/intro/x4/098.webp",
+   "assets/menus/intro/x4_curta/045.webp"
+  ],
+  "288": [
+   "assets/menus/intro/x4/099.webp",
+   "assets/menus/intro/x4_curta/046.webp"
+  ],
+  "290": [
+   "assets/menus/intro/x4/100.webp",
+   "assets/menus/intro/x4_curta/047.webp"
+  ],
+  "292": [
+   "assets/menus/intro/x4/101.webp",
+   "assets/menus/intro/x4_curta/048.webp"
+  ],
+  "294": [
+   "assets/menus/intro/x4/102.webp",
+   "assets/menus/intro/x4_curta/049.webp"
+  ],
+  "296": [
+   "assets/menus/intro/x4/103.webp",
+   "assets/menus/intro/x4_curta/050.webp"
+  ],
+  "298": [
+   "assets/menus/intro/x4/104.webp",
+   "assets/menus/intro/x4_curta/051.webp"
+  ],
+  "300": [
+   "assets/menus/intro/x4/105.webp",
+   "assets/menus/intro/x4_curta/052.webp"
+  ],
+  "302": [
+   "assets/menus/intro/x4/106.webp",
+   "assets/menus/intro/x4_curta/053.webp"
+  ],
+  "304": [
+   "assets/menus/intro/x4/107.webp",
+   "assets/menus/intro/x4_curta/054.webp"
+  ],
+  "306": [
+   "assets/menus/intro/x4/108.webp",
+   "assets/menus/intro/x4_curta/055.webp"
+  ],
+  "308": [
+   "assets/menus/intro/x4/109.webp",
+   "assets/menus/intro/x4_curta/056.webp"
+  ],
+  "310": [
+   "assets/menus/intro/x4/110.webp",
+   "assets/menus/intro/x4_curta/057.webp"
+  ],
+  "312": [
+   "assets/menus/intro/x4/111.webp",
+   "assets/menus/intro/x4_curta/058.webp"
+  ],
+  "314": [
+   "assets/menus/intro/x4/112.webp",
+   "assets/menus/intro/x4_curta/059.webp"
+  ],
+  "316": [
+   "assets/menus/intro/x4/113.webp",
+   "assets/menus/intro/x4_curta/060.webp"
+  ],
+  "318": [
+   "assets/menus/intro/x4/114.webp",
+   "assets/menus/intro/x4_curta/061.webp"
+  ],
+  "320": [
+   "assets/menus/intro/x4/115.webp",
+   "assets/menus/intro/x4_curta/062.webp"
+  ],
+  "322": [
+   "assets/menus/intro/x4/116.webp",
+   "assets/menus/intro/x4_curta/063.webp"
+  ],
+  "324": [
+   "assets/menus/intro/x4/117.webp",
+   "assets/menus/intro/x4_curta/064.webp"
+  ],
+  "326": [
+   "assets/menus/intro/x4/118.webp",
+   "assets/menus/intro/x4_curta/065.webp"
+  ],
+  "328": [
+   "assets/menus/intro/x4/119.webp",
+   "assets/menus/intro/x4_curta/066.webp"
+  ],
+  "330": [
+   "assets/menus/intro/x4/120.webp",
+   "assets/menus/intro/x4_curta/067.webp"
+  ],
+  "332": [
+   "assets/menus/intro/x4/121.webp",
+   "assets/menus/intro/x4_curta/068.webp"
+  ],
+  "334": [
+   "assets/menus/intro/x4/122.webp",
+   "assets/menus/intro/x4_curta/069.webp"
+  ],
+  "336": [
+   "assets/menus/intro/x4/123.webp",
+   "assets/menus/intro/x4_curta/070.webp"
+  ],
+  "338": [
+   "assets/menus/intro/x4/124.webp",
+   "assets/menus/intro/x4_curta/071.webp"
+  ],
+  "340": [
+   "assets/menus/intro/x4/125.webp",
+   "assets/menus/intro/x4_curta/072.webp"
+  ],
+  "342": [
+   "assets/menus/intro/x4/126.webp",
+   "assets/menus/intro/x4_curta/073.webp"
+  ],
+  "344": [
+   "assets/menus/intro/x4/127.webp",
+   "assets/menus/intro/x4_curta/074.webp"
+  ],
+  "346": [
+   "assets/menus/intro/x4/128.webp",
+   "assets/menus/intro/x4_curta/075.webp"
+  ],
+  "348": [
+   "assets/menus/intro/x4/129.webp",
+   "assets/menus/intro/x4_curta/076.webp"
+  ],
+  "350": [
+   "assets/menus/intro/x4/130.webp",
+   "assets/menus/intro/x4_curta/077.webp"
+  ],
+  "352": [
+   "assets/menus/intro/x4/131.webp",
+   "assets/menus/intro/x4_curta/078.webp"
+  ],
+  "354": [
+   "assets/menus/intro/x4/132.webp",
+   "assets/menus/intro/x4_curta/079.webp"
+  ],
+  "356": [
+   "assets/menus/intro/x4/133.webp",
+   "assets/menus/intro/x4_curta/080.webp"
+  ],
+  "358": [
+   "assets/menus/intro/x4/134.webp",
+   "assets/menus/intro/x4_curta/081.webp"
+  ],
+  "360": [
+   "assets/menus/intro/x4/135.webp",
+   "assets/menus/intro/x4_curta/082.webp"
+  ],
+  "362": [
+   "assets/menus/intro/x4/136.webp",
+   "assets/menus/intro/x4_curta/083.webp"
+  ],
+  "364": [
+   "assets/menus/intro/x4/137.webp",
+   "assets/menus/intro/x4_curta/084.webp"
+  ],
+  "366": [
+   "assets/menus/intro/x4/138.webp",
+   "assets/menus/intro/x4_curta/085.webp"
+  ],
+  "368": [
+   "assets/menus/intro/x4/139.webp",
+   "assets/menus/intro/x4_curta/086.webp"
+  ]
+ },
+ "formato": "webp",
+ "qualidade": 0.85
+}

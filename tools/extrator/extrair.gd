@@ -626,7 +626,7 @@ const GRUPOS := {
 	"loading_x5": {"discos": ["x5"], "captura": true}, "loading_x6": {"discos": ["x6"], "captura": true},
 	"intro_x5": {"discos": ["x5"], "captura": true}, "intro_x6": {"discos": ["x6"], "captura": true},
 	"musica_x5": {"discos": ["x5"], "captura": true},
-	"menus_x4": {"discos": ["x4"], "captura": true},
+	"menus_x4": {"discos": ["x4"], "captura": true}, "intro_x4": {"discos": ["x4"], "captura": true},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
 	"codigo_x4": {"discos": []}, "codigo_psx": {"discos": []}, "ferramentas": {"discos": []},
 }
