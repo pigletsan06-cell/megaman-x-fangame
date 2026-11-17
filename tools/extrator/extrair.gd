@@ -150,6 +150,7 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 		OS.set_environment("AUDIO", dir.path_join("som.raw")); OS.set_environment("AUDIO_FROM", str(int(au.de)))
 		if au.has("por"): OS.set_environment("AUDIO_POR", str(int(au.por)))   # amostras por quadro (padrão 735/736)
 	OS.set_environment("NORAM", "1"); OS.set_environment("DUMPDIR", dir)
+	if r.has("spu"): OS.set_environment("SPUDUMP", str(int(r.spu)))   # RAM do SPU (sons) fotografada neste quadro
 	var quadros := fotos.keys()
 	for sp in r.get("sprites", []):
 		if not str(int(sp.quadro)) in quadros: quadros.append(str(int(sp.quadro)))
@@ -174,6 +175,13 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 		if not FileAccess.file_exists(dir.path_join("v_%s.bin" % k)):
 			printerr("a captura não fotografou o quadro %s (saída %d): %s" % [k, code, str(out).right(400)]); return -1
 	var n := 0
+	if r.has("spu"):
+		var ram := FileAccess.get_file_as_bytes(dir.path_join("spu_%d.bin" % int(r.spu)))
+		if ram.size() != 512 * 1024: printerr("a captura não fotografou a RAM do SPU (saída %d): %s" % [code, str(out).right(400)]); return -1
+		for so in r.get("sons", []):
+			if not som_da_spu(ram, int(so.addr), int(so.pitch), int(so.vl), int(so.vr), float(r.get("ganho", 1.0)), jogo.path_join(str(so.saida))):
+				printerr("som não gravado: ", so.saida); return -1
+			n += 1
 	if not au.is_empty():
 		var raw := FileAccess.get_file_as_bytes(dir.path_join("som.raw"))
 		var ini := int(au.inicio) * 4; var tam := int(au.amostras) * 4
@@ -448,6 +456,44 @@ func codigo_x4(jogo: String, prog: Callable) -> int:
 	prog.call(10, 10, "pronto")
 	return 1
 
+## som da RAM do SPU (ADPCM do PS1) como WAV estéreo de 16 bits: altura = a do key-on (44100 * pitch / 4096, arredondado
+## como o Python), volume de cada lado = vol / 0x3FFF vezes o ganho, cortado para o zero (mesmas contas do spu_render.py)
+const ADPCM_F := [[0, 0], [60, 0], [115, -52], [98, -55], [122, -60]]
+func som_da_spu(ram: PackedByteArray, addr: int, pitch: int, vl: int, vr: int, ganho: float, saida: String) -> bool:
+	var amostras := PackedInt32Array()
+	var h1 := 0; var h2 := 0; var a := addr
+	for n in 20000:
+		var hdr := ram[a]; var flags := ram[a + 1]
+		var sh := hdr & 15; var filt := (hdr >> 4) & 7
+		var f: Array = ADPCM_F[filt if filt < 5 else 0]
+		for i in 28:
+			var nib := (ram[a + 2 + i / 2] >> ((i & 1) * 4)) & 15
+			if nib >= 8: nib -= 16
+			var v := ((nib << 12) >> sh) + ((h1 * int(f[0]) + h2 * int(f[1]) + 32) >> 6)
+			v = clampi(v, -32768, 32767); h2 = h1; h1 = v
+			amostras.append(v)
+		if flags & 1: break
+		a = (a + 16) & 0x7FFFF
+	var x := 44100.0 * pitch / 4096.0
+	var taxa := int(floor(x)); var fr: float = x - floor(x)
+	if fr > 0.5 or (fr == 0.5 and taxa % 2 == 1): taxa += 1   # round() do Python: empate vai para o par
+	var gl := (vl if vl < 0x4000 else 0) / float(0x3FFF); var gr := (vr if vr < 0x4000 else 0) / float(0x3FFF)
+	var dados := PackedByteArray(); dados.resize(amostras.size() * 4)
+	for i in amostras.size():
+		var s := float(amostras[i])
+		dados.encode_s16(i * 4, int(clampf(s * gl * ganho, -32768.0, 32767.0)))
+		dados.encode_s16(i * 4 + 2, int(clampf(s * gr * ganho, -32768.0, 32767.0)))
+	var cab := PackedByteArray(); cab.resize(44)
+	cab.encode_u32(0, 0x46464952); cab.encode_u32(4, 36 + dados.size()); cab.encode_u32(8, 0x45564157)   # RIFF ... WAVE
+	cab.encode_u32(12, 0x20746d66); cab.encode_u32(16, 16); cab.encode_u16(20, 1); cab.encode_u16(22, 2)  # "fmt " PCM estéreo
+	cab.encode_u32(24, taxa); cab.encode_u32(28, taxa * 4); cab.encode_u16(32, 4); cab.encode_u16(34, 16)
+	cab.encode_u32(36, 0x61746164); cab.encode_u32(40, dados.size())   # "data"
+	DirAccess.make_dir_recursive_absolute(saida.get_base_dir())
+	var w := FileAccess.open(saida, FileAccess.WRITE)
+	if w == null: return false
+	w.store_buffer(cab); w.store_buffer(dados); w.close()
+	return true
+
 ## arquivo de resposta do ligador: um caminho por linha, entre aspas (os caminhos podem ter espaços)
 func lista_resposta(caminho: String, objs: Array) -> String:
 	var f := FileAccess.open(caminho, FileAccess.WRITE)
@@ -639,11 +685,22 @@ const GRUPOS := {
 	"menus_x4": {"discos": ["x4"], "captura": true}, "intro_x4": {"discos": ["x4"], "captura": true},
 	"musica_x4": {"discos": ["x4"], "captura": true}, "musica_x6": {"discos": ["x6"], "captura": true},
 	"musica_titulo": {"discos": ["x5"], "captura": true},
+	"sons_x5": {"discos": ["x5"], "roteiros": ["sons_x5_x", "sons_x5_a2", "sons_x5_a3"]},
+	"sons_x6": {"discos": ["x6"], "roteiros": ["sons_x6_x", "sons_x6_zero", "sons_x6_a1", "sons_x6_a2", "sons_x6_a3"]},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
 	"codigo_x4": {"discos": []}, "codigo_psx": {"discos": []}, "ferramentas": {"discos": []},
 }
 func roda_grupo(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> int:
 	if GRUPOS.get(nm, {}).get("captura", false): return captura(nm, jogo, discos, prog)
+	if GRUPOS.get(nm, {}).has("roteiros"):   # vários roteiros de captura em seguida
+		var tot := 0
+		var rs: Array = GRUPOS[nm].roteiros
+		for i in rs.size():
+			var pr := func(a: int, b: int, texto := "") -> void: prog.call(i * 10 + int(10.0 * a / maxf(1.0, b)), rs.size() * 10, texto)
+			var k := captura(rs[i], jogo, discos, pr)
+			if k < 0: return -1
+			tot += k
+		return tot
 	if nm.begins_with("mini_"): return miniaturas(nm.substr(5), jogo, prog)
 	if nm == "ferramentas": return ferramentas(prog)
 	if nm == "codigo_x4": return codigo_x4(jogo, prog)

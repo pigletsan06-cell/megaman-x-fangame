@@ -1,0 +1,27 @@
+{
+ "nota": "Sons dos jogos (X6, fase 1 com a armadura 2): a RAM do SPU fotografada no quadro 2290; cada som é o ADPCM de um endereço, na altura e no volume do key-on do jogo, vezes 0,43 (conferido: os WAV saem IDÊNTICOS aos do PC do dono).",
+ "jogo": "x6",
+ "disco": "x6",
+ "quadros": 2300,
+ "botoes": "start:900-905,cross:1000-1006,start:1400-1403,start:1460-1463",
+ "poke": "ccf2e:0002:1010-2300,ccedc:0001:1440-1900",
+ "fotos": {},
+ "spu": 2290,
+ "ganho": 0.43,
+ "sons": [
+  {
+   "saida": "assets/sfx/x6_engetsurin.wav",
+   "addr": 160288,
+   "pitch": 1525,
+   "vl": 13433,
+   "vr": 13433
+  },
+  {
+   "saida": "assets/sfx/x6_shadow_giga.wav",
+   "addr": 226896,
+   "pitch": 1448,
+   "vl": 12290,
+   "vr": 12290
+  }
+ ]
+}

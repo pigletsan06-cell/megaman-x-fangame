@@ -1,0 +1,153 @@
+{
+ "nota": "Sons dos jogos (X6, fase 1 com o X sem armadura): a RAM do SPU fotografada no quadro 2290; cada som é o ADPCM de um endereço, na altura e no volume do key-on do jogo, vezes 0,43 (conferido: os WAV saem IDÊNTICOS aos do PC do dono).",
+ "jogo": "x6",
+ "disco": "x6",
+ "quadros": 2300,
+ "botoes": "start:900-905,cross:1000-1006,start:1400-1403,start:1460-1463",
+ "poke": "ccf2e:0000:1010-2300,ccedc:0001:1440-1900",
+ "fotos": {},
+ "spu": 2290,
+ "ganho": 0.43,
+ "sons": [
+  {
+   "saida": "assets/sfx/vx_0.wav",
+   "addr": 315488,
+   "pitch": 1144,
+   "vl": 10157,
+   "vr": 10157
+  },
+  {
+   "saida": "assets/sfx/vx_1.wav",
+   "addr": 317328,
+   "pitch": 1144,
+   "vl": 10157,
+   "vr": 10157
+  },
+  {
+   "saida": "assets/sfx/vx_10.wav",
+   "addr": 340480,
+   "pitch": 1144,
+   "vl": 10157,
+   "vr": 10157
+  },
+  {
+   "saida": "assets/sfx/vx_11.wav",
+   "addr": 345312,
+   "pitch": 1144,
+   "vl": 10157,
+   "vr": 10157
+  },
+  {
+   "saida": "assets/sfx/vx_2.wav",
+   "addr": 320592,
+   "pitch": 1144,
+   "vl": 10157,
+   "vr": 10157
+  },
+  {
+   "saida": "assets/sfx/vx_3.wav",
+   "addr": 321904,
+   "pitch": 1144,
+   "vl": 10157,
+   "vr": 10157
+  },
+  {
+   "saida": "assets/sfx/vx_4.wav",
+   "addr": 323680,
+   "pitch": 1144,
+   "vl": 12290,
+   "vr": 12290
+  },
+  {
+   "saida": "assets/sfx/vx_5.wav",
+   "addr": 326528,
+   "pitch": 1144,
+   "vl": 10157,
+   "vr": 10157
+  },
+  {
+   "saida": "assets/sfx/vx_6.wav",
+   "addr": 329168,
+   "pitch": 1144,
+   "vl": 10157,
+   "vr": 10157
+  },
+  {
+   "saida": "assets/sfx/vx_7.wav",
+   "addr": 331024,
+   "pitch": 1144,
+   "vl": 10157,
+   "vr": 10157
+  },
+  {
+   "saida": "assets/sfx/vx_8.wav",
+   "addr": 334384,
+   "pitch": 1144,
+   "vl": 10157,
+   "vr": 10157
+  },
+  {
+   "saida": "assets/sfx/vx_9.wav",
+   "addr": 337600,
+   "pitch": 1144,
+   "vl": 10157,
+   "vr": 10157
+  },
+  {
+   "saida": "assets/sfx/x6_charge.wav",
+   "addr": 174752,
+   "pitch": 1525,
+   "vl": 8227,
+   "vr": 8227
+  },
+  {
+   "saida": "assets/sfx/x6_charged.wav",
+   "addr": 165344,
+   "pitch": 1525,
+   "vl": 10661,
+   "vr": 13433
+  },
+  {
+   "saida": "assets/sfx/x6_dash.wav",
+   "addr": 151648,
+   "pitch": 1525,
+   "vl": 10157,
+   "vr": 10157
+  },
+  {
+   "saida": "assets/sfx/x6_grab.wav",
+   "addr": 222816,
+   "pitch": 762,
+   "vl": 9167,
+   "vr": 9167
+  },
+  {
+   "saida": "assets/sfx/x6_hover.wav",
+   "addr": 199504,
+   "pitch": 762,
+   "vl": 8227,
+   "vr": 8227
+  },
+  {
+   "saida": "assets/sfx/x6_jump.wav",
+   "addr": 142720,
+   "pitch": 1448,
+   "vl": 12290,
+   "vr": 12290
+  },
+  {
+   "saida": "assets/sfx/x6_semi.wav",
+   "addr": 159472,
+   "pitch": 1525,
+   "vl": 10661,
+   "vr": 13433
+  },
+  {
+   "saida": "assets/sfx/x6_shot.wav",
+   "addr": 148832,
+   "pitch": 1525,
+   "vl": 8544,
+   "vr": 10157
+  }
+ ]
+}

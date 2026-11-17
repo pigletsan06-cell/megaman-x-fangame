@@ -1,0 +1,27 @@
+{
+ "nota": "Sons dos jogos (X5, fase com a armadura 3): a RAM do SPU fotografada no quadro 2750; cada som é o ADPCM de um endereço, na altura e no volume do key-on do jogo, vezes 0,43 (conferido: os WAV saem IDÊNTICOS aos do PC do dono).",
+ "jogo": "x5",
+ "disco": "x5",
+ "quadros": 2760,
+ "botoes": "start:700-710,down:830-835,down:870-875,down:910-915,cross:960-966,cross:1210-1216,cross:1900-1903,cross:1930-1933,cross:1960-1963,cross:1990-1993,cross:2020-2023,cross:2050-2053,cross:2080-2083,cross:2110-2113,cross:2140-2143,cross:2170-2173,cross:2200-2203,cross:2230-2233,cross:2260-2263,cross:2290-2293,cross:2320-2323,cross:2350-2353,cross:2380-2383,cross:2410-2413,cross:2440-2443,cross:2470-2473,cross:2500-2503,cross:2530-2533,cross:2560-2563,cross:2590-2593",
+ "poke": "d1c0c:0001:1255-1600,d1c48:0300:1000-1800",
+ "fotos": {},
+ "spu": 2750,
+ "ganho": 0.43,
+ "sons": [
+  {
+   "saida": "assets/sfx/x5_gaea_giga1.wav",
+   "addr": 294256,
+   "pitch": 1525,
+   "vl": 11198,
+   "vr": 11198
+  },
+  {
+   "saida": "assets/sfx/x5_gaea_giga2.wav",
+   "addr": 303696,
+   "pitch": 1525,
+   "vl": 12290,
+   "vr": 12290
+  }
+ ]
+}
