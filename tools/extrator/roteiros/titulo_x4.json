@@ -1,0 +1,12 @@
+{
+ "nota": "Tela de título do X4 (quadro 742, o disco do X4 rodando no nosso núcleo de PS1, sem apertar nada). Conferido: mesmos pontos do PC do dono.",
+ "jogo": "x4",
+ "disco": "x4",
+ "quadros": 743,
+ "botoes": "",
+ "poke": "",
+ "fotos": {
+  "742": "assets/menus/titulo_x4.png"
+ },
+ "formato": "rgb"
+}

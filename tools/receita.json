@@ -1,5 +1,5 @@
 {
- "versao_receita": 9,
+ "versao_receita": 10,
  "nota": "Etapas que o launcher roda no PC do jogador, a partir dos discos dele. Cada etapa só roda de novo se mudar o disco, os arquivos dela ou uma etapa de antes.",
  "etapas": [
   {
@@ -240,6 +240,37 @@
    ]
   },
   {
+   "id": "titulo_x4",
+   "nome": "Título do X4",
+   "discos": [
+    "x4"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "titulo_x4",
+    "disco_x4={disco_x4}",
+    "captura={captura}",
+    "bios={tools}/captura/openbios.bin",
+    "godot_render={godot_render}",
+    "godot={godot}"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{tools}/captura/openbios.bin",
+    "{captura}"
+   ],
+   "depois_de": [
+    "godot_inicial"
+   ]
+  },
+  {
    "id": "titulo_x5",
    "nome": "Título do X5",
    "discos": [
@@ -423,7 +454,8 @@
     "titulo_x6",
     "textos_x5",
     "loading_x5",
-    "loading_x6"
+    "loading_x6",
+    "titulo_x4"
    ]
   }
  ]

@@ -160,6 +160,9 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	for sp in r.get("sprites", []):
 		if not sprite_da_vram(dir, int(sp.quadro), int(sp.linha), int(sp.clut), jogo.path_join(str(sp.saida))): return -1
 		n += 1
+	if r.has("fusion"):
+		if not monta_fusion(dir, str(r.fusion.spec), jogo.path_join(str(r.fusion.saida))): return -1
+		n += 1
 	if fotos.is_empty():
 		for f in DirAccess.get_files_at(dir): DirAccess.remove_absolute(dir.path_join(f))
 		DirAccess.remove_absolute(dir); DirAccess.remove_absolute(jogo.path_join(".captura"))
@@ -437,12 +440,40 @@ func sprite_da_vram(dir: String, q: int, linha: int, clut_alvo: int, saida: Stri
 	DirAccess.make_dir_recursive_absolute(saida.get_base_dir())
 	return im.save_png(saida) == OK
 
+## FUSION do título: letras da página de texto do menu do X5 (do disco) + o nosso retoque (fusion.json)
+func monta_fusion(dir: String, spec_path: String, saida: String) -> bool:
+	var sp: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(spec_path))
+	var v := FileAccess.get_file_as_bytes(dir.path_join("v_%d.bin" % int(sp.quadro))).to_int32_array()
+	if v.size() != 1024 * 512 / 2: printerr("VRAM do quadro %d faltando" % int(sp.quadro)); return false
+	var vram := func(x: int, y: int) -> int:
+		var k := (y & 511) * 1024 + (x & 1023)
+		return (v[k >> 1] >> ((k & 1) * 16)) & 0xFFFF
+	var pgx := int(sp.pagina[0]); var pgy := int(sp.pagina[1]); var clut := int(sp.clut)
+	var cx := (clut & 0x3F) * 16; var cy := (clut >> 6) & 0x1FF
+	var W := int(sp.largura); var H := int(sp.altura); var l0 := int(sp.linha)
+	var img := PackedByteArray(); img.resize(W * H * 4)
+	for le in sp.letras:
+		for x in range(maxi(0, int(le.de)), mini(W, int(le.ate))):
+			var tu := x + int(le.desloc)
+			if tu < 0 or tu > 255: continue
+			for y in H:
+				var wd: int = vram.call(pgx + (tu >> 2), pgy + l0 + y)
+				var c: int = vram.call(cx + ((wd >> ((tu & 3) * 4)) & 15), cy)
+				if c == 0: continue
+				var k := (y * W + x) * 4
+				img[k] = (c & 31) << 3; img[k + 1] = ((c >> 5) & 31) << 3; img[k + 2] = ((c >> 10) & 31) << 3; img[k + 3] = 255
+	for rt in sp.retoque:   # [y, x, r, g, b, a]: o nosso retoque
+		var k := (int(rt[0]) * W + int(rt[1])) * 4
+		for c in 4: img[k + c] = int(rt[2 + c])
+	DirAccess.make_dir_recursive_absolute(saida.get_base_dir())
+	return Image.create_from_data(W, H, false, Image.FORMAT_RGBA8, img).save_png(saida) == OK
+
 const GRUPOS := {
 	"x4_arc": {"discos": ["x4"]},
 	"videos_x4": {"discos": ["x4"]}, "videos_x5": {"discos": ["x5"]}, "videos_x6": {"discos": ["x6"]},
 	"menus_x5": {"discos": ["x5"], "captura": true},
 	"menus_x6": {"discos": ["x6"], "captura": true},
-	"titulo_x5": {"discos": ["x5"], "captura": true}, "titulo_x6": {"discos": ["x6"], "captura": true},
+	"titulo_x4": {"discos": ["x4"], "captura": true}, "titulo_x5": {"discos": ["x5"], "captura": true}, "titulo_x6": {"discos": ["x6"], "captura": true},
 	"textos_x5": {"discos": ["x5"], "captura": true},
 	"loading_x5": {"discos": ["x5"], "captura": true}, "loading_x6": {"discos": ["x6"], "captura": true},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},

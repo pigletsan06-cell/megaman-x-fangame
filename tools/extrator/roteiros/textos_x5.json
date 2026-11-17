@@ -1,5 +1,5 @@
 {
- "nota": "Textos do menu do X5 (PRESS START, GAME START, CONTINUE, OPTION acesos e apagados): sprites 16x16 da VRAM (página 384,0 de 4 bits, CLUT 0x7800 apagado / 0x7801 aceso), cores 5 bits << 3, recortados nos pontos opacos. Conferido: iguais aos do PC do dono.",
+ "nota": "Textos do menu do X5 (PRESS START, GAME START, CONTINUE, OPTION acesos e apagados): sprites 16x16 da VRAM (página 384,0 de 4 bits, CLUT 0x7800 apagado / 0x7801 aceso), cores 5 bits << 3, recortados nos pontos opacos. Conferido: iguais aos do PC do dono. Também monta o FUSION do título (fusion.json).",
  "jogo": "x5",
  "disco": "x5",
  "quadros": 877,
@@ -49,5 +49,9 @@
    "clut": 30720,
    "saida": "assets/menus/menu_option_off.png"
   }
- ]
+ ],
+ "fusion": {
+  "spec": "res://fusion.json",
+  "saida": "assets/menus/titulo_fusion.png"
+ }
 }
