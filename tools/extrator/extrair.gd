@@ -173,14 +173,47 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	prog.call(3, 3, "pronto")
 	return n
 
+## miniaturas dos chefes: recorte da tela de seleção com a máscara do retrato (tools/extrator/mini, nossa) + versão cinza
+## (mesma conta do hub_masks.py: cinza do PIL (R*19595+G*38470+B*7471+0x8000)>>16, vezes 0,55 truncado)
+func miniaturas(jg: String, jogo: String, prog: Callable) -> int:
+	var lista = JSON.parse_string(FileAccess.get_file_as_string("res://mini/mini.json"))
+	var ks := []
+	for k in lista:
+		if str(k).begins_with(jg + "_"): ks.append(k)
+	var n := 0
+	for k in ks:
+		var e: Dictionary = lista[k]
+		var tela := Image.load_from_file(jogo.path_join("assets/menus/" + str(e.tela)))
+		if tela == null: printerr("falta a tela ", e.tela); return -1
+		tela.convert(Image.FORMAT_RGBA8)
+		var mk := Image.load_from_file(ProjectSettings.globalize_path("res://mini/%s.png" % k))
+		mk.convert(Image.FORMAT_L8)
+		var w := mk.get_width(); var h := mk.get_height()
+		var cr := tela.get_region(Rect2i(int(e.x), int(e.y), w, h))
+		var px := cr.get_data(); var al := mk.get_data()
+		var cz := px.duplicate()
+		for i in w * h:
+			px[i * 4 + 3] = al[i]
+			var l := (px[i * 4] * 19595 + px[i * 4 + 1] * 38470 + px[i * 4 + 2] * 7471 + 0x8000) >> 16
+			var v := int(l * 0.55)
+			cz[i * 4] = v; cz[i * 4 + 1] = v; cz[i * 4 + 2] = v; cz[i * 4 + 3] = al[i]
+		DirAccess.make_dir_recursive_absolute(jogo.path_join("assets/menus/mini"))
+		Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, px).save_png(jogo.path_join("assets/menus/mini/%s.png" % k))
+		Image.create_from_data(w, h, false, Image.FORMAT_RGBA8, cz).save_png(jogo.path_join("assets/menus/mini/%s_cinza.png" % k))
+		n += 2
+		prog.call(n, ks.size() * 2, "miniaturas do " + jg.to_upper())
+	return n
+
 const GRUPOS := {
 	"x4_arc": {"discos": ["x4"]},
 	"videos_x4": {"discos": ["x4"]}, "videos_x5": {"discos": ["x5"]}, "videos_x6": {"discos": ["x6"]},
 	"menus_x5": {"discos": ["x5"], "captura": true},
 	"menus_x6": {"discos": ["x6"], "captura": true},
+	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
 }
 func roda_grupo(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> int:
 	if GRUPOS.get(nm, {}).get("captura", false): return captura(nm, jogo, discos, prog)
+	if nm.begins_with("mini_"): return miniaturas(nm.substr(5), jogo, prog)
 	match nm:
 		"x4_arc": return x4_arc(jogo, discos, prog)
 		"videos_x4": return videos("x4", jogo, discos, prog)

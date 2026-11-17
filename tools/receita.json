@@ -1,5 +1,5 @@
 {
- "versao_receita": 4,
+ "versao_receita": 5,
  "nota": "Etapas que o launcher roda no PC do jogador, a partir dos discos dele. Cada etapa só roda de novo se mudar o disco, os arquivos dela ou uma etapa de antes.",
  "etapas": [
   {
@@ -173,6 +173,48 @@
    ]
   },
   {
+   "id": "mini_x5",
+   "nome": "Miniaturas do X5",
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "mini_x5"
+   ],
+   "arquivos": [
+    "{tools}/extrator"
+   ],
+   "depois_de": [
+    "menus_x5"
+   ]
+  },
+  {
+   "id": "mini_x6",
+   "nome": "Miniaturas do X6",
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "mini_x6"
+   ],
+   "arquivos": [
+    "{tools}/extrator"
+   ],
+   "depois_de": [
+    "menus_x6"
+   ]
+  },
+  {
    "id": "importar",
    "nome": "Preparar no Godot",
    "cmd": [
@@ -194,7 +236,9 @@
     "videos_x5",
     "videos_x6",
     "menus_x5",
-    "menus_x6"
+    "menus_x6",
+    "mini_x5",
+    "mini_x6"
    ]
   }
  ]

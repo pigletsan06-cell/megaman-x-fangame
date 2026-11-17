@@ -19,6 +19,7 @@
 !/godot/assets/menus/
 /godot/assets/menus/*
 !/godot/assets/menus/mascaras.json
+!/godot/assets/menus/donos/
 
 # discos, saves, dumps e coisas geradas
 *.bin
