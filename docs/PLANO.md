@@ -97,6 +97,10 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
   desenhar com tests/render_dump.gd (JOGO=x4), depois testar com e sem "5bits". Script de partida: /tmp/x4_vram_busca.gd.
   Tentado (17/nov ~04h): X4R.vram_draw vem com 1 MB, mas `m.stream` fica vazio mesmo com step_frame(true) no jogo x4 →
   ver em x4_machine.gd (step_frame, ~linhas 387-438) de onde vêm as primitivas do x4 nativo antes de repetir.
+  ACHADO: sem X4_SEM_VIDEO=1 o X4 fica parado esperando o vídeo (headless) → 0 primitivas; é isso que fazia a pasta do dono e a
+  pasta nova darem resultados diferentes (a nova não tem os .ogv e pula). Com X4_SEM_VIDEO=1: quadro 300 estado 3/9 (conversa
+  do QG), 1822 primitivas. Falta: apertar cross a cada 40 quadros (como tests/x4ms.gd: m.forced = 1<<6) até a seleção, então
+  mem(8,0) / mem(9,cursor), gravar v/p e desenhar (JOGO=x4); comparar com e sem "5bits".
 - `titulo_x6`: não é quadro do X6OP.STR nem do boot no psxcore (cores contínuas 0..255) — talvez do recomp. Fica aproximado.
 - `titulo_fusion` (66x12, "FUSION" laranja itálico): montado por nós com letras de alguma fonte do jogo — achar as letras
   (provavelmente a fonte dos nomes de fase das telas de seleção X5/X6) e a posição de cada uma.
