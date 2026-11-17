@@ -70,6 +70,7 @@ func escreve(jogo: String, rel: String, bytes: PackedByteArray) -> bool:
 	var w := FileAccess.open(p + ".tmp", FileAccess.WRITE)
 	if w == null: printerr("não consegui escrever ", p); return false
 	w.store_buffer(bytes); w.close()
+	if FileAccess.file_exists(p): DirAccess.remove_absolute(p)
 	return DirAccess.rename_absolute(p + ".tmp", p) == OK
 
 # ---------------- grupos ----------------
@@ -117,9 +118,16 @@ func videos(jg: String, jogo: String, discos: Dictionary, prog: Callable) -> int
 			"-c:a", "libvorbis", "-q:a", "5", "-ar", "44100", dst + ".tmp.ogv"], out, true)
 		DirAccess.remove_absolute(src)
 		# (o leitor de STR do ffmpeg reclama no fim do arquivo: normal, o vídeo sai inteiro)
-		if not FileAccess.file_exists(dst + ".tmp.ogv") or FileAccess.open(dst + ".tmp.ogv", FileAccess.READ).get_length() == 0:
+		# (o arquivo aberto tem que ser fechado antes de renomear: no Windows não dá para renomear arquivo aberto)
+		var fv := FileAccess.open(dst + ".tmp.ogv", FileAccess.READ)
+		var tam_ok := fv != null and fv.get_length() > 0
+		if fv != null: fv.close()
+		fv = null
+		if not tam_ok:
 			printerr("ffmpeg falhou em %s (%s): %s" % [saida, ff, str(out).right(300)]); return -1
-		DirAccess.rename_absolute(dst + ".tmp.ogv", dst)
+		if FileAccess.file_exists(dst): DirAccess.remove_absolute(dst)
+		if DirAccess.rename_absolute(dst + ".tmp.ogv", dst) != OK:
+			printerr("não consegui renomear ", dst + ".tmp.ogv"); return -1
 	DirAccess.remove_absolute(tmp)
 	prog.call(lista.size(), lista.size(), "vídeos prontos")
 	return lista.size()
@@ -202,7 +210,9 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 		OS.execute(ff, ["-nostdin", "-v", "error", "-y", "-f", "s16le", "-ar", "44100", "-ac", "2", "-i", dir.path_join("laco.raw"),
 			"-c:a", "libvorbis", "-q:a", str(au.get("qualidade", 5)), dst + ".tmp.ogg"], o2, true)
 		if not FileAccess.file_exists(dst + ".tmp.ogg"): printerr("ffmpeg falhou no som: ", str(o2).right(300)); return -1
-		DirAccess.rename_absolute(dst + ".tmp.ogg", dst); n += 1
+		if FileAccess.file_exists(dst): DirAccess.remove_absolute(dst)
+		if DirAccess.rename_absolute(dst + ".tmp.ogg", dst) != OK: printerr("não consegui renomear ", dst + ".tmp.ogg"); return -1
+		n += 1
 	for sp in r.get("sprites", []):
 		if not sprite_da_vram(dir, int(sp.quadro), int(sp.linha), int(sp.clut), jogo.path_join(str(sp.saida))): return -1
 		n += 1
