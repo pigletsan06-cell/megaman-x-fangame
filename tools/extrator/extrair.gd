@@ -166,7 +166,18 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 		if not FileAccess.file_exists(t): printerr("não desenhou o quadro %s (saída %d): %s" % [k, code, str(out).right(400)]); return -1
 		var dst := jogo.path_join(str(fotos[k]))
 		DirAccess.make_dir_recursive_absolute(dst.get_base_dir())
-		DirAccess.copy_absolute(t, dst); n += 1
+		if str(r.get("cores", "")) == "" and str(r.get("formato", "")) == "":
+			DirAccess.copy_absolute(t, dst); n += 1
+			continue
+		var im := Image.load_from_file(t)
+		im.convert(Image.FORMAT_RGBA8)
+		var px := im.get_data()
+		if str(r.get("cores", "")) == "5bits":   # cores do desenho antigo: 5 bits por canal << 3 (em vez de *255/31)
+			for i in px.size():
+				if i % 4 != 3: px[i] = int(round(px[i] * 31.0 / 255.0)) << 3
+		im = Image.create_from_data(im.get_width(), im.get_height(), false, Image.FORMAT_RGBA8, px)
+		if str(r.get("formato", "")) == "rgb": im.convert(Image.FORMAT_RGB8)
+		im.save_png(dst); n += 1
 	prog.call(2, 3, "limpando")
 	for f in DirAccess.get_files_at(dir): DirAccess.remove_absolute(dir.path_join(f))
 	DirAccess.remove_absolute(dir); DirAccess.remove_absolute(jogo.path_join(".captura"))
@@ -209,6 +220,7 @@ const GRUPOS := {
 	"videos_x4": {"discos": ["x4"]}, "videos_x5": {"discos": ["x5"]}, "videos_x6": {"discos": ["x6"]},
 	"menus_x5": {"discos": ["x5"], "captura": true},
 	"menus_x6": {"discos": ["x6"], "captura": true},
+	"titulo_x5": {"discos": ["x5"], "captura": true}, "titulo_x6": {"discos": ["x6"], "captura": true},
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
 }
 func roda_grupo(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> int:

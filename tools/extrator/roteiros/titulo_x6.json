@@ -1,0 +1,13 @@
+{
+ "nota": "Tela de título do X6 (quadro 500). APROXIMADA: a do PC do dono foi feita de outro jeito (cores com diferença de 1 a 3).",
+ "jogo": "x6",
+ "disco": "x6",
+ "quadros": 501,
+ "botoes": "",
+ "poke": "",
+ "fotos": {
+  "500": "assets/menus/titulo_x6.png"
+ },
+ "cores": "5bits",
+ "formato": "rgb"
+}

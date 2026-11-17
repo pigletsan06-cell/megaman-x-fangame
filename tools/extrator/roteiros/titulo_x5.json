@@ -1,0 +1,13 @@
+{
+ "nota": "Tela de título do X5 (quadro 600, antes de apertar Start). As cores saem como no desenho antigo (5 bits << 3): mesmos pontos do PC do dono.",
+ "jogo": "x5",
+ "disco": "x5",
+ "quadros": 601,
+ "botoes": "",
+ "poke": "",
+ "fotos": {
+  "600": "assets/menus/titulo_x5.png"
+ },
+ "cores": "5bits",
+ "formato": "rgb"
+}

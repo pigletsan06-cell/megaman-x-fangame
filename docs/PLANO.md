@@ -55,6 +55,14 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
 - recomp X5/X6: `/home/claude/tools/rc_build.sh` (MegaManX{5,6}Recomp + psxrecomp-v4 + SDL3 + nosso psx_embed.cpp/gpu.c).
   É a parte mais pesada. Enquanto isso o jogo cai no psxcore sozinho (x4_machine.gd: usa recomp só se a classe existir).
 
+- FEITO `mini_x4/x5/x6` (48 com os mesmos pontos; x4 depende das telas do X4) e `donos` (máscaras nossas, no repositório).
+- Títulos: `titulo_x5` igual (quadro 600; cores "5bits": round(c*31/255)<<3 — os títulos foram desenhados com o shader
+  antigo). `titulo_x6` APROXIMADO (diferença até 117 em 65% dos pontos: outro quadro/outra conversão; investigar).
+  `titulo_x4` depende do X4. Faltam `loading/x5_a,b x6_a,b`, `press_start`, `menu_*_on/off`, `titulo_fusion`.
+- Ideia para o que não der para refazer idêntico (feito à mão antes, sem script): refazer também no PC do dono com o mesmo
+  caminho novo (perguntar ao dono) — aí os dois PCs ficam iguais entre si.
+- Ferramenta de busca de quadros: /tmp/procura.sh (captura + desenho + compara com um alvo).
+
 ## Ordem de trabalho
 
 1. [x] `captura` para Linux e Windows a partir das fontes do `psxcore` (mesmo resultado do harness).
