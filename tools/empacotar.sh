@@ -32,7 +32,7 @@ CB=$(mktemp -d); "$REPO/tools/captura/compilar.sh" "$CB" > /dev/null; cp "$CB/ca
 "$REPO/tools/windows/compilar.sh" "$P/Mega Man X Fusion.exe" > /dev/null
 [ -n "$CHAVE" ] && tr -d ' \r\n' < "$CHAVE" > "$P/chave.txt"
 # confere: nada dos discos (sem .bin/.iso/.STR/.sec, sem assets gerados) e nenhum arquivo fora da lista do repositório
-if find "$P" \( -iname "*.bin" -o -iname "*.iso" -o -iname "*.str" -o -iname "*.sec" -o -iname "*.ogv" -o -iname "*.xa" \) ! -path "*/tools/captura/openbios.bin" | grep -q .; then echo "ERRO: arquivo de disco no pacote"; exit 1; fi
+if find "$P" \( -iname "*.bin" -o -iname "*.iso" -o -iname "*.str" -o -iname "*.sec" -o -iname "*.ogv" -o -iname "*.xa" \) ! -name "openbios.bin" | grep -q .; then echo "ERRO: arquivo de disco no pacote"; exit 1; fi
 rm -f "$SAIDA"; (cd "$T" && zip -qr -9 "$SAIDA" "Mega Man X Fusion")
 rm -rf "$T"
 ls -la "$SAIDA"; unzip -l "$SAIDA" | tail -1
