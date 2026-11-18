@@ -907,6 +907,7 @@ func _input(e: InputEvent) -> void:   # Tab chega aqui antes da navegação de f
 
 func _unhandled_input(e: InputEvent) -> void:
 	if not (e is InputEventKey or e is InputEventJoypadButton) or not e.is_pressed() or e.is_echo(): return
+	if trans_layer: get_viewport().set_input_as_handled(); return   # durante a transição
 	if new_part_msg != "": new_part_msg = ""; _refresh()
 	if slot_open: _slot_input(e); return
 	if build_open: _build_input(e); return
@@ -929,7 +930,9 @@ func _unhandled_input(e: InputEvent) -> void:
 	var g: String = GAMES[page]
 	if not finals_open and (_key(e, KEY_ESCAPE) or _joy(e, JOY_BUTTON_B)):   # volta para a escolha do jogo
 		get_viewport().set_input_as_handled()
-		jogo_open = true; in_page = false; jogo_sel = page; _sfx("menu_back"); _refresh(); return
+		_sfx("menu_back")
+		_transicao(func() -> void: jogo_open = true; in_page = false; jogo_sel = page; _refresh())
+		return
 	if (_key(e, KEY_C) or _joy(e, JOY_BUTTON_X)) and not finals_open and (g == "x4" or g == "x5" or g == "x6"):
 		build_open = true; arm_row = 0 if is_zero else arm_row; _sfx("menu_open")
 		get_viewport().set_input_as_handled(); _refresh(); return
@@ -1090,6 +1093,30 @@ func _sfx(nm: String) -> void:
 var jogo_open := false
 var jogo_sel := 0
 var jogo_box: Control
+
+# ---- transição: a tela "Now Loading" de um dos jogos (sorteada) entre a seleção de chefes e a escolha do jogo ----
+var trans_layer: CanvasLayer
+func _transicao(meio: Callable) -> void:
+	var telas := []
+	for g in GAMES:
+		if ResourceLoader.exists("res://assets/menus/loading/%s_a.png" % g) and ResourceLoader.exists("res://assets/menus/loading/%s_b.png" % g): telas.append(g)
+	if telas.is_empty(): meio.call(); return
+	var g: String = telas[randi() % telas.size()]
+	var ta: Texture2D = load("res://assets/menus/loading/%s_a.png" % g)
+	var tb: Texture2D = load("res://assets/menus/loading/%s_b.png" % g)
+	trans_layer = CanvasLayer.new(); trans_layer.layer = 120; add_child(trans_layer)
+	var raiz := Control.new(); raiz.size = Vector2(320, 240); raiz.modulate.a = 0.0; trans_layer.add_child(raiz)
+	var bg := ColorRect.new(); bg.color = Color.BLACK; bg.size = Vector2(320, 240); raiz.add_child(bg)
+	var tr := TextureRect.new(); tr.size = Vector2(320, 240); tr.texture = ta; tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE; tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; raiz.add_child(tr)
+	var tm := Timer.new(); tm.wait_time = 0.25; tm.autostart = true; raiz.add_child(tm)   # o texto pisca como no jogo
+	tm.timeout.connect(func() -> void: tr.texture = tb if tr.texture == ta else ta)
+	var tw := create_tween()
+	tw.tween_property(raiz, "modulate:a", 1.0, 0.15)
+	tw.tween_callback(meio)
+	tw.tween_interval(0.7)
+	tw.tween_property(raiz, "modulate:a", 0.0, 0.2)
+	tw.tween_callback(func() -> void: trans_layer.queue_free(); trans_layer = null)
 
 func _jogo_input(e: InputEvent) -> void:
 	if _key(e, KEY_LEFT) or _joy(e, JOY_BUTTON_DPAD_LEFT) or _key(e, KEY_A) or _joy(e, JOY_BUTTON_LEFT_SHOULDER):
