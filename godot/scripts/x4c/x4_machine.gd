@@ -612,6 +612,7 @@ func _launch_step() -> void:
 		for ad in FangameSave.PSX[game].tanks:
 			var tv := int(ClassDB.class_call_static(core, "mem", ad, 0, 1))
 			if tv & 0x80 and (tv & 0x7F) > stc: ClassDB.class_call_static(core, "mem", ad, (tv & 0x80) | stc, -1)
+		_wpn_step()
 	if L.has("save") and seen_play: _hearts_step()
 	# jogando: volta ao hub quando a fase acaba (vitória, fim de jogo ou saída)
 	var st2 := 0
@@ -1085,6 +1086,16 @@ func _blk_log(e: PackedByteArray) -> void:
 var hearts_got := 0
 var hp_cap := -1
 const HP_ATUAL := {"x5": 0x9A0FC, "x6": 0x970FC}   # vida do X (objeto do jogador +0x5C; bit 7 = levou golpe)
+
+# X5/X6: voltando a uma fase já vencida o chefe aparece de novo (a fase fica fora da máscara de chefes), mas a arma
+# dele precisa continuar: o jogo copia a máscara para o X (+0xC9, as armas disponíveis) ao entrar e ao renascer
+func _wpn_step() -> void:
+	var stg := int(L.get("stage", 0))
+	if stg < 1 or stg > 8 or not stg in FangameSave.cur().progress.get(game, []): return
+	var ad := int(FangameSave.PSX[game].wpn)
+	var v := int(ClassDB.class_call_static(core, "mem", ad, 0, 1))
+	var bit := 1 << (stg - 1)
+	if v & bit == 0: ClassDB.class_call_static(core, "mem", ad, v | bit, -1)
 
 func _hearts_step() -> void:
 	if hp_cap < 0: hp_cap = int(L.save.get("hp", 0))

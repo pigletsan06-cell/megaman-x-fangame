@@ -13,8 +13,8 @@ const MAX_HEARTS := 24    # heart tanks dos 3 jogos (8 em cada)
 const HEARTS_PER_UP := 3  # cada 3 heart tanks = +2 de vida máxima: com os 24, 8 aumentos = 0x30 (o máximo dos jogos)
 # endereços no X5/X6 (bloco do jogo: X5 0x800D1C00, X6 0x800CCED0; mesma estrutura do engine_obj do X4)
 const PSX := {
-	"x5": {"hp": [0xD1C47, 0xD1C48], "bosses": 0xD1C4C, "upg": 0xD1C7E, "ext": 0xD1C80, "tanks": [0xD1C76, 0xD1C77], "parts": 0xD1CA0},
-	"x6": {"hp": [0xCCF2B, 0xCCF2C], "bosses": 0xCCF30, "upg": 0xCCF3A, "ext": 0xCCF3C, "tanks": [0xCCF33, 0xCCF34], "parts": 0xCCF38},
+	"x5": {"hp": [0xD1C47, 0xD1C48], "bosses": 0xD1C4C, "upg": 0xD1C7E, "ext": 0xD1C80, "tanks": [0xD1C76, 0xD1C77], "parts": 0xD1CA0, "wpn": 0x9A169},
+	"x6": {"hp": [0xCCF2B, 0xCCF2C], "bosses": 0xCCF30, "upg": 0xCCF3A, "ext": 0xCCF3C, "tanks": [0xCCF33, 0xCCF34], "parts": 0xCCF38, "wpn": 0x97169},
 }
 # programas de armadura das cápsulas do Dr. Light (X5 0x800D1CA0, X6 0x800CCF38, u16): cada fase tem uma cápsula;
 # a peça que ela dá (fase -> [armadura, peça]):
