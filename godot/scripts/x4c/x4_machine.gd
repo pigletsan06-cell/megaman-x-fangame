@@ -610,9 +610,13 @@ func _launch_step() -> void:
 	var st2 := 0
 	var ok := []
 	if game == "x4":
-		st2 = ClassDB.class_call_static(core, "mem", 0, 0, 1); ok = [4, 5, 6]
+		# estados do X4 (decomp: func_800200D4): 7 arma nova, 9 menu SALVAR/CONTINUAR do X4, 10 Final Weapon passando para
+		# a 2a parte (vídeo do Zero e carrega: a fase continua), 11 final do jogo
+		st2 = ClassDB.class_call_static(core, "mem", 0, 0, 1); ok = [4, 5, 6, 10]
 		if st2 == 6: seen_play = true
-		if seen_play and st2 in [7, 9, 10, 11]: won = true   # fim da fase do chefe (decomp: func_800200D4)
+		if seen_play and st2 in [7, 9, 11]: won = true
+		if seen_play and st2 == 9 and not preload_mode:   # fase terminada: o save é o do fangame, sem o menu de salvar do X4
+			_back_to_hub(); return
 	else:
 		st2 = ClassDB.class_call_static(core, "mem", PSX_ADDR[game].state, 0, 1); ok = [7, 8, 9, 10]
 		if st2 == 10: seen_play = true

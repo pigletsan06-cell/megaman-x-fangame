@@ -529,9 +529,16 @@ static struct WeaponObj* fg_new_weapon(void)
 struct Unk_unk68 fg_orb_box[] = { { -16, -16, 32, 32 } };
 struct Unk_unk68 fg_boom_box[] = { { -32, -32, 64, 64 } };
 struct Unk_unk68 fg_dive_box[] = { { -16, -24, 32, 48 } };
+#define HAB_VAGAS_DO_X 6        // explosões e bolas não ocupam as 6 últimas vagas de arma (ficam para os tiros do X)
 static struct WeaponObj* hab_box_spawn(int kind, int x, int y, s8 bg, const struct Unk_unk68* box)
 {
-    struct WeaponObj* w = fg_new_weapon();
+    struct WeaponObj* w;
+    if (kind == 0xE8 || kind == 0xE9) {
+        int i, livres = 0;
+        for (i = 0; i < 0x10; i++) if (!weapon_objects[i].active) livres++;
+        if (livres <= HAB_VAGAS_DO_X) return NULL;
+    }
+    w = fg_new_weapon();
     if (!w) return NULL;
     w->pad99[0] = (s8)kind; FG_AGE(w) = 0; FG_HIT(w) = 1;
     w->x_pos.val = 0; w->y_pos.val = 0; w->x_pos.i.hi = (s16)x; w->y_pos.i.hi = (s16)y;
@@ -748,16 +755,12 @@ int fg_weapon_update(struct WeaponObj* w)
     if (k < 0xF8 || k > 0xFE || k == 0xF9) return 0;
     if (--FG_HIT(w) <= 0) { FG_HIT(w) = 4; if (FG_AGE(w)) w->unk64++; }
     switch (k) {
-    case 0xF8:   // lança da Falcon X6: atravessa, alcance de 80 px e some
+    case 0xF8:   // lança da Falcon X6: atravessa e vai até sair da tela, como no X6 (antes sumia com 80 px)
         if (w->unk98 < 0) { fg_despawn(w, 1); return 1; }
         if (w->unk98 > 0) w->unk98 = 0;
         if (FG_AGE(w)++ == 0) return 1;
         w->x_pos.val += w->x_vel.val;
-        {
-            int d = w->x_pos.i.hi - w->unk8A;
-            if (d < 0) d = -d;
-            if (d > 80 || func_8002B1E8(BASE_OBJECT(w), 0x20, 0x14)) fg_despawn(w, 1);
-        }
+        if (func_8002B1E8(BASE_OBJECT(w), 0x20, 0x14)) fg_despawn(w, 1);
         return 1;
     case 0xFA:   // lança da Falcon: atravessa
         if (w->unk98 < 0) { fg_despawn(w, 1); return 1; }   // rebatido
@@ -997,8 +1000,49 @@ static void nova_update(struct PlayerObj* self)
     else if (nova_sub == 1) fg_nova_frame = b + (nova_t < 3 ? 214 : 217);
     else fg_nova_frame = b + 217 + nova_t % 4;
 }
+// ---- conta de tiros do X (shot_count / special_shot_count) ----
+// O X4 soma o tiro depois de chamar a rotina do disparo, mesmo quando não sobrou vaga de arma para o objeto (são só
+// 16, e as caixas, bolas e tiros do fangame usam as mesmas); sem objeto ninguém desconta. Com 3 presos o X não atira
+// mais (limite do lemon), as armas de chefe esperam os especiais chegarem a 0 e a mira do Aiming Laser some (some com
+// 3 especiais). A cada quadro: a conta não passa do número de objetos vivos que ainda podem descontar, mais os tiros
+// carregados que vão nascer do brilho do cano (visual 2) e a lança/plasma que nasce 7 quadros depois do disparo.
+static int fg_kind_sem_conta(int k)   // objetos nossos que somem sem descontar tiro (fg_despawn(w, 0))
+{
+    switch (k) {
+    case 0xD8: case 0xD9: case 0xE0: case 0xE1: case 0xE2: case 0xE8: case 0xE9: case 0xEA: case 0xEE: case 0xEF:
+    case 0xF0: case 0xF1: case 0xF2: case 0xF4: case 0xF5: case 0xF6: case 0xFB: case 0xFE: return 1;
+    }
+    return 0;
+}
+static void fg_shot_resync(struct PlayerObj* p)
+{
+    int i, tiros = 0, esp = 0, marca[3] = { 0, 0, 0 };
+    for (i = 0; i < 0x10; i++) {
+        struct WeaponObj* w = &weapon_objects[i];
+        int id = (u8)w->id;
+        if (!w->active) continue;
+        if (id == 6) { if ((u8)w->unk2 < 3) { esp++; marca[(u8)w->unk2] = 1; } continue; }   // marcas (a mira não conta)
+        if (id == 0xF) { esp++; continue; }                                                // Aiming Laser carregado
+        if (id == 0x16) continue;                                                          // Nova Strike
+        if (id == 0x12 && fg_kind_sem_conta(FG_KIND(w))) continue;
+        tiros++;
+        if ((id >= 1 && id <= 0x11 && id != 9 && id != 0xC)) esp++;
+    }
+    for (i = 0; i < 0x20; i++) {
+        struct VisualObj* v = &visual_objects[i];
+        if (v->active && v->id == 2 && v->unk5 == 0) tiros++;   // tiro carregado ainda no cano
+    }
+    if (shot_wait > 0) tiros++;
+    if (p->shot_count > tiros) p->shot_count = (s8)tiros;
+    if (p->special_shot_count > esp) p->special_shot_count = (s8)esp;
+    if (p->shot_count < 0) p->shot_count = 0;                   // (descontou demais: -1 também trava as armas de chefe)
+    if (p->special_shot_count < 0) p->special_shot_count = 0;
+    for (i = 0; i < 3; i++) if (p->weapon_06_slots[i] && !marca[i]) p->weapon_06_slots[i] = NULL;
+}
+
 void fg_tick(struct PlayerObj* self)
 {
+    if (self == &g_Player) fg_shot_resync(self);
     hab_tick(self);
     if (dive_on && self->unk5 != PLAYER_HOVER) { dive_on = 0; fg_dive_t = -1; fg_fly_on = 0; }   // levou dano etc.
     else if (!dive_on) { extern s32 fg_dive_try(struct PlayerObj*); fg_dive_try(self); }
