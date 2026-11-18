@@ -1,5 +1,6 @@
 // captura: o harness do psxcore com o núcleo junto (sem biblioteca separada), para Linux e Windows.
 // Mesmos argumentos e variáveis do harness: captura NUCLEO(ignorado) BIOS "DISC=..." QUADROS "botao:a-b,..."
+// captura desenha PASTA N1,N2,...: desenha as fotos (v_N.bin + p_N.bin) como o Godot no Mesa llvmpipe (desenho.c)
 extern char psx_debug_pc[];
 extern char psx_ram_ptr[];
 extern char psx_rwatch[];
@@ -18,7 +19,9 @@ extern char x4_vram[];
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+int desenho_main(int argc, char** argv);   // desenho.c: as telas das fotos, sem placa de vídeo
 int main(int argc, char** argv) {
+    if (argc > 1 && strcmp(argv[1], "desenha") == 0) return desenho_main(argc, argv);
     (void)argv[1];   // (o núcleo vem junto: o 1º argumento só existe para ficar igual ao harness)
     int (*start)(const unsigned char*, size_t, const char*) = (void*)x4_start;
     int (*frame)(unsigned) = (void*)x4_frame;

@@ -126,7 +126,7 @@ const SONS_MEGAMAN := {
 	"menu_equip": ["gerado/sons_launcher/tiro.wav"],     # tiro do X (discos conferidos, cada etapa pronta)
 	"menu_error": ["gerado/sons_launcher/dano.wav"],     # o X tomando dano (erro)
 	"menu_full": ["godot/assets/sfx/fg_tele_in.wav", "gerado/sons_launcher/ok.wav"],   # o X chegando (tudo pronto)
-	"jogar": ["godot/assets/sfx/fg_tele_out.wav"],       # o X saindo pelo teletransporte (JOGAR)
+	"jogar": ["godot/assets/sfx/fg_tele_out.wav", "gerado/sons_launcher/ok.wav"],   # o X saindo pelo teletransporte (JOGAR)
 }
 var sons_megaman := 0
 func _carrega_sons() -> void:
@@ -323,15 +323,12 @@ func _vars() -> Dictionary:
 	# codificador WebP do fangame (aberturas das telas de seleção)
 	var wpe := raiz.path_join("ferramentas/webpenc.exe") if OS.get_name() == "Windows" else raiz.path_join("ferramentas/webpenc")
 	if OS.get_environment("FUSION_WEBPENC") != "": wpe = OS.get_environment("FUSION_WEBPENC")
-	# desenho das capturas: no Windows, uma cópia do Godot com o desenhista por software (Mesa llvmpipe) do lado
-	var gr := raiz.path_join("ferramentas/render/godot.exe") if OS.get_name() == "Windows" else gd
-	if OS.get_environment("FUSION_GODOT_RENDER") != "": gr = OS.get_environment("FUSION_GODOT_RENDER")
 	# compilador do código do X4 (llvm-mingw no Windows; no Linux o clang do sistema ou FUSION_CLANG)
 	var cl := raiz.path_join("ferramentas/llvm/bin/clang.exe") if OS.get_name() == "Windows" else "clang"
 	var ll := raiz.path_join("ferramentas/llvm/bin/ld.lld.exe") if OS.get_name() == "Windows" else "ld.lld"
 	if OS.get_environment("FUSION_CLANG") != "": cl = OS.get_environment("FUSION_CLANG")
 	if OS.get_environment("FUSION_LLD") != "": ll = OS.get_environment("FUSION_LLD")
-	var v := {"python": py, "godot": gd, "ffmpeg": ff, "captura": cap, "captura_rc": crc, "webpenc": wpe, "godot_render": gr, "clang": cl, "lld": ll, "raiz": raiz, "tools": raiz.path_join("tools"), "jogo": raiz.path_join("godot"),
+	var v := {"python": py, "godot": gd, "ffmpeg": ff, "captura": cap, "captura_rc": crc, "webpenc": wpe, "clang": cl, "lld": ll, "raiz": raiz, "tools": raiz.path_join("tools"), "jogo": raiz.path_join("godot"),
 		"gerado": raiz.path_join("gerado"), "so": OS.get_name()}
 	for d in DISCOS: v["disco_" + d.id] = str(discos.get(d.id, {}).get("caminho", ""))
 	return v

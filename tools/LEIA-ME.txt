@@ -20,9 +20,8 @@ Se der erro: o botão ABRIR REGISTRO abre o gerado\launcher.log; mande esse arqu
 Este pacote não traz nada dos jogos: tudo o que é dos jogos sai dos SEUS discos, no SEU PC, na hora de preparar.
 Programas livres que vêm junto: Godot Engine (licença MIT, godotengine.org), FFmpeg 4.4.2 com libtheora,
 libvorbis e libogg (ferramentas\ffmpeg.exe: licença LGPL 2.1, ffmpeg.org, e BSD da Xiph.Org, xiph.org; ver
-ferramentas\LICENCA_FFMPEG.txt), libwebp 1.6.0 (ferramentas\webpenc.exe: licença BSD, ver LICENCA_WEBP.txt),
-Mesa 3D (licença MIT, ferramentas\render; build de github.com/pal1000/mesa-dist-win) e, dentro de
-ferramentas\captura.exe, o SPU do psyz (licença MPL 2.0; código em github.com/sozud/psyz).
+ferramentas\LICENCA_FFMPEG.txt), libwebp 1.6.0 (ferramentas\webpenc.exe: licença BSD, ver LICENCA_WEBP.txt)
+e, dentro de ferramentas\captura.exe, o SPU do psyz (licença MPL 2.0; código em github.com/sozud/psyz).
 Na primeira preparação o launcher baixa o compilador llvm-mingw (github.com/mstorsjo/llvm-mingw)
 e a decompilação pública do X4 (github.com/sozud/mmx4), e compila o código do jogo no seu PC.
 O X5 e o X6 rodam pela recompilação (psxrecomp, github.com/RetroPortingToolKit/psxrecomp, e os projetos

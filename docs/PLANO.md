@@ -42,8 +42,13 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
 - FEITO grupos `menus_x5` e `menus_x6` (roteiros em `tools/extrator/roteiros/*.json`; X5 anda com o controle, X6 escreve o
   cursor em 0x800CCEF7 via POKE `ccef6:0N00`): 16 telas com o mesmo SHA-1 do PC do dono, pelo launcher, pasta nova.
   O Godot precisa estar importado antes das capturas (etapa `godot_inicial`), senão as classes (X4Machine, X4R) não existem.
-- Desenho das capturas no Windows: cópia do godot.exe em `ferramentas/render/` + `opengl32.dll` do Mesa llvmpipe 25.2.7
-  (`~/.cache/fusion/mesa-llvmpipe-x64-25.2.7.7z`, GitHub mmozeiko/build-mesa; 7-Zip em `/home/claude/7z/7zz`). Falta testar.
+- Desenho das capturas: `captura desenha PASTA N1,N2,...` (`tools/captura/desenho.c`) faz as contas do Godot 4.7.2 +
+  Mesa 25.2 llvmpipe (o desenhista com que as telas do dono foram feitas) uma a uma: vértice com snap e ida e volta
+  -1..1 → janela (FMA no viewport), planos dos atributos do lp_state_setup.c, ponto fixo 1/256 com regra de cima/esquerda,
+  interpolação com FMA, o psx_gpu.gdshader, mistura em 16 bits normalizados, tela RGB10_A2 do Godot e leitura
+  (v * 255 + 511) / 1023. Conferido: as 238 fotos de menus/títulos/carregando/aberturas iguais ponto a ponto ao
+  render_dump.gd no llvmpipe (Linux e captura.exe no Wine). Sem placa de vídeo, sem abrir janela; o Mesa saiu do pacote
+  (no Windows de verdade ele não abria a janela do Godot e caía na placa, que muda pontos).
 - X4 (telas `x4_N`): foram feitas pelo x4core (`tests/x4ms.gd`, MMX4_ORACLE_SCENE=mission-briefing) → dependem do x4core
   compilado no PC do amigo.
 - `mini`: as 24 normais são recortes das telas de seleção com máscara (`assets/menus/mascaras.json`); `*_cinza` é uma conta
@@ -168,7 +173,7 @@ do dono**. Só dizer "pronto" quando uma pasta nova + os 3 discos gerar o jogo c
 ## Ordem de trabalho
 
 1. [x] `captura` para Linux e Windows a partir das fontes do `psxcore` (mesmo resultado do harness).
-2. [ ] Desenho por software igual ao llvmpipe (conferir com centenas de telas desenhadas aqui).
+2. [x] Desenho por software igual ao llvmpipe (`captura desenha`: 238 telas iguais ponto a ponto).
 3. [~] Grupo `menus`: telas de seleção X4/X5/X6 (X5 e X6 prontos), títulos, botões, carregando, mini, donos.
 4. [ ] `menus/intro` (317 quadros).
 5. [ ] `sfx` e `musica`.

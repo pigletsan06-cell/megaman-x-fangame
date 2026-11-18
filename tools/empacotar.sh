@@ -14,11 +14,6 @@ FV=$(cat "$REPO"/tools/ffmpeg/compilar.sh "$REPO"/tools/ffmpeg/*.patch "$REPO"/t
 # codificador WebP nosso (libwebp 1.6.0, tools/webp): as aberturas das telas de seleção saem iguais às do PC do dono
 WV=$(cat "$REPO"/tools/webp/* | sha1sum | cut -c1-12); WP=$CACHE/webpenc-$WV
 [ -s "$WP/webpenc.exe" ] || "$REPO/tools/webp/compilar.sh" "$WP" > /dev/null
-# desenhista por software (Mesa llvmpipe, MIT): as fotos dos jogos saem iguais em qualquer placa de vídeo.
-# Build de github.com/pal1000/mesa-dist-win (opengl32.dll + libgallium_wgl.dll): o de mmozeiko/build-mesa (uma DLL só)
-# não abria a janela de OpenGL do Godot no Windows de verdade
-MV=25.2.7; MZ=$CACHE/mesa3d-$MV-release-msvc.7z; Z7=${Z7:-/home/claude/7z/7zz}
-[ -s "$MZ" ] || curl -sSfL -o "$MZ" "https://github.com/pal1000/mesa-dist-win/releases/download/$MV/mesa3d-$MV-release-msvc.7z"
 T=$(mktemp -d); P="$T/Mega Man X Fusion"
 mkdir -p "$P/engine" "$P/ferramentas" "$P/discos" "$P/gerado"
 (cd "$REPO" && git archive HEAD godot launcher tools/extrator tools/receita.json tools/captura tools/x4core tools/psxcore versao.json) | tar -x -C "$P"
@@ -27,13 +22,12 @@ echo "Coloque aqui os 3 discos (.bin): Mega Man X4 (USA).bin, Mega Man X5 (USA).
 unzip -q -o -j "$GZ" "Godot_v${GV}-stable_win64.exe" -d "$P/engine"; mv "$P/engine/Godot_v${GV}-stable_win64.exe" "$P/engine/godot.exe"
 cp "$REPO/tools/windows/LICENCA_GODOT.txt" "$P/engine/" 2>/dev/null || true
 cp "$FF/ffmpeg.exe" "$FF/LICENCA_FFMPEG.txt" "$WP/webpenc.exe" "$WP/LICENCA_WEBP.txt" "$P/ferramentas/"
-mkdir -p "$P/ferramentas/render"; "$Z7" e -y -o"$P/ferramentas/render" "$MZ" x64/opengl32.dll x64/libgallium_wgl.dll > /dev/null
-cp "$REPO/tools/windows/LICENCA_MESA.txt" "$P/ferramentas/render/"
 # recompilação do X5/X6: kit com o runtime já compilado (psxrecomp, licença PolyForm Noncommercial) + recompilador;
 # o código do jogo é gerado do disco e compilado no PC do jogador
 [ -s "${RCWIN:-/tmp/rcwin}/psxrecomp-game.exe" ] || "$REPO/tools/recomp/recompilador.sh" "${RCWIN:-/tmp/rcwin}" > /dev/null
 python3 "$REPO/tools/recomp/kit.py" "$P/ferramentas/recomp" "${RCWIN:-/tmp/rcwin}/psxrecomp-game.exe" > /dev/null
-# captura (nosso núcleo de PS1 + SPU do psyz, MPL 2.0: código em github.com/sozud/psyz)
+# captura (nosso núcleo de PS1 + SPU do psyz, MPL 2.0: código em github.com/sozud/psyz); também desenha as telas
+# das fotos (desenho.c), sem placa de vídeo
 CB=$(mktemp -d); "$REPO/tools/captura/compilar.sh" "$CB" > /dev/null; cp "$CB/captura.exe" "$CB/captura_rc.exe" "$P/ferramentas/"; rm -rf "$CB"
 "$REPO/tools/windows/compilar.sh" "$P/Mega Man X Fusion.exe" > /dev/null
 [ -n "$CHAVE" ] && tr -d ' \r\n' < "$CHAVE" > "$P/chave.txt"

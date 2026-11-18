@@ -383,13 +383,13 @@
     "{jogo}",
     "menus_x4",
     "disco_x4={disco_x4}",
-    "godot_render={godot_render}",
+    "captura={captura}",
     "godot={godot}"
    ],
    "arquivos": [
     "{tools}/extrator",
     "{jogo}/tests/x4_fotos.gd",
-    "{jogo}/tests/render_dump.gd"
+    "{captura}"
    ],
    "depois_de": [
     "godot_inicial",
@@ -415,7 +415,6 @@
     "disco_x5={disco_x5}",
     "captura={captura}",
     "bios={tools}/captura/openbios.bin",
-    "godot_render={godot_render}",
     "godot={godot}"
    ],
    "arquivos": [
@@ -446,7 +445,6 @@
     "disco_x6={disco_x6}",
     "captura={captura}",
     "bios={tools}/captura/openbios.bin",
-    "godot_render={godot_render}",
     "godot={godot}"
    ],
    "arquivos": [
@@ -540,7 +538,6 @@
     "disco_x4={disco_x4}",
     "captura={captura}",
     "bios={tools}/captura/openbios.bin",
-    "godot_render={godot_render}",
     "godot={godot}"
    ],
    "arquivos": [
@@ -571,7 +568,6 @@
     "disco_x5={disco_x5}",
     "captura={captura}",
     "bios={tools}/captura/openbios.bin",
-    "godot_render={godot_render}",
     "godot={godot}"
    ],
    "arquivos": [
@@ -602,7 +598,6 @@
     "disco_x6={disco_x6}",
     "captura={captura}",
     "bios={tools}/captura/openbios.bin",
-    "godot_render={godot_render}",
     "godot={godot}"
    ],
    "arquivos": [
@@ -633,7 +628,6 @@
     "disco_x5={disco_x5}",
     "captura={captura}",
     "bios={tools}/captura/openbios.bin",
-    "godot_render={godot_render}",
     "godot={godot}"
    ],
    "arquivos": [
@@ -664,7 +658,6 @@
     "disco_x5={disco_x5}",
     "captura={captura}",
     "bios={tools}/captura/openbios.bin",
-    "godot_render={godot_render}",
     "godot={godot}"
    ],
    "arquivos": [
@@ -695,7 +688,6 @@
     "disco_x6={disco_x6}",
     "captura={captura}",
     "bios={tools}/captura/openbios.bin",
-    "godot_render={godot_render}",
     "godot={godot}"
    ],
    "arquivos": [
@@ -724,14 +716,14 @@
     "{jogo}",
     "intro_x4",
     "disco_x4={disco_x4}",
-    "godot_render={godot_render}",
+    "captura={captura}",
     "godot={godot}",
     "webpenc={webpenc}"
    ],
    "arquivos": [
     "{tools}/extrator",
     "{jogo}/tests/x4_fotos.gd",
-    "{jogo}/tests/render_dump.gd",
+    "{captura}",
     "{webpenc}"
    ],
    "depois_de": [
@@ -758,7 +750,6 @@
     "disco_x5={disco_x5}",
     "captura={captura}",
     "bios={tools}/captura/openbios.bin",
-    "godot_render={godot_render}",
     "godot={godot}",
     "webpenc={webpenc}"
    ],
@@ -791,7 +782,6 @@
     "disco_x6={disco_x6}",
     "captura={captura}",
     "bios={tools}/captura/openbios.bin",
-    "godot_render={godot_render}",
     "godot={godot}",
     "webpenc={webpenc}"
    ],
@@ -854,7 +844,6 @@
     "disco_x5={disco_x5}",
     "captura={captura}",
     "bios={tools}/captura/openbios.bin",
-    "godot_render={godot_render}",
     "godot={godot}",
     "ffmpeg={ffmpeg}"
    ],
@@ -887,7 +876,6 @@
     "disco_x6={disco_x6}",
     "captura={captura}",
     "bios={tools}/captura/openbios.bin",
-    "godot_render={godot_render}",
     "godot={godot}",
     "ffmpeg={ffmpeg}"
    ],
@@ -920,7 +908,6 @@
     "disco_x5={disco_x5}",
     "captura={captura}",
     "bios={tools}/captura/openbios.bin",
-    "godot_render={godot_render}",
     "godot={godot}",
     "ffmpeg={ffmpeg}"
    ],

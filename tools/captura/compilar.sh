@@ -13,7 +13,9 @@ for alvo in linux windows; do
   for f in $XC/marca_inicio.c $XC/marca_fim.c $X/cpu.c $X/gte.c $X/hw.c $X/api.c; do $CC $LIVRE $EXTRA -I$X -c $f -o $T/$(basename $f).o; done
   for f in $PS/psyz/src/psyz/psyz_spu.c $PS/psyz/src/psyz/libspu.c; do $CC $LIVRE $EXTRA -D__psyz=1 -I$PS/psyz/include -I$PS/decomp/include -c $f -o $T/$(basename $f).o; done
   $CC -O2 -w -c $D/captura.c -o $T/captura.o
-  OBJS="$T/marca_inicio.c.o $(ls $T/*.o | grep -v -e marca_ -e captura.o) $T/marca_fim.c.o $T/captura.o"
+  # desenhista das telas: contas de ponto flutuante uma a uma (sem FMA automática), iguais em qualquer PC
+  $CC -O2 -w -std=gnu11 -ffp-contract=off -fno-fast-math -c $D/desenho.c -o $T/desenho.o
+  OBJS="$T/marca_inicio.c.o $(ls $T/*.o | grep -v -e marca_ -e captura.o -e desenho.o) $T/marca_fim.c.o $T/captura.o $T/desenho.o"
   if [ $alvo = linux ]; then $CC -o "$SAI" $OBJS; else $CC -static -o "$SAI" $OBJS; fi
   rm -rf $T
 done
