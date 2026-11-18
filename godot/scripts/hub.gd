@@ -382,8 +382,9 @@ func _status_draw(ci: Control) -> void:
 			MmxUI.text(ci, Vector2(10, yy), "✓" if ok else "·", MmxUI.C_GOOD if ok else MmxUI.C_DIM)
 			MmxUI.text(ci, Vector2(20, yy), str(FangameParts.SLOT_NAME[p]), MmxUI.C_TEXT)
 			MmxUI.text(ci, Vector2(70, yy), MmxUI.fit("pega" if ok else _part_where(sk0, p), 230), MmxUI.C_GOOD if ok else MmxUI.C_DIM)
-		MmxUI.text(ci, Vector2(8, 138), "Corações %d/%d    Sub tanks %d/2    Vida máxima %d" % [mini(int(sv.hearts), FangameSave.MAX_HEARTS),
-			FangameSave.MAX_HEARTS, mini(sv.tanks.size(), 2), FangameSave.max_hp(sv)], MmxUI.C_TEXT)
+		var falta := FangameSave.hearts_to_next(sv)
+		MmxUI.text(ci, Vector2(8, 138), "Heart tanks %d/%d (%s)    Sub tanks %d/2    Vida máxima %d" % [mini(int(sv.hearts), FangameSave.MAX_HEARTS),
+			FangameSave.MAX_HEARTS, ("faltam %d p/ +vida" % falta) if falta > 0 else "vida no máximo", mini(sv.tanks.size(), 2), FangameSave.max_hp(sv)], MmxUI.C_TEXT)
 		for gi in GAMES.size():
 			var g: String = GAMES[gi]
 			MmxUI.text(ci, Vector2(8, 161 + gi * 17), g.to_upper(), MmxUI.C_ACCENT)

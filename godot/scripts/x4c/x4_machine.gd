@@ -606,6 +606,7 @@ func _launch_step() -> void:
 	if game != "x4" and L.has("save"):
 		for ad in FangameSave.PSX[game].hp:
 			if int(ClassDB.class_call_static(core, "mem", ad, 0, 1)) > 0x30: ClassDB.class_call_static(core, "mem", ad, 0x30, -1)
+	if L.has("save") and seen_play: _hearts_step()
 	# jogando: volta ao hub quando a fase acaba (vitória, fim de jogo ou saída)
 	var st2 := 0
 	var ok := []
@@ -1073,6 +1074,26 @@ func _blk_log(e: PackedByteArray) -> void:
 	var f := FileAccess.open("user://capsulas_debug.txt", FileAccess.READ_WRITE if FileAccess.file_exists("user://capsulas_debug.txt") else FileAccess.WRITE)
 	if f: f.seek_end(); f.store_line(txt); f.close()
 
+# heart tanks (save único): cada um conta no save, mas a vida máxima só sobe a cada 3 (FangameSave.HEARTS_PER_UP).
+# O jogo sobe a vida máxima 2 ao pegar um; aqui conta e volta para a vida que o total dá (e a vida atual não passa dela).
+var hearts_got := 0
+var hp_cap := -1
+const HP_ATUAL := {"x5": 0x9A0FC, "x6": 0x970FC}   # vida do X (objeto do jogador +0x5C; bit 7 = levou golpe)
+
+func _hearts_step() -> void:
+	if hp_cap < 0: hp_cap = int(L.save.get("hp", 0))
+	var ads: Array = [30] if game == "x4" else FangameSave.PSX[game].hp
+	var m := int(ClassDB.class_call_static(core, "mem", int(ads[0]), 0, 1))
+	if m <= hp_cap: return
+	hearts_got += maxi(1, (m - hp_cap) / 2)
+	hp_cap = FangameSave.hp_for(int(L.save.get("hearts", 0)) + hearts_got)
+	for ad in ads: ClassDB.class_call_static(core, "mem", int(ad), hp_cap, -1)
+	var ha: int = 21 if game == "x4" else int(HP_ATUAL.get(game, -1))
+	if ha < 0: return
+	var v := int(ClassDB.class_call_static(core, "mem", ha, 0, 1)) & 0xFF
+	if (v & 0x7F) > hp_cap: ClassDB.class_call_static(core, "mem", ha, (v & 0x80) | hp_cap, -1)
+	print("heart tank: %d nesta fase, vida máxima %d" % [hearts_got, hp_cap])
+
 func _back_to_hub() -> void:
 	if Coop.on() and not preload_mode: Coop.me.send_event({"e": "saiu"})
 	last_result = {"game": game, "stage": int(L.get("stage", 0)), "won": won, "char": int(L.get("char", 0))}
@@ -1085,6 +1106,7 @@ func _back_to_hub() -> void:
 	if L.has("save") and booted and (game == "x4" or lf_play > 0):
 		last_result["save_start"] = L.save
 		last_result["save_end"] = FangameSave.read_game(game, core)
+		last_result["save_end"]["hearts_got"] = hearts_got
 		if game != "x4" and not blk_start.is_empty(): _blk_log(_blk_read())
 		if parts0 >= 0: last_result["save_end"]["parts0"] = parts0   # programas de armadura no começo da fase
 	launch = {}

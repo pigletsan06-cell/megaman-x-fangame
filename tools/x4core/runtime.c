@@ -859,7 +859,7 @@ X4API long long x4_mem(unsigned addr, long long value, int size)
         if (fg_slash_frame >= 0) return 1;
         return fg_fly_arm() ? 1 : 0; }
     case 34: { extern int fg_sfx_pop(void); return fg_sfx_pop(); }   // sons do X5/X6 para o Godot (-1 = nada)
-    case 30: return (u8)engine_obj.max_hp;              // save único do fangame
+    case 30: if (size < 0) engine_obj.max_hp = (s8)value; return (u8)engine_obj.max_hp;   // save único do fangame (escrita: heart tanks de 3 em 3)
     case 31: return engine_obj.collected_upgrades;
     case 32: return (u8)engine_obj.palette_flags;
     case 33:

@@ -9,7 +9,8 @@ const OLD_FILE := "user://fangame_progresso.json"
 const SLOTS := 3
 const GAMES := ["x4", "x5", "x6"]
 const BASE_HP := 0x20     # vida inicial nos 3 jogos
-const MAX_HEARTS := 8     # 8 corações = 0x30, o máximo de cada jogo
+const MAX_HEARTS := 24    # heart tanks dos 3 jogos (8 em cada)
+const HEARTS_PER_UP := 3  # cada 3 heart tanks = +2 de vida máxima: com os 24, 8 aumentos = 0x30 (o máximo dos jogos)
 # endereços no X5/X6 (bloco do jogo: X5 0x800D1C00, X6 0x800CCED0; mesma estrutura do engine_obj do X4)
 const PSX := {
 	"x5": {"hp": [0xD1C47, 0xD1C48], "bosses": 0xD1C4C, "upg": 0xD1C7E, "ext": 0xD1C80, "tanks": [0xD1C76, 0xD1C77], "parts": 0xD1CA0},
@@ -91,7 +92,16 @@ static func copy(src: int, dst: int) -> void:
 	load_file(); data.slots[dst] = _fix(JSON.parse_string(JSON.stringify(data.slots[src]))); write()
 
 static func max_hp(s: Dictionary) -> int:
-	return BASE_HP + 2 * mini(int(s.hearts), MAX_HEARTS)
+	return hp_for(int(s.hearts))
+
+static func hp_for(hearts: int) -> int:
+	return BASE_HP + 2 * mini(hearts / HEARTS_PER_UP, MAX_HEARTS / HEARTS_PER_UP)
+
+# quantos heart tanks faltam para o próximo aumento (0 = vida no máximo)
+static func hearts_to_next(s: Dictionary) -> int:
+	var h := int(s.hearts)
+	if h >= MAX_HEARTS: return 0
+	return HEARTS_PER_UP - h % HEARTS_PER_UP
 
 static func bosses_mask(s: Dictionary, g: String, stage: int) -> int:
 	var m := 0
@@ -114,7 +124,7 @@ static func tank_bytes(s: Dictionary) -> Array:
 static func launch_info(g: String, stage: int) -> Dictionary:
 	var s := cur()
 	var hp := max_hp(s); var up := upgrades(s, g); var bo := bosses_mask(s, g, stage); var tk := tank_bytes(s)
-	var info := {"hp": hp, "upg": up, "bosses": bo, "tanks": tk, "ext": int(s.games[g].ext), "caps": int(s.games.x4.get("caps", 0)),
+	var info := {"hearts": int(s.hearts), "hp": hp, "upg": up, "bosses": bo, "tanks": tk, "ext": int(s.games[g].ext), "caps": int(s.games.x4.get("caps", 0)),
 		"parts": int(s.games[g].get("parts", 0))}
 	info["key"] = "%x" % hash([hp, up, bo, tk, info.ext, info.parts])
 	if g == "x4":
@@ -138,8 +148,8 @@ static func apply_result(g: String, stage: int, won: bool, start: Dictionary, r:
 	var s := cur()
 	if won and not stage in s.progress[g]: s.progress[g].append(stage)
 	if not r.is_empty() and not start.is_empty():
-		var hp_end := int(r.hp)
-		if hp_end > int(start.hp): s.hearts = int(s.hearts) + (hp_end - int(start.hp)) / 2   # corações pegos nesta fase
+		if r.has("hearts_got"): s.hearts = mini(int(s.hearts) + int(r.hearts_got), MAX_HEARTS)   # heart tanks pegos nesta fase
+		elif int(r.hp) > int(start.hp): s.hearts = mini(int(s.hearts) + (int(r.hp) - int(start.hp)) / 2, MAX_HEARTS)
 		var up_end := int(r.upg)
 		var novos := up_end & ~int(start.upg)
 		var tanks: Array = s.tanks
@@ -188,4 +198,4 @@ static func summary(i: int) -> String:
 	if not s.used: return "vazio"
 	var parts := []
 	for g in GAMES: parts.append("%s %d/8" % [g.to_upper(), s.progress[g].filter(func(v): return v >= 1 and v <= 8).size()])
-	return "%s   corações %d   sub tanks %d" % ["  ".join(parts), mini(int(s.hearts), MAX_HEARTS), mini(s.tanks.size(), 2)]
+	return "%s   heart tanks %d/%d   sub tanks %d" % ["  ".join(parts), mini(int(s.hearts), MAX_HEARTS), MAX_HEARTS, mini(s.tanks.size(), 2)]
