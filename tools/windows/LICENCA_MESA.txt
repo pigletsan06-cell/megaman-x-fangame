@@ -1,4 +1,5 @@
-Mesa 3D (llvmpipe), build de github.com/mmozeiko/build-mesa (código em gitlab.freedesktop.org/mesa/mesa)
+Mesa 3D 25.2.7 (llvmpipe: opengl32.dll + libgallium_wgl.dll), build de github.com/pal1000/mesa-dist-win
+(código em gitlab.freedesktop.org/mesa/mesa; dentro do libgallium_wgl.dll vai o LLVM, licença Apache 2.0 com exceção LLVM)
 
 Copyright (C) 1999-2007 Brian Paul   All Rights Reserved.
 

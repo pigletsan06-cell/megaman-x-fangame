@@ -256,15 +256,22 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	OS.set_environment("JOGO", str(r.jogo)); OS.set_environment("DUMPS", ",".join(bases))
 	out = []
 	var args := ["--path", jogo, "--rendering-method", "gl_compatibility", "--rendering-driver", "opengl3", "-s", "res://tests/render_dump.gd"]
-	code = OS.execute(render, args, out, true)
-	var faltou := false
-	for k in fotos: faltou = faltou or not FileAccess.file_exists(dir.path_join("tela_%s.png" % k))
+	var telas := []
+	for k in fotos: telas.append(dir.path_join("tela_%s.png" % k))
 	var gd := opcao("godot", "FUSION_GODOT", OS.get_executable_path())
-	if faltou and gd != render and FileAccess.file_exists(gd):
-		# o desenhista por software não abriu neste PC: desenha com a placa de vídeo (pode mudar algum ponto)
-		printerr("o desenho por software falhou (saída %d): %s — tentando pela placa de vídeo" % [code, str(out).right(300)])
-		out = []
-		code = OS.execute(gd, args, out, true)
+	var placa := gd != render and FileAccess.file_exists(gd)   # dá para desenhar pela placa de vídeo se o software falhar
+	# o desenhista por software (Mesa) já falhou neste PC? então vai direto pela placa de vídeo
+	var marca := jogo.path_join("../gerado/desenho_sem_software.txt").simplify_path()
+	var pula := placa and FileAccess.file_exists(marca) and FileAccess.get_file_as_string(marca).strip_edges() == assinatura_render(render)
+	code = -1
+	if not pula:
+		code = desenha(render, args, telas)
+		if code != 0 and placa:
+			printerr("o desenho por software não funcionou neste PC (%s); desenhando pela placa de vídeo (pode mudar algum ponto)" % ["travou" if code == -2 else "não abriu"])
+			for ln in fim_do_log_do_jogo(jogo, 8): printerr("   | ", ln)
+			var fm := FileAccess.open(marca, FileAccess.WRITE)
+			if fm: fm.store_string(assinatura_render(render)); fm.close()
+	if code != 0 and placa: code = desenha(gd, args, telas)
 	for k in fotos:
 		var t := dir.path_join("tela_%s.png" % k)
 		if not FileAccess.file_exists(t): printerr("não desenhou o quadro %s (saída %d): %s" % [k, code, str(out).right(400)]); return -1
@@ -281,6 +288,50 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	DirAccess.remove_absolute(dir); DirAccess.remove_absolute(jogo.path_join(".captura"))
 	prog.call(3, 3, "pronto")
 	return n
+
+## roda o desenho das fotos (tests/render_dump.gd do jogo) e espera as telas: desiste e fecha o programa se ficar muito
+## tempo sem sair tela nova (no Windows um desenhista que não consegue abrir a janela pode ficar preso em vez de sair).
+## 0 = todas as telas prontas; -1 = não abriu; -2 = travou; -3 = saiu sem desenhar tudo
+func desenha(exe: String, args: Array, telas: Array) -> int:
+	for t in telas:
+		if FileAccess.file_exists(t): DirAccess.remove_absolute(t)
+	var pid := OS.create_process(exe, PackedStringArray(args))
+	if pid <= 0: return -1
+	var feitas := 0; var t0 := Time.get_ticks_msec(); var limite := 120000   # a 1ª tela demora mais: o Godot ainda abre
+	while OS.is_process_running(pid):
+		OS.delay_msec(200)
+		var n := 0
+		for t in telas: n += 1 if FileAccess.file_exists(t) else 0
+		if n > feitas: feitas = n; t0 = Time.get_ticks_msec(); limite = 60000
+		if n == telas.size(): limite = 20000   # todas prontas: espera o programa fechar sozinho, senão fecha
+		if Time.get_ticks_msec() - t0 > limite:
+			OS.kill(pid)
+			OS.delay_msec(500)
+			if n == telas.size(): return 0
+			printerr("o desenho parou em %d de %d telas (%s)" % [n, telas.size(), exe.get_file()])
+			return -2
+	var n := 0
+	for t in telas: n += 1 if FileAccess.file_exists(t) else 0
+	return 0 if n == telas.size() else -3
+
+## marca do desenhista por software (o tamanho das DLLs do Mesa): se o pacote trouxer outro, tenta de novo
+func assinatura_render(render: String) -> String:
+	var a := []
+	for f in ["opengl32.dll", "libgallium_wgl.dll"]:
+		var fa := FileAccess.open(render.get_base_dir().path_join(f), FileAccess.READ)
+		a.append(str(fa.get_length()) if fa else "-")
+	return ",".join(a)
+
+## últimas linhas do registro do Godot do jogo (o desenho roda com o projeto do jogo), para o launcher.log
+func fim_do_log_do_jogo(jogo: String, n: int) -> PackedStringArray:
+	var cf := ConfigFile.new()
+	if cf.load(jogo.path_join("project.godot")) != OK: return PackedStringArray()
+	var nome := str(cf.get_value("application", "config/name", ""))
+	var lg := OS.get_data_dir().path_join("Godot/app_userdata/%s/logs/godot.log" % nome)
+	if OS.get_name() != "Windows": lg = OS.get_data_dir().path_join("godot/app_userdata/%s/logs/godot.log" % nome)
+	if not FileAccess.file_exists(lg): return PackedStringArray()
+	var ls := FileAccess.get_file_as_string(lg).split("\n", false)
+	return ls.slice(maxi(0, ls.size() - n))
 
 ## tela desenhada por software direto da VRAM e das primitivas gravadas (v_N.bin, p_N.bin), no tamanho do jogo
 ## (cfg.largura x cfg.altura) e reduzida na horizontal com os pesos inteiros de cfg.reducao (LANCZOS do Pillow, como o

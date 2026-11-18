@@ -25,78 +25,6 @@
    ]
   },
   {
-   "id": "videos_x4",
-   "nome": "Vídeos do X4",
-   "discos": [
-    "x4"
-   ],
-   "cmd": [
-    "{godot}",
-    "--headless",
-    "--path",
-    "{tools}/extrator",
-    "--script",
-    "res://extrair.gd",
-    "--",
-    "{jogo}",
-    "videos_x4",
-    "disco_x4={disco_x4}",
-    "ffmpeg={ffmpeg}"
-   ],
-   "arquivos": [
-    "{tools}/extrator",
-    "{ffmpeg}"
-   ]
-  },
-  {
-   "id": "videos_x5",
-   "nome": "Vídeos do X5",
-   "discos": [
-    "x5"
-   ],
-   "cmd": [
-    "{godot}",
-    "--headless",
-    "--path",
-    "{tools}/extrator",
-    "--script",
-    "res://extrair.gd",
-    "--",
-    "{jogo}",
-    "videos_x5",
-    "disco_x5={disco_x5}",
-    "ffmpeg={ffmpeg}"
-   ],
-   "arquivos": [
-    "{tools}/extrator",
-    "{ffmpeg}"
-   ]
-  },
-  {
-   "id": "videos_x6",
-   "nome": "Vídeos do X6",
-   "discos": [
-    "x6"
-   ],
-   "cmd": [
-    "{godot}",
-    "--headless",
-    "--path",
-    "{tools}/extrator",
-    "--script",
-    "res://extrair.gd",
-    "--",
-    "{jogo}",
-    "videos_x6",
-    "disco_x6={disco_x6}",
-    "ffmpeg={ffmpeg}"
-   ],
-   "arquivos": [
-    "{tools}/extrator",
-    "{ffmpeg}"
-   ]
-  },
-  {
    "id": "ferramentas",
    "nome": "Compilador (só na 1ª vez)",
    "cmd": [
@@ -247,6 +175,168 @@
     "codigo_psx",
     "recomp_x5",
     "recomp_x6"
+   ]
+  },
+  {
+   "id": "sons_x4",
+   "nome": "Sons do X4",
+   "discos": [
+    "x4"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "sons_x4",
+    "disco_x4={disco_x4}",
+    "godot={godot}"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{jogo}/tests/x4_sons.gd",
+    "{jogo}/scripts/x4c/x4_machine.gd",
+    "{jogo}/scenes/fase.tscn"
+   ],
+   "depois_de": [
+    "godot_inicial",
+    "dados_x4"
+   ]
+  },
+  {
+   "id": "sons_x5",
+   "nome": "Sons do X5",
+   "discos": [
+    "x5"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "sons_x5",
+    "disco_x5={disco_x5}",
+    "captura={captura}",
+    "bios={tools}/captura/openbios.bin",
+    "godot={godot}"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{tools}/captura/openbios.bin",
+    "{captura}"
+   ],
+   "depois_de": [
+    "godot_inicial"
+   ]
+  },
+  {
+   "id": "sons_x6",
+   "nome": "Sons do X6",
+   "discos": [
+    "x6"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "sons_x6",
+    "disco_x6={disco_x6}",
+    "captura={captura}",
+    "bios={tools}/captura/openbios.bin",
+    "godot={godot}"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{tools}/captura/openbios.bin",
+    "{captura}"
+   ],
+   "depois_de": [
+    "godot_inicial"
+   ]
+  },
+  {
+   "id": "videos_x4",
+   "nome": "Vídeos do X4",
+   "discos": [
+    "x4"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "videos_x4",
+    "disco_x4={disco_x4}",
+    "ffmpeg={ffmpeg}"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{ffmpeg}"
+   ]
+  },
+  {
+   "id": "videos_x5",
+   "nome": "Vídeos do X5",
+   "discos": [
+    "x5"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "videos_x5",
+    "disco_x5={disco_x5}",
+    "ffmpeg={ffmpeg}"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{ffmpeg}"
+   ]
+  },
+  {
+   "id": "videos_x6",
+   "nome": "Vídeos do X6",
+   "discos": [
+    "x6"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "videos_x6",
+    "disco_x6={disco_x6}",
+    "ffmpeg={ffmpeg}"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{ffmpeg}"
    ]
   },
   {
@@ -815,96 +905,6 @@
    ],
    "depois_de": [
     "godot_inicial"
-   ]
-  },
-  {
-   "id": "sons_x5",
-   "nome": "Sons do X5",
-   "discos": [
-    "x5"
-   ],
-   "cmd": [
-    "{godot}",
-    "--headless",
-    "--path",
-    "{tools}/extrator",
-    "--script",
-    "res://extrair.gd",
-    "--",
-    "{jogo}",
-    "sons_x5",
-    "disco_x5={disco_x5}",
-    "captura={captura}",
-    "bios={tools}/captura/openbios.bin",
-    "godot={godot}"
-   ],
-   "arquivos": [
-    "{tools}/extrator",
-    "{tools}/captura/openbios.bin",
-    "{captura}"
-   ],
-   "depois_de": [
-    "godot_inicial"
-   ]
-  },
-  {
-   "id": "sons_x6",
-   "nome": "Sons do X6",
-   "discos": [
-    "x6"
-   ],
-   "cmd": [
-    "{godot}",
-    "--headless",
-    "--path",
-    "{tools}/extrator",
-    "--script",
-    "res://extrair.gd",
-    "--",
-    "{jogo}",
-    "sons_x6",
-    "disco_x6={disco_x6}",
-    "captura={captura}",
-    "bios={tools}/captura/openbios.bin",
-    "godot={godot}"
-   ],
-   "arquivos": [
-    "{tools}/extrator",
-    "{tools}/captura/openbios.bin",
-    "{captura}"
-   ],
-   "depois_de": [
-    "godot_inicial"
-   ]
-  },
-  {
-   "id": "sons_x4",
-   "nome": "Sons do X4",
-   "discos": [
-    "x4"
-   ],
-   "cmd": [
-    "{godot}",
-    "--headless",
-    "--path",
-    "{tools}/extrator",
-    "--script",
-    "res://extrair.gd",
-    "--",
-    "{jogo}",
-    "sons_x4",
-    "disco_x4={disco_x4}",
-    "godot={godot}"
-   ],
-   "arquivos": [
-    "{tools}/extrator",
-    "{jogo}/tests/x4_sons.gd",
-    "{jogo}/scripts/x4c/x4_machine.gd",
-    "{jogo}/scenes/fase.tscn"
-   ],
-   "depois_de": [
-    "godot_inicial",
-    "dados_x4"
    ]
   },
   {
