@@ -115,7 +115,7 @@ index 2d83718..f4ac632 100644
          return -1;
      }
 diff --git a/src/main/55C4.c b/src/main/55C4.c
-index dda3b47..8476595 100644
+index dda3b47..af8e8c9 100644
 --- a/src/main/55C4.c
 +++ b/src/main/55C4.c
 @@ -596,6 +596,9 @@ void stop_sound(u8 arg0, u8 arg1)
@@ -128,6 +128,16 @@ index dda3b47..8476595 100644
  
      if (arg0 == 0xFF) {
          for (var_s1 = 0; var_s1 < 0x18; var_s1++) {
+@@ -1769,6 +1772,9 @@ void func_800179BC(void)
+             poly->x3 = poly->x2 + (s8)engine_obj.sub_tanks[2];
+         } else {
+             amount = TANK_VALUE(engine_obj.sub_tanks[i - 10]);
++#ifdef X4CORE
++            { extern int fg_tank_cap(void); amount = amount * 0x20 / fg_tank_cap(); }   // fangame: barra cheia = capacidade do sub tank
++#endif
+             poly->x1 = poly->x0 + amount;
+             poly->x3 = poly->x2 + amount;
+         }
 diff --git a/src/main/E47C.c b/src/main/E47C.c
 index 3699c74..806bc33 100644
 --- a/src/main/E47C.c
@@ -273,10 +283,48 @@ index 84e30be..a9d3107 100644
  #endif
  
 diff --git a/src/main/items/item_02_pickup.c b/src/main/items/item_02_pickup.c
-index a189fb0..bbad394 100644
+index a189fb0..70b7572 100644
 --- a/src/main/items/item_02_pickup.c
 +++ b/src/main/items/item_02_pickup.c
-@@ -683,6 +683,7 @@ void func_800C00BC(struct ItemObj* arg0)
+@@ -1,6 +1,12 @@
+ // ItemObj, item_object_update_funcs[2]
+ // 800BF730..800C0404
+ #include "common.h"
++#ifdef X4CORE
++int fg_tank_cap(void);
++#define FG_TANK_CAP fg_tank_cap()   // fangame: capacidade do sub tank (eficácia)
++#else
++#define FG_TANK_CAP 0x20
++#endif
+ #include "main/items/item_02_pickup.h"
+ #include "main/55C4.h"
+ #include "main/collision.h"
+@@ -392,6 +398,10 @@ void func_800BF76C(struct ItemObj* arg0)
+         }
+         break;
+     case 8:
++#ifdef X4CORE
++        { extern int fg_st_on(void), fg_st_found_here(int);   // fangame: sub tank aparece se ainda não foi achado NESTE jogo
++          if (fg_st_on()) { blocked = fg_st_found_here(arg0->unk2 - 0xF); break; } }
++#endif
+         if ((flags & 0x3000) == 0x3000
+             || (flags & (0x1000 << (arg0->unk2 - 0xF))) != 0) {
+             blocked = 1;
+@@ -645,10 +655,10 @@ void pickup_collect_health(struct ItemObj* arg0, s8 arg1, s32 arg2)
+     for (arg1 = 0; arg1 < 2; arg1++) {
+         if (engine_obj.collected_upgrades & (0x1000 << arg1)) {
+             value = TANK_VALUE(engine_obj.sub_tanks[arg1]);
+-            if (value < 0x20) {
++            if (value < FG_TANK_CAP) {
+                 value += arg2;
+-                if (value >= 0x20) {
+-                    value = 0x20;
++                if (value >= FG_TANK_CAP) {
++                    value = FG_TANK_CAP;
+                     func_8001540C(0, 0x18, 0);
+                 } else {
+                     func_8001540C(0, 0x17, 0);
+@@ -683,6 +693,7 @@ void func_800C00BC(struct ItemObj* arg0)
      }
  
      arg0->unk5 = 0;
@@ -284,6 +332,17 @@ index a189fb0..bbad394 100644
      switch (arg0->unk7C.value) {
      case 0:
          pickup_collect_health(arg0, 4, 1);
+@@ -725,6 +736,10 @@ void func_800C00BC(struct ItemObj* arg0)
+         arg0->state = 3;
+         break;
+     case 8:
++#ifdef X4CORE
++        { extern int fg_st_on(void), fg_st_pick(int);   // fangame: achou um sub tank (eficácia sobe com os achados nos 3 jogos)
++          if (fg_st_on()) { if (fg_st_pick(arg0->unk2 - 15)) { arg0->state = 3; func_8001540C(0, SATURN_SOUND(0x15, 0x1E), 0); } break; } }
++#endif
+         bits = engine_obj.collected_upgrades;
+         if ((bits & 0x3000) == 0x3000) {
+             break;
 diff --git a/src/main/items/item_26_light_capsule.c b/src/main/items/item_26_light_capsule.c
 index 93e7521..a18c491 100644
 --- a/src/main/items/item_26_light_capsule.c
@@ -316,10 +375,23 @@ index 93e7521..a18c491 100644
                  u8 bit = light_capsule_part_bits[arg0->unk2];
  
 diff --git a/src/main/pause_menu.c b/src/main/pause_menu.c
-index 4d3adaa..e541811 100644
+index 4d3adaa..c49fb3c 100644
 --- a/src/main/pause_menu.c
 +++ b/src/main/pause_menu.c
-@@ -142,7 +142,12 @@ void func_8002FD70(struct BarObj* self)
+@@ -1,6 +1,12 @@
+ // BarObj, bar_object
+ // 8002FCAC..800311EC
+ #include "common.h"
++#ifdef X4CORE
++int fg_tank_cap(void);
++#define FG_TANK_CAP fg_tank_cap()
++#else
++#define FG_TANK_CAP 0x20
++#endif
+ #include "main/1A5BC.h"
+ #include "main/pause_menu.h"
+ #include "main/11184.h"
+@@ -142,7 +148,12 @@ void func_8002FD70(struct BarObj* self)
      self->unk14 = 0;
      if (g_Player.unk2 == 0) {
          self->options.fields.player[0] = 1;
@@ -332,6 +404,21 @@ index 4d3adaa..e541811 100644
              self->options.fields.player[1] = 1;
          } else {
              self->options.fields.player[1] = 0;
+@@ -415,12 +426,12 @@ void func_800304E4(struct BarObj* arg0)
+         switch (arg0->unk14) {
+         case 10:
+             arg0->unk5 = 3;
+-            if (TANK_VALUE(engine_obj.sub_tanks[0]) == 0x20)
++            if (TANK_VALUE(engine_obj.sub_tanks[0]) >= FG_TANK_CAP)
+                 arg0->unk28 = 1;
+             break;
+         case 11:
+             arg0->unk5 = 3;
+-            if (TANK_VALUE(engine_obj.sub_tanks[1]) == 0x20)
++            if (TANK_VALUE(engine_obj.sub_tanks[1]) >= FG_TANK_CAP)
+                 arg0->unk28 = 1;
+             break;
+         case 12:
 diff --git a/src/main/player.c b/src/main/player.c
 index b1a11ca..abacd9a 100644
 --- a/src/main/player.c

@@ -19,6 +19,7 @@ static int hab_orb_req, hab_orb_x, hab_orb_y; static s8 hab_orb_bg;   // Plasma 
 static struct WeaponObj* hab_box_spawn(int kind, int x, int y, s8 bg, const struct Unk_unk68* box);
 extern struct Unk_unk68 fg_orb_box[];
 static void fg_dive(struct PlayerObj* self);
+static void st_tick(void);   // sub tanks (mais abaixo)
 
 extern int fg_armor;
 
@@ -1042,7 +1043,7 @@ static void fg_shot_resync(struct PlayerObj* p)
 
 void fg_tick(struct PlayerObj* self)
 {
-    if (self == &g_Player) fg_shot_resync(self);
+    if (self == &g_Player) { fg_shot_resync(self); st_tick(); }
     hab_tick(self);
     if (dive_on && self->unk5 != PLAYER_HOVER) { dive_on = 0; fg_dive_t = -1; fg_fly_on = 0; }   // levou dano etc.
     else if (!dive_on) { extern s32 fg_dive_try(struct PlayerObj*); fg_dive_try(self); }
@@ -1503,12 +1504,49 @@ static void shadow_giga(struct PlayerObj* self)
 }
 int fg_shot_took_state(void) { return sh_mode >= 2 && g_Player.unk5 == PLAYER_HOVER; }
 
+// ---- sub tanks do save único (MMX4_TANKS="achados nos outros jogos,máscara dos achados no X4") ----
+// Cada jogo tem 2; os 6 aparecem até serem achados. O 1o achado dá o 1o sub tank, o 2o dá o 2o, e a eficácia (quanto
+// cada um guarda) sobe com o total: 12, 19, 26, 34, 41, 48 (25% a 100% da vida máxima). Sem a variável: X4 original.
+static int st_fora = -1, st_mask;
+static const u8 st_cap[7] = { 0x20, 12, 19, 26, 34, 41, 48 };
+int fg_st_on(void)
+{
+    if (st_fora == -1) {
+        const char* t = getenv("MMX4_TANKS");
+        st_fora = -2; st_mask = 0;
+        if (t != NULL && *t) { char* e; st_fora = (int)strtoul(t, &e, 0); if (*e == ',') st_mask = (int)strtoul(e + 1, NULL, 0) & 3; }
+    }
+    return st_fora >= 0;
+}
+static int st_count(void) { int n = st_fora + (st_mask & 1) + ((st_mask >> 1) & 1); return n > 6 ? 6 : n; }
+int fg_tank_cap(void) { return fg_st_on() ? st_cap[st_count()] : 0x20; }
+int fg_st_found_here(int i) { return (st_mask >> (i & 1)) & 1; }
+int fg_st_mask_get(void) { return fg_st_on() ? st_mask : 0; }
+int fg_st_pick(int i)
+{
+    int k, n;
+    if (fg_st_found_here(i)) return 0;
+    st_mask |= 1 << (i & 1);
+    n = st_count();
+    for (k = 0; k < 2; k++)   // sub tank novo: entra vazio no próximo lugar livre
+        if (n > k && !(engine_obj.collected_upgrades & (0x1000 << k))) { engine_obj.collected_upgrades |= 0x1000 << k; engine_obj.sub_tanks[k] = (s8)0x80; }
+    return 1;
+}
+static void st_tick(void)   // a energia guardada não passa da capacidade
+{
+    int k, c;
+    if (!fg_st_on()) return;
+    c = st_cap[st_count()];
+    for (k = 0; k < 2; k++) if ((engine_obj.sub_tanks[k] & 0x7F) > c) engine_obj.sub_tanks[k] = (s8)((engine_obj.sub_tanks[k] & 0x80) | c);
+}
+
 // MMX4_PARTS="capacete,corpo,braço,pernas" (armadura de cada peça); sem isso, MMX4_DIRECT_SKILL vale para as 4
 void fg_parts_init(void)
 {
     const char* p = getenv("MMX4_PARTS");
     int v[4] = { fg_armor, fg_armor, fg_armor, fg_armor }, n = 0;
     while (p != NULL && *p && n < 4) { char* e; v[n++] = (int)strtoul(p, &e, 0); p = (*e == ',') ? e + 1 : e; if (*e != ',' && *e) break; }
+    st_fora = -1;   // relê MMX4_TANKS nesta fase
     fg_head = v[0]; fg_body = v[1]; fg_arm = v[2]; fg_legs = v[3];
     fg_armor = (fg_head == fg_body && fg_body == fg_arm && fg_arm == fg_legs) ? fg_head : 0;
     if (fg_armor == 9) fg_armor = 0;

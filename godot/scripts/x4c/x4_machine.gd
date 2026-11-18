@@ -122,6 +122,8 @@ func _ready() -> void:
 			else: X4R.env.erase("MMX4_VOZ_X6")
 			if L.has("save"): X4R.env["MMX4_SAVE"] = L.save.env   # save único do fangame
 			else: X4R.env.erase("MMX4_SAVE")
+			if L.has("save") and L.save.has("tanks_env"): X4R.env["MMX4_TANKS"] = L.save.tanks_env   # sub tanks (eficácia)
+			else: X4R.env.erase("MMX4_TANKS")
 			launch_phase = 2
 		else:
 			launch_phase = 1
@@ -606,6 +608,10 @@ func _launch_step() -> void:
 	if game != "x4" and L.has("save"):
 		for ad in FangameSave.PSX[game].hp:
 			if int(ClassDB.class_call_static(core, "mem", ad, 0, 1)) > 0x30: ClassDB.class_call_static(core, "mem", ad, 0x30, -1)
+		var stc := int(L.save.get("st_cap", 0x20))   # sub tanks: a energia não passa da eficácia (X5/X6 guardam até 32)
+		for ad in FangameSave.PSX[game].tanks:
+			var tv := int(ClassDB.class_call_static(core, "mem", ad, 0, 1))
+			if tv & 0x80 and (tv & 0x7F) > stc: ClassDB.class_call_static(core, "mem", ad, (tv & 0x80) | stc, -1)
 	if L.has("save") and seen_play: _hearts_step()
 	# jogando: volta ao hub quando a fase acaba (vitória, fim de jogo ou saída)
 	var st2 := 0

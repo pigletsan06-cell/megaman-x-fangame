@@ -25,6 +25,11 @@ const CAPSULE := {
 		4: ["Shadow_X6", "helmet"], 6: ["Shadow_X6", "body"], 3: ["Shadow_X6", "arms"], 2: ["Shadow_X6", "legs"]},
 }
 const SUBTANK_BITS := [0x1000, 0x2000]   # collected_upgrades: sub tank 1 e 2 (os 3 jogos)
+# sub tanks: 2 em cada jogo (6). O 1o achado dá o 1o sub tank, o 2o dá o 2o (o máximo dos jogos); a eficácia (quanto
+# cada um guarda) sobe com o total achado: 25% a 100% da vida máxima (48)
+const MAX_SUBTANKS := 6
+const ST_CAP := [0, 12, 19, 26, 34, 41, 48]
+const ST_PCT := [0, 25, 40, 55, 70, 85, 100]
 
 static var data := {}
 static var slot := -1      # slot em uso (-1 = ainda não escolhido nesta sessão)
@@ -64,12 +69,15 @@ static func _fix(s) -> Dictionary:
 		if not s.games.has(g): s.games[g] = {"upg": 0, "ext": 0}
 		s.games[g].parts = int(s.games[g].get("parts", 0))
 		s.games[g].upg = int(s.games[g].get("upg", 0)); s.games[g].ext = int(s.games[g].get("ext", 0))
+		s.games[g].st = int(s.games[g].get("st", 0))
 	s.games.x4.caps = int(s.games.x4.get("caps", 0))
 	s.unlocked = Array(s.unlocked)
 	for p in FangameParts.SLOTS:
 		if not s.parts.has(p): s.parts[p] = ""
 	s.hearts = int(s.hearts)
 	s.tanks = Array(s.tanks).map(func(v): return int(v))
+	if not s.has("st_legado"): s.st_legado = mini(s.tanks.size(), 2)   # sub tanks de antes da eficácia (não se sabe de qual jogo)
+	s.st_legado = int(s.st_legado)
 	return s
 
 static func write() -> void:
@@ -91,6 +99,17 @@ static func erase(i: int) -> void:
 static func copy(src: int, dst: int) -> void:
 	load_file(); data.slots[dst] = _fix(JSON.parse_string(JSON.stringify(data.slots[src]))); write()
 
+static func st_found(s: Dictionary) -> int:
+	var n := int(s.get("st_legado", 0))
+	for g in GAMES: n += (int(s.games[g].get("st", 0)) & 1) + ((int(s.games[g].get("st", 0)) >> 1) & 1)
+	return mini(n, MAX_SUBTANKS)
+
+static func st_usable(s: Dictionary) -> int:
+	return mini(st_found(s), 2)
+
+static func st_cap(s: Dictionary) -> int:
+	return ST_CAP[st_found(s)]
+
 static func max_hp(s: Dictionary) -> int:
 	return hp_for(int(s.hearts))
 
@@ -111,13 +130,14 @@ static func bosses_mask(s: Dictionary, g: String, stage: int) -> int:
 
 # itens do jogo + sub tanks compartilhados: os slots que o jogador já tem (em qualquer jogo) ficam marcados
 static func upgrades(s: Dictionary, g: String) -> int:
-	var u: int = int(s.games[g].upg)
-	for i in mini(s.tanks.size(), 2): u |= SUBTANK_BITS[i]
+	var u: int = int(s.games[g].upg) & ~0x3000
+	for i in st_usable(s): u |= SUBTANK_BITS[i]
 	return u
 
 static func tank_bytes(s: Dictionary) -> Array:
 	var t := [0, 0]
-	for i in mini(s.tanks.size(), 2): t[i] = 0x80 | clampi(int(s.tanks[i]), 0, 0x7F)
+	var c := st_cap(s)
+	for i in st_usable(s): t[i] = 0x80 | clampi(int(s.tanks[i]) if i < s.tanks.size() else 0, 0, c)
 	return t
 
 # o que o hub passa para a fase (X4: variável de ambiente; X5/X6: escritas na RAM durante o carregamento)
@@ -126,9 +146,12 @@ static func launch_info(g: String, stage: int) -> Dictionary:
 	var hp := max_hp(s); var up := upgrades(s, g); var bo := bosses_mask(s, g, stage); var tk := tank_bytes(s)
 	var info := {"hearts": int(s.hearts), "hp": hp, "upg": up, "bosses": bo, "tanks": tk, "ext": int(s.games[g].ext), "caps": int(s.games.x4.get("caps", 0)),
 		"parts": int(s.games[g].get("parts", 0))}
-	info["key"] = "%x" % hash([hp, up, bo, tk, info.ext, info.parts])
+	info["key"] = "%x" % hash([hp, up, bo, tk, info.ext, info.parts, st_found(s)])
+	info["st_cap"] = st_cap(s)
 	if g == "x4":
 		info["env"] = "%d,%d,%d,%d,%d,%d" % [hp, up, bo, tk[0], tk[1], int(s.games[g].get("wt", 0))]
+		var m4 := int(s.games.x4.get("st", 0)) & 3
+		info["tanks_env"] = "%d,%d" % [st_found(s) - (m4 & 1) - (m4 >> 1), m4]   # x4core: sub tanks achados fora do X4, máscara do X4
 	else:
 		var a: Dictionary = PSX[g]
 		var pk := []
@@ -152,15 +175,17 @@ static func apply_result(g: String, stage: int, won: bool, start: Dictionary, r:
 		elif int(r.hp) > int(start.hp): s.hearts = mini(int(s.hearts) + (int(r.hp) - int(start.hp)) / 2, MAX_HEARTS)
 		var up_end := int(r.upg)
 		var novos := up_end & ~int(start.upg)
+		# sub tanks achados nesta fase (X4: máscara do x4core; X5/X6: o bit novo do jogo)
+		if r.has("st"): s.games[g].st = int(r.st) & 3
+		else: s.games[g].st = int(s.games[g].get("st", 0)) | ((novos >> 12) & 3)
 		var tanks: Array = s.tanks
-		for i in 2:   # sub tanks pegos agora entram no conjunto compartilhado (no máximo 2)
-			if novos & SUBTANK_BITS[i] and tanks.size() < 2: tanks.append(0)
+		while tanks.size() < st_usable(s): tanks.append(0)   # sub tank novo entra vazio
 		# energia dos sub tanks no fim da fase (o jogo enche e gasta)
 		for i in mini(tanks.size(), 2):
 			var b := int(r.tanks[i])
-			if b & 0x80: tanks[i] = b & 0x7F
+			if b & 0x80: tanks[i] = mini(b & 0x7F, st_cap(s))
 		s.tanks = tanks
-		s.games[g].upg = up_end
+		s.games[g].upg = up_end & ~0x3000
 		s.games[g].ext = int(r.ext)
 		if r.has("wt"): s.games[g].wt = int(r.wt)   # tanque de arma do X4 (não é compartilhado)
 		if r.has("parts") and r.has("parts0"):   # X5/X6: programa de armadura pego nesta fase -> peça liberada na montagem
@@ -184,7 +209,7 @@ static func apply_result(g: String, stage: int, won: bool, start: Dictionary, r:
 static func read_game(g: String, core: String) -> Dictionary:
 	if g == "x4":
 		var t: int = ClassDB.class_call_static(core, "mem", 33, 0, 1)
-		return {"hp": int(ClassDB.class_call_static(core, "mem", 30, 0, 1)), "upg": int(ClassDB.class_call_static(core, "mem", 31, 0, 1)),
+		return {"st": int(ClassDB.class_call_static(core, "mem", 37, 0, 1)), "hp": int(ClassDB.class_call_static(core, "mem", 30, 0, 1)), "upg": int(ClassDB.class_call_static(core, "mem", 31, 0, 1)),
 			"ext": 0, "tanks": [t & 0xFF, (t >> 8) & 0xFF], "wt": (t >> 16) & 0xFF, "caps": int(ClassDB.class_call_static(core, "mem", 36, 0, 1))}
 	var a: Dictionary = PSX[g]
 	return {"hp": int(ClassDB.class_call_static(core, "mem", a.hp[0], 0, 1)), "upg": int(ClassDB.class_call_static(core, "mem", a.upg, 0, 2)),
@@ -198,4 +223,4 @@ static func summary(i: int) -> String:
 	if not s.used: return "vazio"
 	var parts := []
 	for g in GAMES: parts.append("%s %d/8" % [g.to_upper(), s.progress[g].filter(func(v): return v >= 1 and v <= 8).size()])
-	return "%s   heart tanks %d/%d   sub tanks %d" % ["  ".join(parts), mini(int(s.hearts), MAX_HEARTS), MAX_HEARTS, mini(s.tanks.size(), 2)]
+	return "%s   heart tanks %d/%d   sub tanks %d/%d" % ["  ".join(parts), mini(int(s.hearts), MAX_HEARTS), MAX_HEARTS, st_found(s), MAX_SUBTANKS]

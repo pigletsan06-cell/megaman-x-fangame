@@ -469,6 +469,14 @@ func baixa(url: String, destino: String) -> bool:
 	return false
 
 ## extrai um zip do GitHub (tira a pasta de cima) em pasta
+func _apaga_pasta(p: String) -> void:
+	var d := DirAccess.open(p)
+	if d == null: return
+	d.include_hidden = true
+	for f in d.get_files(): DirAccess.remove_absolute(p.path_join(f))
+	for sd in d.get_directories(): _apaga_pasta(p.path_join(sd))
+	DirAccess.remove_absolute(p)
+
 func extrai(zip: String, pasta: String) -> bool:
 	var z := ZIPReader.new()
 	if z.open(zip) != OK: return false
@@ -523,7 +531,13 @@ func codigo_x4(jogo: String, prog: Callable) -> int:
 	var x4 := pasta_x4core()
 	var base := opcao("fontes", "FUSION_FONTES", jogo.path_join("../gerado/fontes")).simplify_path()
 	var src := base.path_join("mmx4")
-	if not FileAccess.file_exists(src.path_join(".pronto")):
+	# a marca leva o commit e as nossas mudanças (patch): patch novo numa atualização -> extrai e aplica de novo
+	var marca := MMX4_COMMIT + ":" + FileAccess.get_file_as_string(x4.path_join("mmx4.patch")).sha256_text().left(16) + ":" + FileAccess.get_file_as_string(x4.path_join("psyz.patch")).sha256_text().left(16)
+	var pronta := FileAccess.get_file_as_string(src.path_join(".pronto")) if FileAccess.file_exists(src.path_join(".pronto")) else ""
+	if pronta != "" and pronta != marca:
+		prog.call(0, 10, "atualizando a decompilação do X4")
+		_apaga_pasta(src)
+	if pronta != marca:
 		prog.call(0, 10, "baixando a decompilação do X4 (pública)")
 		DirAccess.make_dir_recursive_absolute(base)
 		var zm := opcao("zip_mmx4", "", base.path_join("mmx4.zip")); var zp := opcao("zip_psyz", "", base.path_join("psyz.zip"))
@@ -538,7 +552,7 @@ func codigo_x4(jogo: String, prog: Callable) -> int:
 		if not aplica_patch(src.path_join("tools/psyz"), FileAccess.get_file_as_string(x4.path_join("psyz.patch"))): return -1
 		DirAccess.make_dir_recursive_absolute(src.path_join("src/godot"))
 		DirAccess.copy_absolute(x4.path_join("frame.c"), src.path_join("src/godot/frame.c"))
-		FileAccess.open(src.path_join(".pronto"), FileAccess.WRITE).store_string(MMX4_COMMIT)
+		FileAccess.open(src.path_join(".pronto"), FileAccess.WRITE).store_string(marca)
 	# compila (mesmas opções do build.sh do PC do dono)
 	var cc := opcao("clang", "FUSION_CLANG", "clang")
 	var ld := opcao("lld", "FUSION_LLD", "ld.lld")

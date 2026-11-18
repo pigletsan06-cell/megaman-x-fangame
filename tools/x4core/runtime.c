@@ -852,6 +852,7 @@ X4API long long x4_mem(unsigned addr, long long value, int size)
     case 88: case 89: { extern void fg_test_hab(int); if (size < 0) fg_test_hab(addr - 88); return 0; }   // testes das habilidades
     case 62: { extern int fg_zero_pal(int); return fg_zero_pal((int)value); }
     case 56: case 57: case 58: case 59: case 60: case 61: { extern int fg_bz_fx_query(int); return fg_bz_fx_query(addr - 56); }   // efeito do Giga do Black Zero
+    case 37: { extern int fg_st_mask_get(void); return fg_st_mask_get(); }   // sub tanks achados no X4 (bits 1 e 2)
     case 36: { extern int fg_caps, fg_caps_new, fg_caps_worn; return fg_caps < 0 ? 0 : (fg_caps_new | (fg_caps_worn << 8)); }   // cápsulas pegas nesta fase
     case 35: {   // de qual peça vem o quadro especial (mem 19): 0 pernas, 1 braço, 2 corpo
         extern int fg_fly_on, fg_giga_on, fg_nova_frame, fg_slash_frame; extern int fg_fly_arm(void);
