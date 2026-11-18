@@ -139,7 +139,7 @@ index dda3b47..af8e8c9 100644
              poly->x3 = poly->x2 + amount;
          }
 diff --git a/src/main/E47C.c b/src/main/E47C.c
-index 3699c74..806bc33 100644
+index 3699c74..0620931 100644
 --- a/src/main/E47C.c
 +++ b/src/main/E47C.c
 @@ -409,12 +409,45 @@ extern u8 D_800F2474_jp[4];
@@ -159,7 +159,7 @@ index 3699c74..806bc33 100644
 +            engine_obj.max_hp = (s8)mh; engine_obj.checkpoint_hp = (u8)mh;
 +            engine_obj.collected_upgrades = (u16)up;
 +            engine_obj.palette_flags = (s8)bo;
-+            if (stage >= 1 && stage <= 8) engine_obj.palette_flags &= (u8) ~(1 << (stage - 1));
++            // (o chefe da fase vencido continua marcado: a arma dele fica, e o chefe aparece de novo como no X4 original)
 +            engine_obj.sub_tanks[0] = (s8)t0; engine_obj.sub_tanks[1] = (s8)t1; engine_obj.sub_tanks[2] = (s8)t2;
 +        }
 +    }
@@ -219,7 +219,7 @@ index 583c7fc..dc6fc32 100644
      arg0->x_pos.val = g_Player.x_pos.val;
      arg0->y_pos.val = g_Player.y_pos.val;
 diff --git a/src/main/game_info.c b/src/main/game_info.c
-index 84e30be..a9d3107 100644
+index 84e30be..16743f3 100644
 --- a/src/main/game_info.c
 +++ b/src/main/game_info.c
 @@ -68,11 +68,43 @@ static u8 direct_u8(const char* name)
@@ -236,7 +236,7 @@ index 84e30be..a9d3107 100644
 +            engine_obj.max_hp = (s8)mh; engine_obj.checkpoint_hp = (u8)mh;
 +            engine_obj.collected_upgrades = (u16)up;
 +            engine_obj.palette_flags = (s8)bo;
-+            if (stage >= 1 && stage <= 8) engine_obj.palette_flags &= (u8) ~(1 << (stage - 1));
++            // (o chefe da fase vencido continua marcado: a arma dele fica, e o chefe aparece de novo como no X4 original)
 +            engine_obj.sub_tanks[0] = (s8)t0; engine_obj.sub_tanks[1] = (s8)t1; engine_obj.sub_tanks[2] = (s8)t2;
 +        }
 +    }

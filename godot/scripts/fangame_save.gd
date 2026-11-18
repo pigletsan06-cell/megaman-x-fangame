@@ -125,7 +125,9 @@ static func hearts_to_next(s: Dictionary) -> int:
 static func bosses_mask(s: Dictionary, g: String, stage: int) -> int:
 	var m := 0
 	for v in s.progress[g]:
-		if v >= 1 and v <= 8 and v != stage: m |= 1 << (v - 1)   # a fase atual fica de fora (o chefe ainda está lá)
+		# X5/X6: a fase atual fica de fora (com o chefe marcado ele não aparece); X4: fica marcada (a arma continua e
+		# o chefe aparece de novo, como no X4 original)
+		if v >= 1 and v <= 8 and (v != stage or g == "x4"): m |= 1 << (v - 1)
 	return m
 
 # itens do jogo + sub tanks compartilhados: os slots que o jogador já tem (em qualquer jogo) ficam marcados
