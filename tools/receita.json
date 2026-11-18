@@ -1,5 +1,5 @@
 {
- "versao_receita": 24,
+ "versao_receita": 25,
  "nota": "Etapas que o launcher roda no PC do jogador, a partir dos discos dele. Cada etapa só roda de novo se mudar o disco, os arquivos dela ou uma etapa de antes.",
  "etapas": [
   {
@@ -1030,6 +1030,39 @@
    ]
   },
   {
+   "id": "menus_ui",
+   "nome": "Fontes dos menus (X4/X5/X6)",
+   "discos": [
+    "x4",
+    "x5",
+    "x6"
+   ],
+   "cmd": [
+    "{godot}",
+    "--headless",
+    "--path",
+    "{tools}/extrator",
+    "--script",
+    "res://extrair.gd",
+    "--",
+    "{jogo}",
+    "menus_ui",
+    "disco_x4={disco_x4}",
+    "disco_x5={disco_x5}",
+    "disco_x6={disco_x6}",
+    "captura={captura}",
+    "bios={tools}/captura/openbios.bin"
+   ],
+   "arquivos": [
+    "{tools}/extrator",
+    "{tools}/captura/openbios.bin",
+    "{captura}"
+   ],
+   "depois_de": [
+    "godot_inicial"
+   ]
+  },
+  {
    "id": "importar",
    "nome": "Preparar no Godot",
    "cmd": [
@@ -1075,7 +1108,8 @@
     "pecas_x",
     "efeitos_x",
     "dash_x6",
-    "corte_nz_x6"
+    "corte_nz_x6",
+    "menus_ui"
    ]
   }
  ]

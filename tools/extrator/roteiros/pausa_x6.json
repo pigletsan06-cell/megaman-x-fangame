@@ -1,0 +1,23 @@
+{
+ "nota": "Menu de pausa do X6 (fase de abertura, START no quadro 2330): a fonte do menu vira assets/fonte/mmx_x6 e uma faixa de 16 pontos da grade azul do fundo vira assets/menus/ui/x6_grade.png (fundo dos menus do fangame na página do X6; repete a cada 16 pontos na horizontal).",
+ "jogo": "x6",
+ "disco": "x6",
+ "quadros": 2430,
+ "botoes": "start:900-905,cross:1000-1006,start:1400-1403,start:1460-1463,start:2330-2335",
+ "poke": "ccf2e:0000:1010-2300,ccedc:0001:1440-1900",
+ "fotos": {},
+ "fonte": {
+  "quadro": 2420,
+  "saida": "assets/fonte/mmx_x6"
+ },
+ "recortes": [
+  {
+   "quadro": 2420,
+   "x": 120,
+   "y": 50,
+   "w": 16,
+   "h": 155,
+   "saida": "assets/menus/ui/x6_grade.png"
+  }
+ ]
+}

@@ -37,14 +37,14 @@ func has_frame(i: int) -> bool:
 	return i >= 0 and i < frames.size() and frames[i] != null
 
 ## Desenha o quadro i com a origem do personagem em `pos`. flip = virado para a esquerda.
-func draw(ci: CanvasItem, i: int, pos: Vector2, flip: bool, modulate := Color.WHITE, variant := 0) -> void:
+func draw(ci: CanvasItem, i: int, pos: Vector2, flip: bool, modulate := Color.WHITE, variant := 0, scl := 1.0) -> void:
 	if not has_frame(i) or texture == null:
 		return
 	var tex: Texture2D = variants[variant] if variant > 0 and variant < variants.size() else texture
 	var fr: Dictionary = frames[i]
 	var src := Rect2(fr["x"], fr["y"], fr["w"], fr["h"])
 	var dst := Rect2(-float(fr["ox"]), -float(fr["oy"]), float(fr["w"]), float(fr["h"]))
-	ci.draw_set_transform(pos.round(), 0.0, Vector2(-1.0 if flip else 1.0, 1.0))
+	ci.draw_set_transform(pos.round(), 0.0, Vector2((-1.0 if flip else 1.0) * scl, scl))
 	ci.draw_texture_rect_region(tex, dst, src, modulate)
 	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 

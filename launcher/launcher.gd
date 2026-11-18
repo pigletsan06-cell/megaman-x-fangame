@@ -65,7 +65,12 @@ func _ready() -> void:
 	estado = _ler_json(raiz.path_join("gerado/estado.json"))
 	_le_receita()
 	versao = _ler_json(raiz.path_join("versao.json"))
+	MmxUI.set_skin("x5")   # o visual do menu de pausa do X5 (o mesmo da tela de título do jogo)
+	# a fonte do X5 e o FUSION saem dos discos no PREPARAR (pasta do jogo); antes disso, a fonte do launcher
+	MmxUI.pasta_fontes = raiz.path_join("godot/assets/fonte")
 	theme = MmxUI.theme()
+	var lp := raiz.path_join("godot/assets/menus/titulo_fusion.png")
+	if FileAccess.file_exists(lp): logo = MmxUI._img(lp)
 	var ic := Image.load_from_file(ProjectSettings.globalize_path("res://assets/icone.png"))
 	if ic: DisplayServer.set_icon(ic)
 	get_window().title = "Mega Man X Fusion"
@@ -89,13 +94,16 @@ func _ready() -> void:
 	_atualiza_botoes()
 	_novidades_ao_abrir()
 
+var logo: Texture2D
+
 func _botao(txt: String, r: Rect2, f: Callable, fs := MmxUI.SIZE) -> Button:
 	var b := Button.new(); b.text = txt; b.clip_text = true
-	b.add_theme_font_override("font", MmxUI.font()); b.add_theme_font_size_override("font_size", fs)
+	if fs >= MmxUI.SIZE * 2 and MmxUI.tem_fonte(): b.add_theme_font_override("font", MmxUI.skin_font()); b.add_theme_font_size_override("font_size", MmxUI.SIZE)   # botão grande: fonte do X5
+	else: b.add_theme_font_override("font", MmxUI.font()); b.add_theme_font_size_override("font_size", fs)
 	for st in ["normal", "hover", "pressed", "disabled", "focus"]:
 		var sb := StyleBoxFlat.new()
-		sb.bg_color = {"normal": Color(0.03, 0.09, 0.22, 0.95), "hover": Color(0.07, 0.2, 0.42), "pressed": Color(0.12, 0.3, 0.55),
-			"disabled": Color(0.02, 0.04, 0.1, 0.85), "focus": Color(0, 0, 0, 0)}[st]
+		sb.bg_color = {"normal": Color(0.0, 0.0, 0.16, 0.95), "hover": Color(0.13, 0.12, 0.42), "pressed": Color(0.29, 0.18, 0.55),
+			"disabled": Color(0.0, 0.0, 0.08, 0.85), "focus": Color(0, 0, 0, 0)}[st]
 		sb.border_color = {"normal": MmxUI.C_EDGE_LO, "hover": MmxUI.C_SEL, "pressed": MmxUI.C_SEL, "disabled": Color(0.1, 0.16, 0.3), "focus": MmxUI.C_SEL}[st]
 		sb.set_border_width_all(1)
 		sb.skew = Vector2(0.25, 0)
@@ -785,27 +793,25 @@ func _exit_tree() -> void:
 
 # ---------------- desenho (original: grade, linhas de varredura, painéis) ----------------
 func _desenha(ci: Control) -> void:
-	# fundo: degradê, grade em perspectiva andando, faixa de luz e partículas
+	# fundo: azul-escuro com a grade de hexágonos e os tubos azuis do menu de pausa do X5
 	ci.draw_polygon(PackedVector2Array([Vector2(0, 0), Vector2(640, 0), Vector2(640, 360), Vector2(0, 360)]),
-		PackedColorArray([Color(0.02, 0.05, 0.14), Color(0.02, 0.05, 0.14), Color(0.0, 0.01, 0.04), Color(0.0, 0.01, 0.04)]))
-	var hz := 250.0
-	for i in 15:
-		var x := 320.0 + (i - 7) * 46.0
-		ci.draw_line(Vector2(320 + (x - 320) * 0.15, hz), Vector2(x * 1.0 + (x - 320) * 1.6, 360), Color(0.2, 0.55, 1.0, 0.1), 1.0)
-	for i in 8:
-		var k := fmod(i / 8.0 + t * 0.08, 1.0)
-		var y := hz + (360.0 - hz) * k * k
-		ci.draw_line(Vector2(0, y), Vector2(640, y), Color(0.2, 0.55, 1.0, 0.04 + 0.1 * k), 1.0)
+		PackedColorArray([Color8(0, 0, 74), Color8(0, 0, 74), Color8(0, 0, 30), Color8(0, 0, 30)]))
+	MmxUI._hex_grid(ci, Rect2(0, 0, 640, 360), Color8(30, 44, 140, 110))
+	# hexágonos acendendo devagar, como os do menu
+	for i in 7:
+		var ph := fmod(t * 0.18 + i * 0.37, 1.0)
+		var c := Vector2(fmod(i * 173.0 + 40.0, 600.0) + 20.0, fmod(i * 97.0 + 60.0, 300.0) + 30.0)
+		ci.draw_colored_polygon(MmxUI.hexagon(c, 9.0), Color8(123, 74, 206, int(70.0 * sin(ph * PI))))
+	for y in [0.0, 352.0]:   # tubos cromados em cima e embaixo
+		var cols := [Color8(0, 33, 74), Color8(156, 189, 255), Color8(82, 140, 255), Color8(82, 140, 255), Color8(49, 99, 197), Color8(25, 66, 148), Color8(8, 41, 99), Color8(0, 33, 74)]
+		for k in cols.size(): ci.draw_rect(Rect2(0, y + k, 640, 1), cols[k])
 	var sw := fmod(t * 0.12, 1.6) - 0.3
-	ci.draw_colored_polygon(PackedVector2Array([Vector2(sw * 640 - 40, 0), Vector2(sw * 640 + 20, 0), Vector2(sw * 640 - 80, 360), Vector2(sw * 640 - 140, 360)]), Color(0.4, 0.7, 1.0, 0.035))
-	for i in 24:
-		var ph := fmod(t * (0.03 + (i % 5) * 0.01) + i * 0.137, 1.0)
-		ci.draw_rect(Rect2(fmod(i * 97.3, 640.0), 360.0 - ph * 380.0, 1.5, 1.5), Color(0.5, 0.8, 1.0, 0.35 * sin(ph * PI)))
+	ci.draw_colored_polygon(PackedVector2Array([Vector2(sw * 640 - 40, 0), Vector2(sw * 640 + 20, 0), Vector2(sw * 640 - 80, 360), Vector2(sw * 640 - 140, 360)]), Color(0.4, 0.7, 1.0, 0.03))
 	var ab := MmxUI.ease_out(t / 0.6)
 	_titulo(ci, ab)
-	MmxUI.text(ci, Vector2(22, 50), "LAUNCHER  ·  X4  X5  X6", Color(0.6, 0.75, 1.0, ab))
+	MmxUI.text(ci, Vector2(22, 52), "LAUNCHER  ·  X4  X5  X6", Color(0.6, 0.75, 1.0, ab))
 	MmxUI.text(ci, Vector2(0, 26), "versão %d" % int(versao.get("versao", 0)), Color(0.6, 0.75, 1.0, ab), MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, 620)
-	ci.draw_line(Vector2(16, 56), Vector2(16 + 608 * ab, 56), Color(0.3, 0.84, 1.0, 0.5), 1.0)
+	ci.draw_line(Vector2(16, 57), Vector2(16 + 608 * ab, 57), Color8(206, 247, 66, int(160 * ab)), 1.0)
 	_painel_discos(ci, Rect2(16, 64, 236, 164), ab)
 	_painel_atualizacao(ci, Rect2(16, 236, 236, 68), ab)
 	_painel_etapas(ci, Rect2(264, 64, 360, 198), ab)
@@ -817,19 +823,25 @@ func _desenha(ci: Control) -> void:
 		var sk := r.size.y * 0.25 * 0.5
 		ci.draw_polyline(PackedVector2Array([r.position + Vector2(sk, 0), Vector2(r.end.x + sk, r.position.y), r.end - Vector2(sk, 0), Vector2(r.position.x - sk, r.end.y), r.position + Vector2(sk, 0)]), Color(1, 0.86, 0.35, a), 1.0)
 
-## título com um brilho passando pelas letras
+## título: "MEGA MAN X" na fonte do X5 e o "FUSION" laranja (as letras do menu do X5), com um brilho passando
 func _titulo(ci: Control, ab: float) -> void:
-	var s := "MEGA MAN X FUSION"
-	var f := MmxUI.font()
 	var x := 20.0 - (1.0 - ab) * 30.0
-	var sw := fmod(t * 0.35, 1.8) * 360.0 - 60.0   # posição do brilho
+	var f := MmxUI.skin_font()
+	var s := "MEGA MAN X"
+	var sw := fmod(t * 0.35, 1.8) * 360.0 - 60.0
 	for ch in s:
-		var w := f.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 27).x
+		var w := f.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, MmxUI.SIZE * 2).x
 		var g := clampf(1.0 - absf(x + w * 0.5 - 20.0 - sw) / 26.0, 0.0, 1.0)
-		var col := Color(1, 0.86, 0.35).lerp(Color(1, 1, 0.92), g * 0.85)
-		col.a = ab
-		MmxUI.text(ci, Vector2(x, 38), ch, col, 27)
+		var col := Color(0.62, 0.78, 1.0).lerp(Color.WHITE, g * 0.85); col.a = ab
+		ci.draw_string(f, Vector2(x + 1, 40), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, MmxUI.SIZE * 2, Color(0, 0, 0, ab))
+		ci.draw_string(f, Vector2(x, 39), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, MmxUI.SIZE * 2, col)
 		x += w
+	if logo:
+		var lr := Rect2(x + 10, 13, logo.get_width() * 2, logo.get_height() * 2)
+		ci.draw_texture_rect(logo, lr, false, Color(1, 1, 1, ab))
+	else:   # antes do PREPARAR: FUSION escrito em laranja
+		ci.draw_string(f, Vector2(x + 11, 40), "FUSION", HORIZONTAL_ALIGNMENT_LEFT, -1, MmxUI.SIZE * 2, Color(0, 0, 0, ab))
+		ci.draw_string(f, Vector2(x + 10, 39), "FUSION", HORIZONTAL_ALIGNMENT_LEFT, -1, MmxUI.SIZE * 2, Color(1, 0.62, 0.15, ab))
 
 ## texto do rodapé: o que está acontecendo, em palavras de gente
 func _status() -> Array:   # [texto, cor]
@@ -858,8 +870,7 @@ func _status() -> Array:   # [texto, cor]
 
 func _rodape(ci: Control, ab: float) -> void:
 	var r := Rect2(16, 314, 608, 22)
-	ci.draw_rect(r, Color(0.0, 0.03, 0.1, 0.8 * ab))
-	ci.draw_rect(r, Color(0.13, 0.32, 0.66, 0.8 * ab), false, 1.0)
+	MmxUI.inset(ci, r)
 	var st := _status()
 	var col: Color = st[1]
 	ci.draw_rect(Rect2(r.position, Vector2(3, r.size.y)), col)
@@ -893,8 +904,7 @@ func _painel_discos(ci: Control, r: Rect2, ab: float) -> void:
 		var st: Dictionary = discos.get(d.id, {})
 		var s := str(st.get("estado", ""))
 		var row := Rect2(r.position.x + 8, y, r.size.x - 16, 34)
-		ci.draw_rect(row, Color(0.0, 0.03, 0.1, 0.7))
-		ci.draw_rect(row, Color(0.13, 0.32, 0.66, 0.7), false, 1.0)
+		MmxUI.inset(ci, row)
 		var col: Color = C_OK if s == "ok" else (C_ERR if s in ["faltando", "diferente"] else MmxUI.C_ACCENT)
 		ci.draw_rect(Rect2(row.position, Vector2(3, row.size.y)), col)
 		_disco_icone(ci, row.position + Vector2(20, 17), COR_JOGO[d.id], s == "procurando", s == "ok")
@@ -945,12 +955,14 @@ func _painel_etapas(ci: Control, r: Rect2, ab: float) -> void:
 	var y := r.position.y + 14
 	var h := minf(24.0, (r.size.y - 58.0) / etapas.size())
 	var tot := 0.0
-	for i in etapas.size():
+	if h < 12.0:   # muitas etapas: lista compacta em duas colunas (só a que está rodando ganha barra)
+		tot = _etapas_compacta(ci, Rect2(r.position.x + 8, y, r.size.x - 16, r.size.y - 50))
+	for i in (etapas.size() if h >= 12.0 else 0):
 		var e: Dictionary = etapas[i]
 		var s := str(e.estado)
 		var row := Rect2(r.position.x + 8, y, r.size.x - 16, h - 3)
 		var on := i == rodando
-		ci.draw_rect(row, Color(0.0, 0.03, 0.1, 0.7) if not on else Color(0.05, 0.15, 0.32, 0.9))
+		MmxUI.inset(ci, row)
 		if on: MmxUI.sel_bar(ci, row, t, MmxUI.C_ACCENT, false)
 		var col: Color = C_OK if s == "feita" else (C_ERR if s == "erro" else (MmxUI.C_SEL if on else MmxUI.C_DIM))
 		var ic := "✓" if s == "feita" else ("✗" if s == "erro" else ("▶" if on else "·"))
@@ -974,6 +986,33 @@ func _painel_etapas(ci: Control, r: Rect2, ab: float) -> void:
 	MmxUI.text(ci, Vector2(gr.position.x, gr.position.y - 3), "TOTAL", MmxUI.C_DIM)
 	MmxUI.text(ci, Vector2(gr.position.x, gr.position.y - 3), "%d%%" % int(k * 100.0), MmxUI.C_TEXT, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, gr.size.x)
 
+## etapas em duas colunas, uma linha de 11 px cada; devolve a soma dos progressos
+func _etapas_compacta(ci: Control, area: Rect2) -> float:
+	var por_col := int(ceil(etapas.size() / 2.0))
+	var cw := floorf((area.size.x - 4.0) / 2.0)
+	var lh := minf(12.0, floorf(area.size.y / por_col))
+	var tot := 0.0
+	for c in 2: MmxUI.inset(ci, Rect2(area.position.x + c * (cw + 4.0), area.position.y, cw, lh * por_col + 3.0))
+	for i in etapas.size():
+		var e: Dictionary = etapas[i]
+		var s := str(e.estado)
+		var on := i == rodando
+		var c := i / por_col
+		var row := Rect2(area.position.x + c * (cw + 4.0) + 2, area.position.y + 2 + (i % por_col) * lh, cw - 4, lh - 1)
+		if on: MmxUI.sel_bar(ci, row, t, MmxUI.C_ACCENT, false)
+		var col: Color = C_OK if s == "feita" else (C_ERR if s == "erro" else (MmxUI.C_SEL if on else MmxUI.C_DIM))
+		var ic := "✓" if s == "feita" else ("✗" if s == "erro" else ("▶" if on else "·"))
+		var ty := row.position.y + 8
+		MmxUI.text(ci, Vector2(row.position.x + 3, ty), ic, col)
+		var pct := ""
+		if on: pct = "%d%%" % int(float(e.progresso) * 100.0)
+		elif s == "erro": pct = "erro"
+		MmxUI.text(ci, Vector2(row.position.x + 13, ty), MmxUI.fit(str(e.nome), row.size.x - 40), MmxUI.C_TEXT if s != "pendente" else Color(0.6, 0.68, 0.85))
+		if pct != "": MmxUI.text(ci, Vector2(row.position.x, ty), pct, col, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, row.size.x - 3)
+		if on: ci.draw_rect(Rect2(row.position.x + 13, row.end.y - 1, (row.size.x - 16) * float(e.progresso), 1), MmxUI.C_SEL)
+		tot += float(e.progresso)
+	return tot
+
 ## barra de segmentos (estilo barra de energia)
 func _barra(ci: Control, r: Rect2, k: float, col := MmxUI.C_ACCENT, grande := false) -> void:
 	ci.draw_rect(r, Color(0.0, 0.02, 0.06, 0.9))
@@ -981,7 +1020,7 @@ func _barra(ci: Control, r: Rect2, k: float, col := MmxUI.C_ACCENT, grande := fa
 	var n := int(r.size.x / seg)
 	var on := int(round(clampf(k, 0.0, 1.0) * n))
 	for i in n:
-		var c := col if i < on else Color(0.08, 0.14, 0.28)
+		var c := col if i < on else Color8(16, 24, 70)
 		if i < on and i == on - 1 and k < 1.0: c = c.lerp(Color.WHITE, 0.5 + 0.5 * sin(t * 12.0))
 		ci.draw_rect(Rect2(r.position.x + i * seg + 1, r.position.y + 1, seg - 1, r.size.y - 2), c)
 	ci.draw_rect(r, Color(0.13, 0.32, 0.66, 0.8), false, 1.0)

@@ -4,18 +4,71 @@ extends RefCounted
 ## painéis azul-metálicos com cantos cortados, faixa de título, barra de seleção pulsando e sons de menu
 ## (assets/sfx/menu_*.wav: move/ok gravados; open/close/back/equip/error/tab/full sintetizados em tools/sons_menu.py).
 
-const C_BG_TOP := Color(0.035, 0.075, 0.19, 0.95)
-const C_BG_BOT := Color(0.008, 0.02, 0.07, 0.95)
-const C_EDGE_HI := Color(0.62, 0.9, 1.0)
-const C_EDGE_LO := Color(0.13, 0.32, 0.66)
-const C_EDGE_DK := Color(0.0, 0.015, 0.05)
-const C_TEXT := Color(0.86, 0.92, 1.0)
-const C_DIM := Color(0.48, 0.56, 0.74)
-const C_SEL := Color(1.0, 0.86, 0.3)
-const C_ACCENT := Color(0.3, 0.84, 1.0)
+# cores do estilo atual (mudam com set_skin: cada página usa o visual do menu de pausa do seu jogo)
+static var C_BG_TOP := Color(0.035, 0.075, 0.19, 0.95)
+static var C_BG_BOT := Color(0.008, 0.02, 0.07, 0.95)
+static var C_EDGE_HI := Color(0.62, 0.9, 1.0)
+static var C_EDGE_LO := Color(0.13, 0.32, 0.66)
+static var C_EDGE_DK := Color(0.0, 0.015, 0.05)
+static var C_TEXT := Color(0.86, 0.92, 1.0)
+static var C_DIM := Color(0.48, 0.56, 0.74)
+static var C_SEL := Color(1.0, 0.86, 0.3)
+static var C_ACCENT := Color(0.3, 0.84, 1.0)
 const C_GOLD := Color(1.0, 0.72, 0.18)
 const C_GOOD := Color(0.45, 1.0, 0.55)
 const C_WARN := Color(1.0, 0.55, 0.35)
+
+# ---- estilo de cada jogo (tirado dos menus de pausa originais; fontes de VRAM 960,256, research/fontes.py) ----
+# x4: placas de metal cinza + painel azul-marinho + barra verde; x5: tubos azuis cromados + fundo azul-escuro com
+# hexágonos + amarelo-esverdeado; x6: grade azul (textura do menu de pausa) + borda cinza/azul + verde
+static var skin := ""
+static var _skin_font := {}
+## onde ficam as fontes dos jogos (geradas dos discos no PREPARAR); o launcher aponta para a pasta do jogo
+static var pasta_fontes := "res://assets/fonte"
+static var _tex := {}
+const SKINS := {
+	"x4": {"bg0": Color8(41, 49, 115, 245), "bg1": Color8(33, 41, 100, 245), "hi": Color8(214, 214, 214), "lo": Color8(58, 66, 132),
+		"dk": Color8(24, 24, 40), "text": Color(0.97, 0.97, 1.0), "dim": Color8(150, 158, 205), "sel": Color8(99, 239, 82), "acc": Color8(132, 148, 230)},
+	"x5": {"bg0": Color8(0, 0, 74, 245), "bg1": Color8(0, 0, 44, 245), "hi": Color8(156, 189, 255), "lo": Color8(33, 82, 173),
+		"dk": Color8(0, 20, 50), "text": Color(1, 1, 1), "dim": Color8(140, 160, 214), "sel": Color8(206, 247, 66), "acc": Color8(82, 140, 255)},
+	"x6": {"bg0": Color8(58, 74, 214, 250), "bg1": Color8(25, 41, 180, 250), "hi": Color8(189, 189, 189), "lo": Color8(16, 40, 160),
+		"dk": Color8(8, 16, 70), "text": Color(1, 1, 1), "dim": Color8(176, 190, 245), "sel": Color8(99, 247, 140), "acc": Color8(120, 140, 250)},
+}
+
+static func set_skin(s: String) -> void:
+	if not SKINS.has(s) or s == skin: return
+	skin = s
+	var k: Dictionary = SKINS[s]
+	C_BG_TOP = k.bg0; C_BG_BOT = k.bg1; C_EDGE_HI = k.hi; C_EDGE_LO = k.lo; C_EDGE_DK = k.dk
+	C_TEXT = k.text; C_DIM = k.dim; C_SEL = k.sel; C_ACCENT = k.acc
+	if _theme != null:
+		_theme.set_color("font_color", "Label", C_TEXT)
+		_theme.set_color("caret_color", "LineEdit", C_SEL)
+
+## fonte original do jogo do estilo atual (letras grandes: títulos e nomes); o que faltar vem da fonte pequena
+static func skin_font() -> Font:
+	return _skin_font[skin] if tem_fonte() else font()
+
+## a fonte do jogo do estilo atual existe (sem ela, os textos grandes ficam na fonte pequena em dobro, como antes)
+static func tem_fonte() -> bool:
+	if skin == "": return false
+	if not _skin_font.has(skin):
+		var f := FontFile.new()
+		var p := pasta_fontes.path_join("mmx_%s.fnt" % skin)
+		if FileAccess.file_exists(p) and f.load_bitmap_font(p) == OK:
+			f.fixed_size_scale_mode = TextServer.FIXED_SIZE_SCALE_INTEGER_ONLY
+			f.fallbacks = [font()]
+			_skin_font[skin] = f
+		else:
+			_skin_font[skin] = null
+	return _skin_font[skin] != null
+
+static func _img(path: String) -> Texture2D:
+	if not _tex.has(path):
+		var img := Image.load_from_file(ProjectSettings.globalize_path(path))
+		_tex[path] = ImageTexture.create_from_image(img) if img != null and not img.is_empty() else null
+	return _tex[path]
+
 const LINE := 10          # altura da linha da fonte (1x)
 # sons dos menus: os do menu de pausa do X4 que o projeto já tem (menu_move = cursor, menu_ok = confirmar); só o erro
 # continua o zumbido sintetizado (menu_error)
@@ -70,6 +123,7 @@ static func shape(r: Rect2, cut := 6.0) -> PackedVector2Array:
 ## fundo + moldura metálica (claro em cima/à esquerda, escuro embaixo/à direita) + detalhes na cor de destaque
 static func frame(ci: CanvasItem, r: Rect2, accent := C_ACCENT, cut := 6.0, bg := true) -> void:
 	if r.size.x < 2.0 or r.size.y < 2.0: return
+	if skin != "": _frame_skin(ci, r, accent, cut, bg); return
 	var pts := shape(r, cut)
 	if bg:
 		var cols := PackedColorArray()
@@ -102,6 +156,7 @@ static func _grow(pts: PackedVector2Array, r: Rect2, d: float) -> PackedVector2A
 ## faixa do título (aba inclinada) em cima à esquerda do painel
 static func title_tab(ci: CanvasItem, r: Rect2, text: String, accent := C_ACCENT) -> void:
 	if text == "": return
+	if skin != "": _tab_skin(ci, r, text); return
 	var f := font()
 	var w := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, SIZE).x + 14.0
 	var y0 := r.position.y - 5.0
@@ -120,6 +175,7 @@ static func title_tab(ci: CanvasItem, r: Rect2, text: String, accent := C_ACCENT
 
 ## barra de seleção: degradê na cor de destaque, linhas finas e a seta ▶ que balança
 static func sel_bar(ci: CanvasItem, r: Rect2, t: float, accent := C_ACCENT, arrow := true) -> void:
+	if skin != "": _sel_skin(ci, r, t, arrow); return
 	var pulse := 0.5 + 0.5 * sin(t * TAU * 1.6)
 	var a0 := 0.32 + 0.18 * pulse
 	var pts := PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)])
@@ -132,12 +188,19 @@ static func sel_bar(ci: CanvasItem, r: Rect2, t: float, accent := C_ACCENT, arro
 		ci.draw_string(font(), Vector2(r.position.x - 7 + bob, r.position.y + (r.size.y - LINE) * 0.5 + 8), "▶", HORIZONTAL_ALIGNMENT_LEFT, -1, SIZE, C_SEL)
 
 ## texto com sombra (desenho direto)
-static func text(ci: CanvasItem, pos: Vector2, s: String, col := C_TEXT, size := SIZE, align := HORIZONTAL_ALIGNMENT_LEFT, width := -1.0) -> void:
+static func text(ci: CanvasItem, pos: Vector2, s: String, col = null, size := SIZE, align := HORIZONTAL_ALIGNMENT_LEFT, width := -1.0) -> void:
+	var c: Color = C_TEXT if col == null else col
 	var f := font()
-	ci.draw_string(f, pos + Vector2(1, 1) * (size / SIZE), s, align, width, size, Color(0, 0, 0, 0.8 * col.a))
-	ci.draw_string(f, pos, s, align, width, size, col)
+	if size >= SIZE * 2 and tem_fonte():   # nomes grandes: a fonte original do jogo, no tamanho dela
+		f = skin_font(); size = SIZE
+		ci.draw_string(f, pos + Vector2(1, 1), s, align, width, size, Color(0, 0, 0, 0.85 * c.a))
+		ci.draw_string(f, pos, s, align, width, size, c)
+		return
+	ci.draw_string(f, pos + Vector2(1, 1) * (size / SIZE), s, align, width, size, Color(0, 0, 0, 0.8 * c.a))
+	ci.draw_string(f, pos, s, align, width, size, c)
 
 static func text_width(s: String, size := SIZE) -> float:
+	if size >= SIZE * 2 and tem_fonte(): return skin_font().get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, SIZE).x
 	return font().get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 
 ## botão (letra num quadradinho) + ação, para as dicas; devolve a largura usada
@@ -180,6 +243,7 @@ static func fit(s: String, width: float) -> String:
 
 ## painel de vidro escuro simples (caixas internas)
 static func inset(ci: CanvasItem, r: Rect2, accent := C_ACCENT) -> void:
+	if skin != "": _inset_skin(ci, r); return
 	ci.draw_rect(r, Color(0.0, 0.02, 0.08, 0.75))
 	ci.draw_rect(r, Color(accent.r, accent.g, accent.b, 0.35), false, 1.0)
 	ci.draw_line(r.position + Vector2(1, 1), Vector2(r.end.x - 1, r.position.y + 1), Color(1, 1, 1, 0.06), 1.0)
@@ -293,3 +357,145 @@ static func badge(ci: CanvasItem, c: Vector2, r: float, cols: Dictionary, full_k
 		var fc: Array = ARM_COL.get(full_key, ARM_COL[""])
 		ci.draw_colored_polygon(hexagon(c, r * 0.55), Color(0.02, 0.05, 0.12, 0.9))
 		color_chip(ci, c, r * 0.45, fc[0], fc[1], 0.0)
+
+
+# ================= visual de cada jogo =================
+## linha de 1 pixel seguindo o contorno de cantos cortados, recuada d pixels; cor clara em cima/à esquerda, escura no resto
+static func _bevel(ci: CanvasItem, r: Rect2, cut: float, d: float, light: Color, dark: Color) -> void:
+	var p := shape(r.grow(-d), maxf(cut - d * 0.6, 1.0))
+	ci.draw_line(p[5], p[0], light, 1.0); ci.draw_line(p[0], p[1], light, 1.0); ci.draw_line(p[4], p[5], light, 1.0)
+	ci.draw_line(p[1], p[2], dark, 1.0); ci.draw_line(p[2], p[3], dark, 1.0); ci.draw_line(p[3], p[4], dark, 1.0)
+
+static func _fill(ci: CanvasItem, r: Rect2, cut: float, c0: Color, c1: Color) -> void:
+	var pts := shape(r, cut)
+	var cols := PackedColorArray()
+	for v in pts: cols.append(c0.lerp(c1, clampf((v.y - r.position.y) / r.size.y, 0.0, 1.0)))
+	ci.draw_polygon(pts, cols)
+
+static func _frame_skin(ci: CanvasItem, r: Rect2, accent: Color, cut: float, bg: bool) -> void:
+	match skin:
+		"x4":   # painel azul-marinho com placa de metal cinza em volta (menu de pausa do X4)
+			if bg:
+				_fill(ci, r, cut, C_BG_TOP, C_BG_BOT)
+				var x := r.position.x - r.size.y   # riscas de brilho na diagonal, como no painel das armas
+				while x < r.end.x:
+					var a := Vector2(maxf(x, r.position.x), r.end.y - maxf(0.0, r.position.x - x))
+					ci.draw_line(Vector2(x + r.size.y, r.position.y) if x + r.size.y < r.end.x else Vector2(r.end.x, r.position.y + (x + r.size.y - r.end.x)), a, Color(0.6, 0.7, 1.0, 0.025), 1.0)
+					x += 9.0
+			var o := shape(r.grow(1.0), cut + 1.0); o.append(o[0])
+			ci.draw_polyline(o, Color8(66, 66, 74), 1.0)
+			_bevel(ci, r, cut, 0.0, Color8(214, 214, 214), Color8(123, 123, 123))
+			_bevel(ci, r, cut, 1.0, Color8(181, 181, 181), Color8(148, 148, 148))
+			_bevel(ci, r, cut, 2.0, Color8(148, 148, 148), Color8(107, 107, 107))
+			_bevel(ci, r, cut, 3.0, Color8(24, 30, 82), Color8(66, 74, 140))
+			# brilho verde no canto (as barras de energia do X4)
+			ci.draw_line(Vector2(r.position.x + cut + 4, r.position.y + 1), Vector2(r.position.x + cut + 22, r.position.y + 1), Color8(49, 198, 49), 1.0)
+		"x5":   # tubos azuis cromados em volta de um fundo azul-escuro com hexágonos (menu de pausa do X5)
+			if bg:
+				_fill(ci, r, cut, C_BG_TOP, C_BG_BOT)
+				_hex_grid(ci, r.grow(-4.0), Color8(30, 44, 140, 90))
+			var o := shape(r.grow(1.0), cut + 1.0); o.append(o[0])
+			ci.draw_polyline(o, Color8(0, 20, 50), 1.0)
+			_bevel(ci, r, cut, 0.0, Color8(156, 189, 255), Color8(25, 66, 148))
+			_bevel(ci, r, cut, 1.0, Color8(82, 140, 255), Color8(33, 82, 173))
+			_bevel(ci, r, cut, 2.0, Color8(49, 99, 197), Color8(8, 41, 99))
+			_bevel(ci, r, cut, 3.0, Color8(0, 33, 74), Color8(0, 33, 74))
+			ci.draw_line(Vector2(r.end.x - 34, r.end.y - 1), Vector2(r.end.x - cut - 3, r.end.y - 1), Color8(206, 247, 66), 1.0)
+		"x6":   # grade azul do menu de pausa do X6 + borda cinza e azul + cantos verdes
+			if bg:
+				var tex := _img("res://assets/menus/ui/x6_grade.png")
+				var pts := shape(r, cut)
+				if tex:
+					var uvs := PackedVector2Array()
+					for v in pts: uvs.append(Vector2((v.x - r.position.x) / tex.get_width(), (v.y - r.position.y) / r.size.y))
+					ci.draw_colored_polygon(pts, Color(0.62, 0.62, 0.78, 0.97), uvs, tex)
+				else:
+					_fill(ci, r, cut, C_BG_TOP, C_BG_BOT)
+			var o := shape(r.grow(1.0), cut + 1.0); o.append(o[0])
+			ci.draw_polyline(o, Color8(66, 66, 66), 1.0)
+			_bevel(ci, r, cut, 0.0, Color8(214, 214, 214), Color8(148, 148, 148))
+			_bevel(ci, r, cut, 1.0, Color8(189, 189, 189), Color8(123, 123, 123))
+			_bevel(ci, r, cut, 2.0, Color8(16, 40, 160), Color8(16, 40, 160))
+			_bevel(ci, r, cut, 3.0, Color8(16, 40, 160), Color8(8, 24, 120))
+			_bevel(ci, r, cut, 4.0, Color8(99, 115, 239), Color8(41, 58, 206))
+			var g := Color8(99, 247, 140)
+			ci.draw_rect(Rect2(r.end.x - 26, r.position.y - 1, 18, 3), g)
+			ci.draw_rect(Rect2(r.position.x + 4, r.end.y - 2, 3, 3), g); ci.draw_rect(Rect2(r.position.x + 9, r.end.y - 2, 3, 3), g)
+
+## grade de hexágonos (linhas finas), recortada no retângulo
+static func _hex_grid(ci: CanvasItem, r: Rect2, col: Color) -> void:
+	var R := 9.0; var w := R * 1.5; var h := R * sqrt(3.0)
+	var i := 0
+	var x := r.position.x
+	while x < r.end.x + R:
+		var y := r.position.y + (h * 0.5 if i % 2 == 1 else 0.0)
+		while y < r.end.y + h:
+			var hx := hexagon(Vector2(x, y), R)
+			for k in 3:   # só 3 lados por hexágono (os outros vêm dos vizinhos)
+				var a := hx[k]; var b := hx[k + 1]
+				if r.has_point(a) and r.has_point(b): ci.draw_line(a, b, col, 1.0)
+			y += h
+		x += w; i += 1
+
+static func _tab_skin(ci: CanvasItem, r: Rect2, text: String) -> void:
+	var f := skin_font()   # (sem a fonte do jogo: a pequena)
+	var tw := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, SIZE).x
+	var asc := f.get_ascent(SIZE)
+	var th := roundf(asc + 4.0)
+	var y0 := r.position.y - roundf(th * 0.5)
+	var w := tw + 14.0
+	var p := PackedVector2Array([Vector2(r.position.x + 8, y0), Vector2(r.position.x + 8 + w, y0), Vector2(r.position.x + 8 + w + th * 0.6, y0 + th),
+		Vector2(r.position.x + 2, y0 + th), Vector2(r.position.x + 2, y0 + th * 0.5)])
+	var pl := p.duplicate(); pl.append(p[0])
+	var tc := Color.WHITE
+	match skin:
+		"x4":
+			var cols := PackedColorArray()
+			for v in p: cols.append(Color8(214, 214, 214).lerp(Color8(148, 148, 148), clampf((v.y - y0) / th, 0.0, 1.0)))
+			ci.draw_polygon(p, cols); ci.draw_polyline(pl, Color8(66, 66, 74), 1.0)
+			ci.draw_line(p[0], p[1], Color.WHITE, 1.0)
+			tc = Color8(33, 41, 107)
+		"x5":
+			ci.draw_colored_polygon(p, Color(0, 0, 0, 0.92)); ci.draw_polyline(pl, Color8(82, 140, 255), 1.0)
+			ci.draw_line(p[0], p[1], Color8(156, 189, 255), 1.0)
+		"x6":
+			ci.draw_colored_polygon(p, Color8(16, 32, 140)); ci.draw_polyline(pl, Color8(189, 189, 189), 1.0)
+			ci.draw_line(p[3] + Vector2(1, -1), p[2] + Vector2(-2, -1), Color8(99, 247, 140), 1.0)
+	var bx := Vector2(r.position.x + 15, y0 + 2 + asc)
+	if skin != "x4": ci.draw_string(f, bx + Vector2(1, 1), text, HORIZONTAL_ALIGNMENT_LEFT, -1, SIZE, Color(0, 0, 0, 0.9))
+	ci.draw_string(f, bx, text, HORIZONTAL_ALIGNMENT_LEFT, -1, SIZE, tc)
+
+static func _sel_skin(ci: CanvasItem, r: Rect2, t: float, arrow: bool) -> void:
+	var pulse := 0.5 + 0.5 * sin(t * TAU * 1.6)
+	var pts := PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)])
+	var c: Color
+	match skin:
+		"x4": c = Color8(49, 198, 49)      # barra verde de energia
+		"x5": c = Color8(123, 74, 206)     # roxo dos hexágonos
+		_: c = Color8(74, 230, 140)        # verde do X6
+	var a0 := 0.45 + 0.2 * pulse
+	ci.draw_polygon(pts, PackedColorArray([Color(c, a0), Color(c, 0.0), Color(c, 0.0), Color(c, a0)]))
+	ci.draw_line(r.position, Vector2(lerpf(r.position.x, r.end.x, 0.7), r.position.y), Color(c.lightened(0.5), 0.6 + 0.3 * pulse), 1.0)
+	ci.draw_line(Vector2(r.position.x, r.end.y - 1), Vector2(lerpf(r.position.x, r.end.x, 0.5), r.end.y - 1), Color(c.darkened(0.3), 0.8), 1.0)
+	ci.draw_rect(Rect2(r.position.x, r.position.y, 2, r.size.y), c.lightened(0.2))
+	if arrow:
+		var bob := roundf(1.5 + 1.5 * sin(t * TAU * 2.2))
+		var cy := r.position.y + r.size.y * 0.5
+		var ax := r.position.x - 7 + bob
+		var ac := Color8(123, 239, 255) if skin == "x5" else c.lightened(0.35)
+		ci.draw_colored_polygon(PackedVector2Array([Vector2(ax, cy - 3), Vector2(ax + 4, cy), Vector2(ax, cy + 3)]), ac)
+		if skin == "x5": ci.draw_colored_polygon(PackedVector2Array([Vector2(ax - 3, cy - 3), Vector2(ax + 1, cy), Vector2(ax - 3, cy + 3)]), Color(ac, 0.5))
+
+static func _inset_skin(ci: CanvasItem, r: Rect2) -> void:
+	match skin:
+		"x4":   # o encaixe das armas: azul mais escuro com a linha clara em L
+			ci.draw_rect(r, Color8(33, 41, 107, 235))
+			ci.draw_line(r.position + Vector2(0, 1), Vector2(r.position.x, r.end.y), Color8(74, 82, 156), 1.0)
+			ci.draw_line(r.position, Vector2(r.end.x, r.position.y), Color8(16, 20, 66), 1.0)
+			ci.draw_line(Vector2(r.position.x + 6, r.position.y + 1), Vector2(r.end.x - 4, r.position.y + 1), Color8(99, 115, 189, 160), 1.0)
+		"x5":   # caixa preta do texto
+			ci.draw_rect(r, Color(0, 0, 0, 0.82))
+			ci.draw_rect(r, Color8(33, 82, 173), false, 1.0)
+		_:
+			ci.draw_rect(r, Color8(8, 24, 140, 230))
+			ci.draw_rect(r, Color8(99, 115, 239), false, 1.0)

@@ -41,6 +41,7 @@ func _sprite(tex: Texture2D, sc := 1.0) -> TextureRect:
 func _ready() -> void:
 	Opcoes.apply(get_tree()); Opcoes.menu_mode(get_tree(), true)
 	size = Vector2(320, 240)
+	MmxUI.set_skin("x5")   # título: o visual do menu do X5 (o mesmo do "FUSION")
 	theme = MmxUI.theme()
 	var bg := ColorRect.new(); bg.color = Color.BLACK; bg.size = size; add_child(bg)
 	for n in TITLES:

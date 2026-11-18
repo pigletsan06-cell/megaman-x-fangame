@@ -74,15 +74,16 @@ func _layout() -> void:
 	content.modulate.a = reveal()
 
 func _draw() -> void:
+	var acc := MmxUI.C_ACCENT if MmxUI.skin != "" else accent   # com o visual de um jogo, a cor dele
 	var r := _cur()
 	if t < SPLIT:   # a linha de luz esticando
 		var y := roundf(size.y * 0.5)
-		draw_rect(Rect2(r.position.x, y - 3, r.size.x, 6), Color(accent.r, accent.g, accent.b, 0.25))
+		draw_rect(Rect2(r.position.x, y - 3, r.size.x, 6), Color(acc.r, acc.g, acc.b, 0.25))
 		draw_rect(Rect2(r.position.x, y - 1, r.size.x, 2), Color(1, 1, 1, 0.95))
 		return
-	MmxUI.frame(self, r, accent, cut)
-	if t > 0.8 and title != "": MmxUI.title_tab(self, Rect2(Vector2.ZERO, size), title, accent)
+	MmxUI.frame(self, r, acc, cut)
+	if t > 0.8 and title != "": MmxUI.title_tab(self, Rect2(Vector2.ZERO, size), title, acc)
 	if dir == 1 and t > 0.55:   # varredura de luz descendo enquanto o conteúdo aparece
 		var sy := roundf(r.position.y + r.size.y * (t - 0.55) / 0.45)
-		draw_rect(Rect2(r.position.x + 2, sy - 2, r.size.x - 4, 2), Color(accent.r, accent.g, accent.b, 0.35))
+		draw_rect(Rect2(r.position.x + 2, sy - 2, r.size.x - 4, 2), Color(acc.r, acc.g, acc.b, 0.35))
 		draw_rect(Rect2(r.position.x + 2, sy, r.size.x - 4, 1), Color(1, 1, 1, 0.6))

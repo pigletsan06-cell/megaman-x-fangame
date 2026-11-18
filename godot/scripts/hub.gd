@@ -240,6 +240,7 @@ func _refresh() -> void:
 		_jogo_seen = jogo_open
 		if jogo_open: jogo_box.t_open = 0.0
 	var g: String = GAMES[page]
+	MmxUI.set_skin(GAMES[clampi(jogo_sel, 0, 2)] if jogo_open else g)   # os menus com o visual do menu de pausa do jogo
 	var pos: int = cursor[g]
 	var stage: int = POS_STAGE[g][pos]
 	jogo_box.visible = jogo_open
@@ -685,12 +686,13 @@ func _arm_draw_lista(ci: Control) -> void:
 		ci.draw_rect(cr, Color(gc, 0.14 + 0.1 * sin(t_anim * TAU * 1.2)))
 		ci.draw_rect(cr, gc, false, 1.0)
 		MmxUI.text(ci, Vector2(cr.position.x, cr.position.y + 9), "COMPLETA", gc, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_CENTER, cr.size.x)
+	_arm_draw_preview(ci, Rect2(8 + roundf((1.0 - MmxUI.ease_out(app * 1.4)) * -40.0), 50, ARM_LX - 12, 98), parts, zv)
 	# ---- peças do X ----
 	if not is_zero:
 		for i in 4:
 			var slot: String = FangameParts.SLOTS[i]
 			var sl := roundf((1.0 - MmxUI.ease_out(app * 1.6 - (i + 1) * 0.12)) * 60.0)
-			var r := Rect2(8 + sl, 50 + i * 25, 292, 23)
+			var r := Rect2(ARM_LX + sl, 50 + i * 25, 300 - ARM_LX, 23)
 			var on_row := arm_row == i + 1
 			var pk := str(parts.get(slot, ""))
 			var key := FangameParts.asset(pk)
@@ -736,7 +738,8 @@ func _arm_draw_lista(ci: Control) -> void:
 				MmxUI.text(ci, Vector2(r.end.x - 12 - tot * 5 - 40, r.position.y + 15), "%d/%d" % [unl.size() - 1, tot], MmxUI.C_DIM, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, 36)
 	# ---- peças do Black / Nightmare Zero ----
 	elif zv == "zero":
-		MmxUI.text(ci, Vector2(14, 66), "O Zero deste jogo, sem as peças dos desafios.", MmxUI.C_DIM)
+		MmxUI.text(ci, Vector2(ARM_LX + 6, 66), "O Zero deste jogo, sem as peças", MmxUI.C_DIM)
+		MmxUI.text(ci, Vector2(ARM_LX + 6, 78), "dos desafios.", MmxUI.C_DIM)
 	else:
 		var gz := "x6" if zv == "nz" else "x4"
 		var zc: Array = ARM_COL.get(zv, ARM_COL[""])
@@ -745,22 +748,23 @@ func _arm_draw_lista(ci: Control) -> void:
 		for i in 4:   # cada linha: a peça (esquerda) e a melhoria dela (direita)
 			var slot: String = FangameParts.SLOTS[i]
 			var sl2 := roundf((1.0 - MmxUI.ease_out(app * 1.6 - (i + 1) * 0.12)) * 60.0)
-			var r2 := Rect2(8 + sl2, 50 + i * 25, 292, 23)
+			var r2 := Rect2(ARM_LX + sl2, 50 + i * 25, 300 - ARM_LX, 23)
 			var on_row := row == i + 1
 			var zp := MmxUI.shape(r2, 6.0)
 			ci.draw_colored_polygon(zp, Color(0.0, 0.02, 0.08, 0.8))
 			for h in 2:
 				var prize := slot + ("+" if h == 1 else "")
 				var ok := ZeroDesafios.has(sv, gz, prize)
-				var hr := Rect2(r2.position.x + h * 146.0, r2.position.y, 146.0, r2.size.y)
+				var hw := r2.size.x / 2.0
+				var hr := Rect2(r2.position.x + h * hw, r2.position.y, hw, r2.size.y)
 				if ok: _arm_grad(ci, PackedVector2Array([hr.position, Vector2(hr.end.x, hr.position.y), hr.end, Vector2(hr.position.x, hr.end.y)]), hr, Color(zcol, 0.3), Color(zcol, 0.0), 0.8)
 				if on_row and zero_half == h: MmxUI.sel_bar(ci, hr.grow_individual(-1, -1, -1, -1), t_anim, MmxUI.C_ACCENT, h == 0)
-				_arm_hex_icon(ci, Vector2(hr.position.x + 14, hr.get_center().y), 8.5 if h == 0 else 7.0, zv, ok)
+				_arm_hex_icon(ci, Vector2(hr.position.x + 11, hr.get_center().y), 7.0 if h == 0 else 6.0, zv, ok)
 				var lab := str(ZeroDesafios.SLOT_NAME[slot]).to_upper() if h == 0 else "MELHORIA"
-				MmxUI.text(ci, Vector2(hr.position.x + 28, hr.position.y + 9), lab, Color(0.6, 0.7, 0.88))
-				MmxUI.text(ci, Vector2(hr.position.x + 28, hr.position.y + 20), MmxUI.fit(str(ZERO_TXT[zv][prize]), 100), (MmxUI.C_SEL if on_row and zero_half == h else Color.WHITE) if ok else MmxUI.C_DIM)
-				if ok: MmxUI.text(ci, Vector2(hr.end.x - 12, hr.position.y + 15), "✓", MmxUI.C_GOLD)
-			ci.draw_line(Vector2(r2.position.x + 146, r2.position.y + 4), Vector2(r2.position.x + 146, r2.end.y - 4), Color(MmxUI.C_EDGE_LO, 0.8), 1.0)
+				MmxUI.text(ci, Vector2(hr.position.x + 21, hr.position.y + 9), lab, Color(0.6, 0.7, 0.88))
+				if ok: MmxUI.text(ci, Vector2(hr.end.x - 10, hr.position.y + 9), "✓", MmxUI.C_GOLD)
+				MmxUI.text(ci, Vector2(hr.position.x + 21, hr.position.y + 20), MmxUI.fit(str(ZERO_TXT[zv][prize]), hw - 24), (MmxUI.C_SEL if on_row and zero_half == h else Color.WHITE) if ok else MmxUI.C_DIM)
+			ci.draw_line(Vector2(r2.position.x + r2.size.x / 2.0, r2.position.y + 4), Vector2(r2.position.x + r2.size.x / 2.0, r2.end.y - 4), Color(MmxUI.C_EDGE_LO, 0.8), 1.0)
 			var zl := zp.duplicate(); zl.append(zp[0])
 			ci.draw_polyline(zl, MmxUI.C_GOLD if on_row else Color(MmxUI.C_EDGE_LO, 0.9), 1.0)
 	# ---- Giga ----
@@ -813,6 +817,82 @@ func _arm_draw_lista(ci: Control) -> void:
 		var mr := Rect2(dr.position.x + 10, dr.position.y - 15, dr.size.x - 20, 12)
 		ci.draw_rect(mr, Color(0.25, 0.04, 0.02, 0.92 * ma)); ci.draw_rect(mr, Color(1, 0.5, 0.3, ma), false, 1.0)
 		MmxUI.text(ci, Vector2(mr.position.x, mr.position.y + 9), arm_msg, Color(1, 0.75, 0.55, ma), MmxUI.SIZE, HORIZONTAL_ALIGNMENT_CENTER, mr.size.x)
+
+# ---- prévia (esquerda): o sprite do X com as peças escolhidas, parado e respirando como no jogo; a peça trocada pisca ----
+const ARM_LX := 96.0           # onde começam as linhas das peças (a prévia fica antes)
+const ARM_PREV_SCALE := 2.0
+var _pv_atl := {}
+# o X parado, respirando: a animação 0 do jogo ([quadros de duração, quadro do atlas]), em laço
+const PV_IDLE := [[11, 0], [13, 115], [11, 0], [13, 116], [11, 0], [13, 115], [11, 0], [13, 116], [11, 0], [4, 115], [5, 115], [4, 115], [11, 0], [13, 116]]
+
+func _pv_frame() -> int:
+	var tot := 0
+	for st in PV_IDLE: tot += int(st[0])
+	var q := int(t_anim * 60.0) % tot
+	for st in PV_IDLE:
+		q -= int(st[0])
+		if q < 0: return int(st[1])
+	return 0
+
+func _pv_atlas(dir: String, variants := []) -> SpriteAtlas:
+	var k := dir + str(variants)
+	if not _pv_atl.has(k):
+		var a: SpriteAtlas = SpriteAtlas.load_from(dir) if FileAccess.file_exists(dir + "/frames.json") else null
+		if a and variants.size() > 0: a.load_variants(variants)
+		_pv_atl[k] = a
+	return _pv_atl[k]
+
+# x da origem para o quadro (virado para a direita) ficar centralizado em cx
+func _pv_center_x(a: SpriteAtlas, f: int, cx: float, sc: float) -> float:
+	if not a.has_frame(f): return cx
+	var fr: Dictionary = a.frames[f]
+	return roundf(cx - (2.0 * float(fr["ox"]) - float(fr["w"])) / 2.0 * sc)
+
+func _arm_draw_preview(ci: Control, r: Rect2, parts: Dictionary, zv: String) -> void:
+	# fundo: caixa escura com grade de holograma e uma plataforma em baixo
+	var rp := MmxUI.shape(r, 7.0)
+	ci.draw_colored_polygon(rp, Color(0.0, 0.03, 0.1, 0.85))
+	var gy := r.position.y + 6.0
+	while gy < r.end.y - 4.0:
+		ci.draw_line(Vector2(r.position.x + 3, gy), Vector2(r.end.x - 3, gy), Color(0.4, 0.75, 1.0, 0.05), 1.0)
+		gy += 4.0
+	var scan := r.position.y + fmod(t_anim * 40.0, r.size.y)
+	ci.draw_line(Vector2(r.position.x + 3, scan), Vector2(r.end.x - 3, scan), Color(0.5, 0.85, 1.0, 0.12), 1.0)
+	var foot := Vector2(r.get_center().x, r.end.y - 3.0)
+	var glow := 0.5 + 0.2 * sin(t_anim * TAU * 0.8)
+	for k in 3:
+		var w := 30.0 - k * 7.0
+		ci.draw_rect(Rect2(foot.x - w, foot.y + 1 + k, w * 2.0, 1), Color(0.35, 0.8, 1.0, glow * (0.35 - k * 0.1)))
+	var rl := rp.duplicate(); rl.append(rp[0])
+	ci.draw_polyline(rl, Color(MmxUI.C_EDGE_LO, 0.9), 1.0)
+	# personagem (os sprites olham para a esquerda: vira para a direita)
+	var sc := ARM_PREV_SCALE
+	if is_zero:
+		var g: String = GAMES[page]
+		var dir := "res://assets/zero/x5" if g == "x5" else "res://assets/zero/x6"
+		var za := _pv_atlas(dir, [dir + "/atlas_bz.png", dir + "/atlas_nz.png"])
+		if za == null: return
+		var f := 0   # parado (os quadros deste atlas não seguem a tabela de animação do X4)
+		var pos := Vector2(_pv_center_x(za, f, foot.x, sc), foot.y - za.bottom_of(f) * sc)
+		za.draw(ci, f, pos, true, Color.WHITE, {"bz": 1, "nz": 2}.get(zv, 0), sc)
+		return
+	var base := _pv_atlas("res://assets/x/parts/body")
+	if base == null: return
+	var fx := _pv_frame()
+	if not base.has_frame(fx): fx = 0
+	var pos := Vector2(_pv_center_x(base, 0, foot.x, sc), foot.y - base.bottom_of(fx) * sc)
+	var sel_slot := ""
+	if arm_row > 0 and _arm_is_custom(GAMES[page]): sel_slot = FangameParts.SLOTS[arm_row - 1]
+	base.draw(ci, fx, pos, true, Color.WHITE, 0, sc)
+	for p in ["legs", "body", "arms", "helmet"]:   # mesma ordem do jogo
+		var s := FangameParts.asset(str(parts.get(p, "")))
+		if s == "": continue
+		var a := _pv_atlas("res://assets/x/parts/%s/%s" % [s, p])
+		if a == null or not a.has_frame(fx): continue
+		a.draw(ci, fx, pos, true, Color.WHITE, 0, sc)
+		var fl := clampf(1.0 - (t_anim - float(arm_flash.get(p, -9.0))) / 0.35, 0.0, 1.0)
+		if fl > 0.0: a.draw(ci, fx, pos, true, Color(3, 3, 3, fl), 0, sc)   # a peça que acabou de trocar brilha
+		elif p == sel_slot: a.draw(ci, fx, pos, true, Color(1.6, 1.6, 1.6, 0.25 + 0.2 * sin(t_anim * TAU * 1.5)), 0, sc)
 
 class _BuildPreview extends Control:
 	var parts := {}

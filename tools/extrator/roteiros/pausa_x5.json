@@ -1,0 +1,13 @@
+{
+ "nota": "Menu de pausa do X5 (a fase com o X sem armadura, START no quadro 2780): a fonte do menu (VRAM 960,256, células 16x16) vira assets/fonte/mmx_x5 para os textos grandes dos menus do fangame.",
+ "jogo": "x5",
+ "disco": "x5",
+ "quadros": 2890,
+ "botoes": "start:700-710,down:830-835,down:870-875,down:910-915,cross:960-966,cross:1210-1216,cross:1900-1903,cross:1930-1933,cross:1960-1963,cross:1990-1993,cross:2020-2023,cross:2050-2053,cross:2080-2083,cross:2110-2113,cross:2140-2143,cross:2170-2173,cross:2200-2203,cross:2230-2233,cross:2260-2263,cross:2290-2293,cross:2320-2323,cross:2350-2353,cross:2380-2383,cross:2410-2413,cross:2440-2443,cross:2470-2473,cross:2500-2503,cross:2530-2533,cross:2560-2563,cross:2590-2593,start:2780-2785",
+ "poke": "d1c0c:0001:1255-1600,d1c48:0000:1000-1800",
+ "fotos": {},
+ "fonte": {
+  "quadro": 2880,
+  "saida": "assets/fonte/mmx_x5"
+ }
+}

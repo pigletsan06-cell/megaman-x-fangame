@@ -167,6 +167,9 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	var quadros := fotos.keys()
 	for sp in r.get("sprites", []):
 		if not str(int(sp.quadro)) in quadros: quadros.append(str(int(sp.quadro)))
+	var extras: Array = r.get("recortes", []) + ([r.fonte] if r.has("fonte") else [])   # fonte do menu e recortes da tela
+	for ex in extras:
+		if not str(int(ex.quadro)) in quadros: quadros.append(str(int(ex.quadro)))
 	OS.set_environment("DUMP_LIST", ",".join(quadros)); OS.set_environment("POKE", str(r.get("poke", "")))
 	prog.call(0, 3, "rodando o %s" % str(r.jogo).to_upper())
 	var out := []
@@ -229,6 +232,27 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 	if r.has("fusion"):
 		if not monta_fusion(dir, str(r.fusion.spec), jogo.path_join(str(r.fusion.saida))): return -1
 		n += 1
+	if r.has("fonte"):   # a fonte do menu, da VRAM 960,256 desse quadro
+		var vb := FileAccess.get_file_as_bytes(dir.path_join("v_%d.bin" % int(r.fonte.quadro)))
+		if vb.size() != 1024 * 512 * 2: printerr("fonte: VRAM do quadro %d faltando" % int(r.fonte.quadro)); return -1
+		if not load("res://fontes.gd").monta(str(r.jogo), load("res://fontes.gd").pagina_da_vram(vb), jogo.path_join(str(r.fonte.saida))): return -1
+		n += 2
+	if r.has("recortes"):   # pedaços da tela desenhada (mesmo desenhista das fotos)
+		var ks := []
+		for rc in r.recortes:
+			if not str(int(rc.quadro)) in ks: ks.append(str(int(rc.quadro)))
+		var o3 := []
+		var c3 := OS.execute(cap, ["desenha", dir, ",".join(ks)], o3, true)
+		for rc in r.recortes:
+			var cru := FileAccess.get_file_as_bytes(dir.path_join("tela_%d.rgba" % int(rc.quadro)))
+			if cru.size() != 320 * 240 * 4: printerr("recorte: não desenhou o quadro %d (saída %d): %s" % [int(rc.quadro), c3, str(o3).right(300)]); return -1
+			var im := Image.create_from_data(320, 240, false, Image.FORMAT_RGBA8, cru)
+			im.convert(Image.FORMAT_RGB8)
+			var pedaco := im.get_region(Rect2i(int(rc.x), int(rc.y), int(rc.w), int(rc.h)))
+			var dst := jogo.path_join(str(rc.saida))
+			DirAccess.make_dir_recursive_absolute(dst.get_base_dir())
+			if pedaco.save_png(dst) != OK: printerr("não gravei ", dst); return -1
+			n += 1
 	if fotos.is_empty():
 		for f in DirAccess.get_files_at(dir): DirAccess.remove_absolute(dir.path_join(f))
 		DirAccess.remove_absolute(dir); DirAccess.remove_absolute(jogo.path_join(".captura"))
@@ -997,11 +1021,19 @@ const GRUPOS := {
 	"recomp_x5": {"discos": ["x5"]}, "recomp_x6": {"discos": ["x6"]},
 	"pecas_x": {"discos": ["x4", "x5", "x6"]}, "efeitos_x": {"discos": ["x5", "x6"]}, "dash_x6": {"discos": ["x6"]},
 	"corte_nz_x6": {"discos": ["x6"]},
+	"menus_ui": {"discos": ["x4", "x5", "x6"], "roteiros": ["pausa_x5", "pausa_x6"]},   # fontes dos menus e a grade do X6
 }
 func roda_grupo(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> int:
 	if GRUPOS.get(nm, {}).get("captura", false): return captura(nm, jogo, discos, prog)
 	if GRUPOS.get(nm, {}).has("roteiros"):   # vários roteiros de captura em seguida
 		var tot := 0
+		if nm == "menus_ui":   # a fonte do X4 está pronta no disco: ARC/LOAD_U.ARC, a partir do byte 34816 (256x256, 4 bits)
+			var d: Disco = discos.x4
+			var arq: Array = d.arquivos().get("ARC/LOAD_U.ARC", [])
+			if arq.is_empty(): printerr("menus_ui: ARC/LOAD_U.ARC não está no disco do X4"); return -1
+			var pag := d.dados(int(arq[0]) + 34816 / 2048, 16)   # 16 setores = 128 bytes x 256 linhas
+			if not load("res://fontes.gd").monta("x4", pag, jogo.path_join("assets/fonte/mmx_x4")): return -1
+			tot += 2
 		var rs: Array = GRUPOS[nm].roteiros
 		for i in rs.size():
 			var pr := func(a: int, b: int, texto := "") -> void: prog.call(i * 10 + int(10.0 * a / maxf(1.0, b)), rs.size() * 10, texto)
