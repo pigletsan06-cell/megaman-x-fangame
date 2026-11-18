@@ -6,7 +6,7 @@
 #   VERSAO_ANTERIOR (tag ou commit): o que foi apagado desde ela vai para remover.txt (o launcher apaga)
 set -e
 REPO=$(cd "$(dirname $0)/.." && pwd); SAIDA=$(realpath -m "${1:?uso: atualizacao.sh SAIDA.zip [versao_anterior]}"); ANT=$2
-CAMINHOS="godot launcher tools/extrator tools/receita.json tools/captura tools/x4core tools/psxcore versao.json"
+CAMINHOS="godot launcher tools/extrator tools/receita.json tools/captura tools/x4core tools/psxcore versao.json novidades.json"
 T=$(mktemp -d)
 (cd "$REPO" && git archive HEAD $CAMINHOS) | tar -x -C "$T"
 cp "$REPO/tools/LEIA-ME.txt" "$T/LEIA-ME.txt"

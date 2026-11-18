@@ -75,7 +75,9 @@ func _ready() -> void:
 	btn_preparar = _botao("PREPARAR", Rect2(268, 271, 124, 32), _preparar)
 	btn_jogar = _botao("JOGAR", Rect2(402, 271, 220, 32), _jogar, 18)
 	btn_log = _botao("ABRIR REGISTRO", Rect2(522, 318, 96, 14), _abrir_registro)
+	btn_novidades = _botao("NOVIDADES", Rect2(420, 318, 96, 14), func() -> void: _mostra_novidades(int(versao.get("versao", 0)) - 5))
 	btn_atualizar.visible = false; btn_log.visible = false
+	_novidades_init()
 	dlg = FileDialog.new(); dlg.file_mode = FileDialog.FILE_MODE_OPEN_DIR; dlg.access = FileDialog.ACCESS_FILESYSTEM
 	dlg.use_native_dialog = true; dlg.title = "Pasta com os discos (.bin)"
 	dlg.dir_selected.connect(_pasta_escolhida); add_child(dlg)
@@ -85,6 +87,7 @@ func _ready() -> void:
 	_procura_discos()
 	_procurar_atualizacao()
 	_atualiza_botoes()
+	_novidades_ao_abrir()
 
 func _botao(txt: String, r: Rect2, f: Callable, fs := MmxUI.SIZE) -> Button:
 	var b := Button.new(); b.text = txt; b.clip_text = true
@@ -516,6 +519,9 @@ func _atualiza_botoes() -> void:
 	btn_log.visible = tem_erro
 	for b in [btn_discos, btn_preparar, btn_jogar, btn_atualizar]:
 		if b.disabled and b.has_focus(): b.release_focus()
+	if nov_cv and nov_cv.visible:
+		if not nov_ok.has_focus(): nov_ok.grab_focus()
+		return
 	if not btn_jogar.disabled and not btn_jogar.has_focus() and not auto: btn_jogar.grab_focus()
 	elif btn_jogar.disabled and not btn_preparar.disabled and not btn_preparar.has_focus(): btn_preparar.grab_focus()
 
@@ -621,6 +627,7 @@ func _resp_download(res: int, code: int, headers: PackedStringArray, _b: PackedB
 	_aplica_atualizacao(zip)
 
 func _aplica_atualizacao(zip: String) -> void:
+	if not estado.has("novidades_vistas"): estado.novidades_vistas = int(versao.get("versao", 0)); _grava_estado()
 	var zr := ZIPReader.new()
 	if zr.open(zip) != OK:
 		upd.estado = "disponivel"; upd.texto = "Arquivo de atualização estragado"; _atualiza_botoes(); return
@@ -660,6 +667,75 @@ func _aplica_atualizacao(zip: String) -> void:
 	_monta_etapas(); _avalia_etapas(); _atualiza_botoes()
 	_foto("atualizado")
 	_preparar()
+	if not auto: _mostra_novidades(int(estado.get("novidades_vistas", 0)))
+
+# ---------------- novidades: novidades.json = {"versão": ["o que mudou", ...]} ----------------
+# Ao abrir depois de atualizar, mostra o que mudou desde a última versão vista (gerado/estado.json "novidades_vistas").
+const VERSAO_SEM_NOVIDADES := 56   # o launcher dessa versão ainda não guardava a versão vista
+const NOV_R := Rect2(50, 40, 540, 270)
+const NOV_LINHAS := 18
+var btn_novidades: Button
+var nov_cv: _Canvas
+var nov_ok: Button
+var nov_linhas: Array = []   # [texto, é título]
+var nov_scroll := 0
+
+func _novidades_init() -> void:
+	nov_cv = _Canvas.new(); nov_cv.fn = _desenha_novidades; nov_cv.size = Vector2(640, 360)
+	nov_cv.mouse_filter = Control.MOUSE_FILTER_STOP; nov_cv.visible = false; add_child(nov_cv)
+	nov_cv.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed:
+			if e.button_index == MOUSE_BUTTON_WHEEL_UP: _nov_rola(-1)
+			elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN: _nov_rola(1))
+	nov_ok = _botao("OK", Rect2(NOV_R.end.x - 110, NOV_R.end.y - 24, 96, 16), _fecha_novidades)
+	nov_ok.visible = false
+
+func _novidades_ao_abrir() -> void:
+	var atual := int(versao.get("versao", 0))
+	if not estado.has("novidades_vistas"):
+		# atualizou com o launcher antigo (o arquivo da atualização ficou em gerado/): mostra desde a versão dele
+		if atual > VERSAO_SEM_NOVIDADES and FileAccess.file_exists(raiz.path_join("gerado/atualizacao.zip")): estado.novidades_vistas = VERSAO_SEM_NOVIDADES
+		else: estado.novidades_vistas = atual; _grava_estado(); return
+	if int(estado.novidades_vistas) < atual and not auto: _mostra_novidades(int(estado.novidades_vistas))
+
+func _mostra_novidades(desde: int) -> void:
+	var p := raiz.path_join("novidades.json")
+	var d = JSON.parse_string(FileAccess.get_file_as_string(p)) if FileAccess.file_exists(p) else null
+	if not d is Dictionary: return
+	var atual := int(versao.get("versao", 0))
+	var vs := []
+	for k in d:
+		if int(k) > desde and int(k) <= atual: vs.append(int(k))
+	if vs.is_empty(): return
+	vs.sort(); vs.reverse()
+	nov_linhas = []
+	for v in vs:
+		nov_linhas.append(["VERSÃO %d" % v, true])
+		for item in d[str(v)]:
+			var ls := MmxUI.wrap(str(item), NOV_R.size.x - 46)
+			for i in ls.size(): nov_linhas.append([("•  " if i == 0 else "    ") + ls[i], false])
+		nov_linhas.append(["", false])
+	nov_scroll = 0
+	nov_cv.visible = true; nov_ok.visible = true; nov_ok.grab_focus()
+	_som("menu_open")
+
+func _nov_rola(n: int) -> void:
+	nov_scroll = clampi(nov_scroll + n * 3, 0, maxi(0, nov_linhas.size() - NOV_LINHAS))
+
+func _fecha_novidades() -> void:
+	nov_cv.visible = false; nov_ok.visible = false
+	estado.novidades_vistas = int(versao.get("versao", 0)); _grava_estado()
+	_atualiza_botoes()
+
+func _desenha_novidades(ci: Control) -> void:
+	ci.draw_rect(Rect2(0, 0, 640, 360), Color(0, 0.01, 0.04, 0.78))
+	MmxUI.frame(ci, NOV_R, MmxUI.C_GOLD, 8.0)
+	MmxUI.title_tab(ci, NOV_R, "O QUE MUDOU", MmxUI.C_GOLD)
+	for i in mini(NOV_LINHAS, nov_linhas.size() - nov_scroll):
+		var l: Array = nov_linhas[nov_scroll + i]
+		MmxUI.text(ci, NOV_R.position + Vector2(18, 26 + i * 12), str(l[0]), MmxUI.C_SEL if l[1] else MmxUI.C_TEXT)
+	if nov_linhas.size() > NOV_LINHAS:
+		MmxUI.text(ci, NOV_R.position + Vector2(18, NOV_R.size.y - 14), "role com a rodinha ou as setas (%d/%d)" % [mini(nov_scroll + NOV_LINHAS, nov_linhas.size()), nov_linhas.size()], MmxUI.C_DIM)
 
 # ---------------- teste automático ----------------
 func _tela_depois(arg: String) -> void:
@@ -694,6 +770,12 @@ func _process(dt: float) -> void:
 	cv.queue_redraw()
 
 func _unhandled_input(e: InputEvent) -> void:
+	if nov_cv and nov_cv.visible:
+		if e.is_action_pressed("ui_cancel"): _fecha_novidades()
+		elif e.is_action_pressed("ui_up"): _nov_rola(-1)
+		elif e.is_action_pressed("ui_down"): _nov_rola(1)
+		else: return
+		get_viewport().set_input_as_handled(); return
 	if e.is_action_pressed("ui_cancel") and rodando >= 0:
 		cancelar = true; _log("cancelando..."); get_viewport().set_input_as_handled()
 

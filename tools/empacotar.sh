@@ -16,7 +16,7 @@ WV=$(cat "$REPO"/tools/webp/* | sha1sum | cut -c1-12); WP=$CACHE/webpenc-$WV
 [ -s "$WP/webpenc.exe" ] || "$REPO/tools/webp/compilar.sh" "$WP" > /dev/null
 T=$(mktemp -d); P="$T/Mega Man X Fusion"
 mkdir -p "$P/engine" "$P/ferramentas" "$P/discos" "$P/gerado"
-(cd "$REPO" && git archive HEAD godot launcher tools/extrator tools/receita.json tools/captura tools/x4core tools/psxcore versao.json) | tar -x -C "$P"
+(cd "$REPO" && git archive HEAD godot launcher tools/extrator tools/receita.json tools/captura tools/x4core tools/psxcore versao.json novidades.json) | tar -x -C "$P"
 cp "$REPO/tools/LEIA-ME.txt" "$P/LEIA-ME.txt"
 echo "Coloque aqui os 3 discos (.bin): Mega Man X4 (USA).bin, Mega Man X5 (USA).bin, Mega Man X6 (USA) (v1.1).bin" > "$P/discos/COLOQUE OS DISCOS AQUI.txt"
 unzip -q -o -j "$GZ" "Godot_v${GV}-stable_win64.exe" -d "$P/engine"; mv "$P/engine/Godot_v${GV}-stable_win64.exe" "$P/engine/godot.exe"

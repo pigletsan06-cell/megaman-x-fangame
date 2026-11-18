@@ -1,0 +1,28 @@
+{
+ "63": [
+  "Launcher: depois de atualizar, mostra esta lista com o que mudou. O botão NOVIDADES abre de novo as últimas versões."
+ ],
+ "62": [
+  "Hub: com os 8 Mavericks de um jogo vencidos, as fases finais já aparecem abertas na próxima que falta (B fecha, Select abre de novo)."
+ ],
+ "61": [
+  "X4: voltar numa fase de um Maverick já vencido não tira mais a arma dele; o chefe aparece de novo, como no X4 original."
+ ],
+ "60": [
+  "Hub: voltar da seleção de chefes para a escolha do jogo passa por uma tela Now Loading do X5 ou do X6, sorteada."
+ ],
+ "59": [
+  "Sub tanks: os 6 (2 por jogo) aparecem nas fases. O primeiro achado dá um sub tank, o segundo dá o outro, e cada achado aumenta quanto eles guardam: 25%, 40%, 55%, 70%, 85% e 100% da vida máxima.",
+  "X4: o menu de pausa e a barra do sub tank seguem a eficácia nova. No X5/X6 a eficácia ainda vai só até o que esses jogos guardam (32).",
+  "Hub (Tab): mostra quantos sub tanks foram achados e a eficácia."
+ ],
+ "58": [
+  "Heart tanks: os 24 dos 3 jogos contam; a cada 3 a vida máxima sobe 2, chegando a 48 com todos.",
+  "Hub (Tab): mostra quantos heart tanks faltam para o próximo aumento."
+ ],
+ "57": [
+  "X4: os tiros e as armas de chefe não param mais de sair, e a mira do Aiming Laser não some mais (a conta de tiros travava quando as bolas/explosões das habilidades enchiam as vagas).",
+  "X4: o tiro carregado da Falcon do X6 vai até sair da tela.",
+  "X4: terminar uma fase final volta direto para o hub, sem a tela de salvar do X4."
+ ]
+}
