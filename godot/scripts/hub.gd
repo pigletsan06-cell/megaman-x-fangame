@@ -110,7 +110,9 @@ var arm_change_t := 0.0        # relógio da última mudança (texto digitando)
 var arm_full_t := -9.0
 var arm_msg := ""; var arm_msg_t := -9.0
 var arm_open_t := 0.0
-static var arm_row := 0        # 0 = conjunto / variante; 1-4 = peças
+static var arm_row := 0        # -1 = personagem (X / Zero); 0 = conjunto / variante; 1-4 = peças
+var arm_launch := false        # o menu abriu ao escolher a fase: confirmar começa a fase (Esc volta para os chefes)
+var arm_final := -1            # fase final escolhida (-1 = a do Maverick)
 static var zero_half := 0      # Zero: 0 = a peça, 1 = a melhoria dela
 
 func _ready() -> void:
@@ -429,28 +431,42 @@ func _build_input(e: InputEvent) -> void:
 	var g: String = GAMES[page]
 	var nrows := 1 if is_zero and _zero_variant(g) == "zero" else 5
 	if arm_row >= nrows: arm_row = 0
+	var r0 := -1 if arm_launch else 0   # na hora de jogar, a 1ª linha é o personagem
 	var up := _key(e, KEY_UP) or _joy(e, JOY_BUTTON_DPAD_UP)
 	var dn := _key(e, KEY_DOWN) or _joy(e, JOY_BUTTON_DPAD_DOWN)
 	var lf := _key(e, KEY_LEFT) or _joy(e, JOY_BUTTON_DPAD_LEFT)
 	var rt := _key(e, KEY_RIGHT) or _joy(e, JOY_BUTTON_DPAD_RIGHT)
 	if up or dn:
-		if nrows > 1:
-			arm_row = (arm_row + (nrows - 1 if up else 1)) % nrows; arm_change_t = t_anim; _sfx("menu_move")
+		var n := nrows - r0
+		if n > 1:
+			arm_row = r0 + (arm_row - r0 + (n - 1 if up else 1)) % n; arm_change_t = t_anim; _sfx("menu_move")
 	elif _key(e, KEY_Q) or _key(e, KEY_W):
 		_arm_cycle_preset(g, -1 if _key(e, KEY_Q) else 1)
 	elif lf or rt:
 		var d := -1 if lf else 1
-		if arm_row == 0: _arm_cycle_preset(g, d)
+		if arm_row < 0:   # X <-> Zero
+			is_zero = not is_zero; char_t = t_anim; arm_change_t = t_anim
+			for p in FangameParts.SLOTS: arm_flash[p] = t_anim
+			_sfx("menu_equip")
+		elif arm_row == 0: _arm_cycle_preset(g, d)
 		elif is_zero: zero_half = 1 - zero_half; arm_change_t = t_anim; _sfx("menu_move")   # peça <-> melhoria
 		else: _arm_change_piece(g, arm_row - 1, d)
 	elif _key(e, KEY_ESCAPE) or _joy(e, JOY_BUTTON_B):
-		build_open = false; _sfx("menu_back")
+		build_open = false; arm_launch = false; _sfx("menu_back")
 	elif _key(e, KEY_C) or _key(e, KEY_X) or _key(e, KEY_ENTER) or e.is_action_pressed("jump") \
 			or _joy(e, JOY_BUTTON_X) or _joy(e, JOY_BUTTON_A) or _joy(e, JOY_BUTTON_START):
-		build_open = false; _sfx("menu_ok")
+		build_open = false
+		if arm_launch and not (_key(e, KEY_C) or _joy(e, JOY_BUTTON_X)):   # pronto: começa a fase
+			arm_launch = false; _sfx("menu_ok"); get_viewport().set_input_as_handled(); _start(arm_final); return
+		arm_launch = false; _sfx("menu_ok")
 	else: return
 	get_viewport().set_input_as_handled()
 	_refresh()
+
+## abre o menu da armadura para jogar a fase escolhida (personagem, conjunto e peças; confirmar começa)
+func _abre_missao(final_stage := -1) -> void:
+	build_open = true; arm_launch = true; arm_final = final_stage; arm_row = -1
+	_sfx("menu_open")
 
 # ---- escolha do personagem (△ / V): o aviso PERSONAGEM fica aberto, ←→ troca X / Zero ----
 func _char_input(e: InputEvent) -> void:
@@ -467,6 +483,7 @@ func _char_input(e: InputEvent) -> void:
 	_refresh()
 
 func _draw_build() -> void:   # (o menu é desenhado a cada quadro em _arm_draw; aqui só abre/fecha)
+	pn_arm.title = "MISSÃO" if arm_launch else "ARMADURA"
 	if build_open and not pn_arm.shown(): pn_arm.open(); arm_open_t = t_anim; arm_change_t = t_anim + 0.35
 	elif not build_open and pn_arm.shown(): pn_arm.close()
 
@@ -629,7 +646,7 @@ func _arm_draw_lista(ci: Control) -> void:
 	var full_key := ""
 	if not is_zero: full_key = FangameParts.full_set(parts) if custom else str(parts.helmet)
 	var zv := _zero_variant(g) if is_zero else ""
-	var row := 0 if zv == "zero" else arm_row
+	var row := arm_row if arm_row < 0 else (0 if zv == "zero" else arm_row)
 	var bob := roundf(1.0 + 1.0 * sin(t_anim * TAU * 2.0))
 	# ---- fundo: riscas diagonais andando ----
 	var x := -220.0 + fmod(t_anim * 6.0, 14.0)
@@ -686,7 +703,22 @@ func _arm_draw_lista(ci: Control) -> void:
 		ci.draw_rect(cr, Color(gc, 0.14 + 0.1 * sin(t_anim * TAU * 1.2)))
 		ci.draw_rect(cr, gc, false, 1.0)
 		MmxUI.text(ci, Vector2(cr.position.x, cr.position.y + 9), "COMPLETA", gc, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_CENTER, cr.size.x)
-	_arm_draw_preview(ci, Rect2(8 + roundf((1.0 - MmxUI.ease_out(app * 1.4)) * -40.0), 50, ARM_LX - 12, 98), parts, zv)
+	var pvr := Rect2(8 + roundf((1.0 - MmxUI.ease_out(app * 1.4)) * -40.0), 50, ARM_LX - 12, 98)
+	_arm_draw_preview(ci, pvr, parts, zv)
+	if arm_launch:   # personagem: em cima da prévia, ←→ troca X / Zero
+		var pr := Rect2(pvr.position.x, pvr.end.y + 2, pvr.size.x, 13)   # logo embaixo da prévia
+		var on := row < 0
+		MmxUI.inset(ci, pr)
+		if on: MmxUI.sel_bar(ci, pr, t_anim, MmxUI.C_ACCENT, false)
+		var nm := "ZERO" if is_zero else "X"
+		var nw := MmxUI.text_width(nm)
+		var cx := pr.get_center().x
+		MmxUI.text(ci, Vector2(cx - nw * 0.5, pr.position.y + 10), nm, MmxUI.C_SEL if on else Color.WHITE)
+		if on:
+			MmxUI.text(ci, Vector2(pr.position.x + 3 - bob, pr.position.y + 10), "◀", MmxUI.C_SEL)
+			MmxUI.text(ci, Vector2(pr.end.x - 9 + bob, pr.position.y + 10), "▶", MmxUI.C_SEL)
+		var pl := MmxUI.shape(pvr, 7.0); pl.append(pl[0])
+		ci.draw_polyline(pl, MmxUI.C_GOLD if on else Color(MmxUI.C_EDGE_LO, 0.9), 1.0)
 	# ---- peças do X ----
 	if not is_zero:
 		for i in 4:
@@ -769,19 +801,23 @@ func _arm_draw_lista(ci: Control) -> void:
 			ci.draw_polyline(zl, MmxUI.C_GOLD if on_row else Color(MmxUI.C_EDGE_LO, 0.9), 1.0)
 	# ---- Giga ----
 	var gy := 151.0
+	var gx := ARM_LX if arm_launch else 10.0   # na missão, à esquerda fica o personagem
 	if giga != "":
 		var gon := full_key != ""
-		var gw := _arm_pill(ci, Vector2(10, gy), "GIGA", MmxUI.C_GOLD if gon else MmxUI.C_DIM, gon)
-		MmxUI.text(ci, Vector2(14 + gw, gy + 8), giga, MmxUI.C_GOLD if gon else MmxUI.C_DIM)
+		var gw := _arm_pill(ci, Vector2(gx, gy), "GIGA", MmxUI.C_GOLD if gon else MmxUI.C_DIM, gon)
+		MmxUI.text(ci, Vector2(gx + 4 + gw, gy + 8), giga, MmxUI.C_GOLD if gon else MmxUI.C_DIM)
 	elif not is_zero:
-		MmxUI.text(ci, Vector2(10, gy + 8), "Giga: 4 peças da mesma armadura", MmxUI.C_DIM)
+		MmxUI.text(ci, Vector2(gx, gy + 8), "Giga: 4 peças da mesma armadura", MmxUI.C_DIM)
 	elif zv != "zero":
-		MmxUI.text(ci, Vector2(10, gy + 8), "↑↓ peça   ←→ peça / melhoria", MmxUI.C_DIM)
+		MmxUI.text(ci, Vector2(gx, gy + 8), "↑↓ peça   ←→ peça / melhoria", MmxUI.C_DIM)
 	# ---- descrição (embaixo), digitando ----
 	var dr := Rect2(8, 166, 292, 35)
 	MmxUI.frame(ci, dr, MmxUI.C_ACCENT, 6.0)
 	var desc := ""
-	if is_zero and row > 0:
+	if row < 0:
+		desc = ("Zero: o espadachim. Com as peças dos desafios vira Black Zero ou Nightmare Zero (desça para escolher)." if is_zero
+			else "X: com a armadura deste jogo ou montada peça por peça (desça para escolher).") + " Confirme para jogar."
+	elif is_zero and row > 0:
 		desc = _zero_prize_text(zv, FangameParts.SLOTS[row - 1] + ("+" if zero_half == 1 else ""))
 	elif is_zero:
 		if zv == "nz":
@@ -1038,7 +1074,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			if _bosses_done(g) < 8: _sfx("menu_error")
 			elif Coop.on() and not Coop.is_host():
 				_sfx("menu_error"); new_part_msg = "CO-OP: o P1 escolhe a fase (você vai junto)"; get_viewport().set_input_as_handled(); _refresh(); return
-			else: _sfx("menu_ok"); _start(int(FINALS[g][clampi(final_sel, 0, FINALS[g].size() - 1)][0])); return
+			else: _abre_missao(int(FINALS[g][clampi(final_sel, 0, FINALS[g].size() - 1)][0]))
 		else: return
 		get_viewport().set_input_as_handled(); _refresh(); return
 	var c0: int = cursor[g]
@@ -1052,7 +1088,7 @@ func _unhandled_input(e: InputEvent) -> void:
 	elif e.is_action_pressed("jump") or _key(e, KEY_ENTER) or _joy(e, JOY_BUTTON_START):
 		if Coop.on() and not Coop.is_host():
 			_sfx("menu_error"); new_part_msg = "CO-OP: o P1 escolhe a fase (você vai junto)"; get_viewport().set_input_as_handled(); _refresh(); return
-		_sfx("menu_ok"); _start(); return
+		_abre_missao(); get_viewport().set_input_as_handled(); _refresh(); return
 	elif _key(e, KEY_4) or _key(e, KEY_5) or _key(e, KEY_6):   # jogo original completo
 		X4Machine.launch = {}
 		for k in ["MMX4_ORACLE_SCENE", "MMX4_DIRECT_STAGE", "MMX4_DIRECT_CHARACTER", "MMX4_DIRECT_LOADOUT", "MMX4_DIRECT_SECRET", "MMX4_DIRECT_ARMOR", "MMX4_DIRECT_SKILL", "MMX4_SAVE", "MMX4_VOZ_X6"]: X4R.env.erase(k)
@@ -1502,12 +1538,13 @@ func _bar_draw(ci: Control) -> void:
 		MmxUI.text(ci, Vector2(0, y0 + 10), MmxUI.fit(bar_info_r, 308 - lw - 10), MmxUI.C_TEXT, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, 316)
 	var hs: Array
 	if jogo_open: hs = [["←→", "←→", "jogo"], ["✕", "Z", "entrar"], ["○", "Esc", "saves"], ["R3", "Tab", "status"], ["L1", "O", "co-op"]]
+	elif build_open and arm_launch: hs = [["↑↓", "↑↓", "escolher"], ["←→", "←→", "trocar"], ["✕", "Z", "jogar"], ["○", "Esc", "voltar"]]
 	elif build_open: hs = [["↑↓", "↑↓", "escolher"], ["←→", "←→", "trocar"], ["L2 R2", "Q W", "conjunto"], ["✕", "Z", "pronto"]]
 	elif status_open: hs = [["←→", "←→", "armadura"], ["R3", "Tab", "fechar"]]
 	elif finals_open: hs = [["↑↓", "↑↓", "fase"], ["✕", "Z", "jogar"], ["SEL", "Bksp", "fechar"]]
 	elif coop_open: hs = [["↑↓", "↑↓", "escolher"], ["✕", "Enter", "confirmar"], ["○", "Esc", "fechar"]]
 	elif char_open: hs = [["←→", "←→", "trocar X / Zero"], ["△", "V", "fechar"], ["✕", "Z", "pronto"]]
-	else: hs = [["○", "Esc", "jogos"], ["△", "V", "X/Zero"], ["□", "C", "armadura"], ["SEL", "Bksp", "finais"], ["R3", "Tab", "status"], ["L1", "O", "co-op"]]
+	else: hs = [["✕", "Z", "escolher fase"], ["○", "Esc", "jogos"], ["SEL", "Bksp", "finais"], ["R3", "Tab", "status"], ["L1", "O", "co-op"]]
 	var tot := 0.0
 	for h in hs: tot += MmxUI.text_width(str(h[0] if pad_mode else h[1])) + 2.0 + MmxUI.text_width(str(h[2])) + 8.0
 	var x := maxf(4.0, (320.0 - tot + 8.0) * 0.5)
