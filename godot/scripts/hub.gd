@@ -139,6 +139,7 @@ func _ready() -> void:
 	pn_finals = MmxPanel.make(self, Rect2(66, 56, 188, 118), "FASES FINAIS", MmxUI.C_GOLD)
 	pn_coop = MmxPanel.make(self, Rect2(14, 16, 292, 200), "CO-OP ONLINE", MmxUI.C_ACCENT)
 	if not from_stage and not in_page: jogo_open = true; jogo_sel = page
+	if in_page and not jogo_open: _auto_finals(GAMES[page])
 	_refresh()
 
 func _load_progress() -> void:
@@ -833,6 +834,14 @@ class _BuildPreview extends Control:
 			var a := _atlas(s, p)
 			if a and a.has_frame(0): a.draw(self, 0, pos, false)
 
+# com os 8 Mavericks vencidos e alguma fase final faltando, as fases finais já aparecem abertas na próxima que falta
+# (voltando de uma fase ou entrando no jogo); B fecha e volta para os Mavericks, Select abre de novo
+func _auto_finals(g: String) -> void:
+	if not FINALS.has(g) or _bosses_done(g) < 8: return
+	for i in FINALS[g].size():
+		if not int(FINALS[g][i][0]) in progress[g]:
+			finals_open = true; final_sel = i; return
+
 func _bosses_done(g: String) -> int:
 	return progress[g].filter(func(v): return v >= 1 and v <= 8).size()
 
@@ -938,6 +947,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		get_viewport().set_input_as_handled(); _refresh(); return
 	if _key(e, KEY_BACKSPACE) or _joy(e, JOY_BUTTON_BACK):
 		finals_open = not finals_open; final_sel = 0; _sfx("menu_open" if finals_open else "menu_close")
+		if finals_open: _auto_finals(g)
 		get_viewport().set_input_as_handled(); _refresh(); return
 	if finals_open:
 		var nf: int = FINALS[g].size()
@@ -1170,6 +1180,7 @@ func _intro_step(dt: float) -> void:
 func _intro_end() -> void:
 	intro_t = -1.0; screen.modulate = Color.WHITE; bar.visible = true
 	fx.t_move = 0.0
+	if in_page and not jogo_open: _auto_finals(GAMES[page])
 	_refresh()
 
 # ---- vida nas telas: brilho do cursor no formato do retrato + efeitos do X5/X6 ----
