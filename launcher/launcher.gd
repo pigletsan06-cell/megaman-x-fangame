@@ -116,16 +116,17 @@ func _som(nm: String) -> void:
 	var p: AudioStreamPlayer = sfx.get(nm)
 	if p and p.stream: p.play()
 
-# sons do launcher: os do Mega Man que o PREPARAR tira dos discos do jogador (godot/assets/sfx); antes da 1ª preparação
-# (o pacote não traz nada dos jogos) ficam os sons próprios do launcher (assets/sfx)
+# sons do launcher: os do Mega Man tirados dos discos do jogador (o pacote não traz nada dos jogos). Logo depois de
+# conferir os discos o launcher tira os do X6 (etapa sons_launcher, uns segundos: gerado/sons_launcher); os do
+# teletransporte vêm do X4 no PREPARAR (godot/assets/sfx). Enquanto não existem, ficam os sons próprios (assets/sfx).
 const SONS_MEGAMAN := {
-	"menu_tab": "menu_move",      # cursor do menu de pausa do X4 (passar por um botão)
-	"menu_open": "menu_ok",       # confirmar do menu de pausa do X4 (apertar um botão)
-	"menu_close": "menu_move", "menu_back": "menu_move",
-	"menu_equip": "x6_shot",      # tiro do X (discos conferidos, cada etapa pronta)
-	"menu_full": "fg_tele_in",    # o X chegando pelo teletransporte (tudo pronto, atualização)
-	"menu_error": "vx_0",         # o X tomando dano (erro)
-	"jogar": "fg_tele_out",       # o X saindo pelo teletransporte (JOGAR)
+	"menu_tab": ["gerado/sons_launcher/cursor.wav"],     # cursor do menu de pausa do X6 (passar por um botão)
+	"menu_close": ["gerado/sons_launcher/cursor.wav"], "menu_back": ["gerado/sons_launcher/cursor.wav"],
+	"menu_open": ["gerado/sons_launcher/ok.wav"],        # confirmar do menu de pausa do X6 (apertar um botão)
+	"menu_equip": ["gerado/sons_launcher/tiro.wav"],     # tiro do X (discos conferidos, cada etapa pronta)
+	"menu_error": ["gerado/sons_launcher/dano.wav"],     # o X tomando dano (erro)
+	"menu_full": ["godot/assets/sfx/fg_tele_in.wav", "gerado/sons_launcher/ok.wav"],   # o X chegando (tudo pronto)
+	"jogar": ["godot/assets/sfx/fg_tele_out.wav"],       # o X saindo pelo teletransporte (JOGAR)
 }
 var sons_megaman := 0
 func _carrega_sons() -> void:
@@ -133,13 +134,26 @@ func _carrega_sons() -> void:
 	for s in SONS_MEGAMAN:
 		var p: AudioStreamPlayer = sfx.get(s)
 		if p == null: p = AudioStreamPlayer.new(); add_child(p); sfx[s] = p
-		var f := raiz.path_join("godot/assets/sfx/%s.wav" % SONS_MEGAMAN[s])
-		if not FileAccess.file_exists(f): f = ProjectSettings.globalize_path("res://assets/sfx/%s.wav" % s)
-		else: n += 1
+		var f := ""
+		for c in SONS_MEGAMAN[s]:
+			if FileAccess.file_exists(raiz.path_join(c)): f = raiz.path_join(c); break
+		if f != "": n += 1
+		else: f = ProjectSettings.globalize_path("res://assets/sfx/%s.wav" % s)
 		var st: AudioStreamWAV = AudioStreamWAV.load_from_file(f) if FileAccess.file_exists(f) else null
 		if st != null or p.stream == null: p.stream = st
 	if n != sons_megaman: _log("sons do Mega Man no launcher: %d de %d" % [n, SONS_MEGAMAN.size()])
 	sons_megaman = n
+
+# logo depois de conferir os discos: tira só os sons do launcher (sem esperar o PREPARAR)
+var so_sons := false
+func _sons_do_launcher() -> void:
+	if auto or rodando >= 0 or not _discos_ok(): return
+	_avalia_etapas()
+	for i in etapas.size():
+		if etapas[i].id == "sons_launcher" and etapas[i].estado != "feita":
+			so_sons = true; cancelar = false
+			_roda_etapa(i, _vars())
+			return
 
 # ---------------- arquivos ----------------
 func _ler_json(p: String) -> Dictionary:
@@ -271,6 +285,7 @@ func _discos_fim(cache: Dictionary) -> void:
 	_avalia_etapas()
 	_atualiza_botoes()
 	_foto("discos")
+	if faltam.is_empty(): _sons_do_launcher()   # os sons do Mega Man do launcher, já (uns segundos)
 	if auto:
 		if not faltam.is_empty(): _fim_auto(false, disco_msg)
 		elif etapas.is_empty(): _fim_auto(false, receita_msg)
@@ -379,6 +394,7 @@ func _discos_ok() -> bool:
 	return true
 
 func _preparar() -> void:
+	if so_sons and rodando >= 0: so_sons = false; return   # apertou PREPARAR enquanto tirava os sons: continua depois
 	if rodando >= 0 or not _discos_ok(): return
 	cancelar = false
 	_avalia_etapas()
@@ -444,6 +460,10 @@ func _processa_saida() -> void:
 
 func _etapa_erro(i: int, msg: String) -> void:
 	var e: Dictionary = etapas[i]
+	if so_sons:   # só os sons do launcher, antes do PREPARAR: sem alarde (o PREPARAR tenta de novo)
+		so_sons = false; e.estado = "pendente"; e.texto = ""; rodando = -1; proc = {}
+		_log("sons do launcher: %s (o PREPARAR tenta de novo)" % msg)
+		_atualiza_botoes(); return
 	e.estado = "erro"; e.texto = msg
 	rodando = -1; proc = {}
 	_log("ERRO em %s: %s" % [e.nome, msg])
@@ -478,6 +498,10 @@ func _confere_processo() -> void:
 	_log("ok: %s (%s)" % [e.nome, e.texto])
 	if sons_megaman < SONS_MEGAMAN.size(): _carrega_sons()
 	_som("menu_equip")
+	if so_sons:
+		so_sons = false; rodando = -1
+		_avalia_etapas(); _atualiza_botoes()
+		return
 	rodando = -1
 	_proxima_etapa()
 

@@ -1,0 +1,41 @@
+{
+ "nota": "Sons do launcher (do disco do X6, como os do sons_x6_x: a RAM do SPU fotografada no quadro 2290 da fase 1): cursor e confirmar do menu de pausa do X6, tiro do X e o X tomando dano. Ficam em gerado/sons_launcher (fora do jogo): o launcher toca estes logo depois de conferir os discos, antes do PREPARAR.",
+ "jogo": "x6",
+ "disco": "x6",
+ "quadros": 2300,
+ "botoes": "start:900-905,cross:1000-1006,start:1400-1403,start:1460-1463",
+ "poke": "ccf2e:0000:1010-2300,ccedc:0001:1440-1900",
+ "fotos": {},
+ "spu": 2290,
+ "ganho": 0.43,
+ "sons": [
+  {
+   "saida": "../gerado/sons_launcher/cursor.wav",
+   "addr": 36256,
+   "pitch": 1525,
+   "vl": 8227,
+   "vr": 8227
+  },
+  {
+   "saida": "../gerado/sons_launcher/ok.wav",
+   "addr": 19520,
+   "pitch": 1525,
+   "vl": 8227,
+   "vr": 8227
+  },
+  {
+   "saida": "../gerado/sons_launcher/tiro.wav",
+   "addr": 148832,
+   "pitch": 1525,
+   "vl": 8544,
+   "vr": 10157
+  },
+  {
+   "saida": "../gerado/sons_launcher/dano.wav",
+   "addr": 315488,
+   "pitch": 1144,
+   "vl": 10157,
+   "vr": 10157
+  }
+ ]
+}

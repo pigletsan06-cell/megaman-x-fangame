@@ -198,7 +198,7 @@ func captura(nm: String, jogo: String, discos: Dictionary, prog: Callable) -> in
 		var ram := FileAccess.get_file_as_bytes(dir.path_join("spu_%d.bin" % int(r.spu)))
 		if ram.size() != 512 * 1024: printerr("a captura não fotografou a RAM do SPU (saída %d): %s" % [code, str(out).right(400)]); return -1
 		for so in r.get("sons", []):
-			if not som_da_spu(ram, int(so.addr), int(so.pitch), int(so.vl), int(so.vr), float(r.get("ganho", 1.0)), jogo.path_join(str(so.saida))):
+			if not som_da_spu(ram, int(so.addr), int(so.pitch), int(so.vl), int(so.vr), float(r.get("ganho", 1.0)), jogo.path_join(str(so.saida)).simplify_path()):
 				printerr("som não gravado: ", so.saida); return -1
 			n += 1
 	if au.has("cortes"):   # pedaços do som como WAV (44,1 kHz, estéreo, 16 bits)
@@ -1035,6 +1035,7 @@ const GRUPOS := {
 	"musica_titulo": {"discos": ["x5"], "captura": true}, "sons_x4": {"discos": ["x4"], "roteiros": ["sons_x4"]},
 	"sons_x5": {"discos": ["x5"], "roteiros": ["sons_x5_x", "sons_x5_a2", "sons_x5_a3", "sons_x5_nova"]},
 	"sons_x6": {"discos": ["x6"], "roteiros": ["sons_x6_x", "sons_x6_zero", "sons_x6_a1", "sons_x6_a2", "sons_x6_a3"]},
+	"sons_launcher": {"discos": ["x6"], "roteiros": ["sons_launcher"]},   # sons do Mega Man para o próprio launcher
 	"mini_x4": {"discos": []}, "mini_x5": {"discos": []}, "mini_x6": {"discos": []},
 	"codigo_x4": {"discos": []}, "codigo_psx": {"discos": []}, "ferramentas": {"discos": []},
 	"recomp_x5": {"discos": ["x5"]}, "recomp_x6": {"discos": ["x6"]},
