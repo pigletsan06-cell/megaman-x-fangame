@@ -1,7 +1,8 @@
 extends Control
 ## Hub do fangame: a tela de seleção de chefes de cada jogo (X4, X5, X6), copiada do próprio jogo.
-## Primeiro escolhe o jogo (X4/X5/X6); ○/Esc volta para a escolha do jogo; setas escolhem o chefe; △ (V) abre a escolha X/Zero; L2/R2 (Q/W) troca a armadura;
-## Z/Enter começa. Cada fase roda no motor original do seu jogo (scenes/fase.tscn).
+## Primeiro escolhe o jogo (X4/X5/X6); ○/Esc volta para a escolha do jogo; setas escolhem o chefe; ✕/Z/Enter abre a
+## tela MISSÃO (personagem X/Zero, conjunto e peças), que começa a fase. Cada fase roda no motor original do seu jogo
+## (scenes/fase.tscn).
 
 const GAMES := ["x4", "x5", "x6"]
 const NAMES := {
@@ -28,7 +29,7 @@ const POS_XY := {
 		Vector2(64, 166), Vector2(122, 190), Vector2(204, 190), Vector2(262, 166)],
 }
 const ARMORS := {
-	# X4: armadura montada peça por peça (C/□ abre a montagem) ou uma Ultimate inteira
+	# X4: armadura montada peça por peça (na tela MISSÃO) ou uma Ultimate inteira
 	"x4": [["montada", 1, false, "*"], ["Ultimate (X4)", 1, true],
 		["Ultimate (X5)", 1, false, "Ultimate_X5"], ["Ultimate (X6)", 1, false, "Ultimate_X6"]],
 	"x5": [["Fourth", 1], ["Falcon", 2], ["Gaea", 3], ["Ultimate", 4], ["montada", 1, false, "*"]],
@@ -95,7 +96,7 @@ var bar_cv: _Canvas
 var bar_info := ""             # linha de cima da barra: à esquerda (jogo, chefe) e à direita (personagem, chefes)
 var bar_info_r := ""
 var bar_hints: Array = []      # [botão do controle, tecla, ação]
-var pn_arm: MmxPanel           # menu da armadura (C / □)
+var pn_arm: MmxPanel           # tela MISSÃO / menu da armadura
 var pn_status: MmxPanel
 var pn_finals: MmxPanel
 var pn_coop: MmxPanel
@@ -170,7 +171,7 @@ func _load_progress() -> void:
 		var k: String = str(FangameSave.cur().new_part)
 		FangameSave.cur().erase("new_part"); FangameSave.write()
 		var a := k.split(":")
-		new_part_msg = "Peça nova: %s - %s (C/□ na página do X4)" % [FangameParts.NAME.get(a[0], a[0]), FangameParts.SLOT_NAME.get(a[1], a[1])]
+		new_part_msg = "Peça nova: %s - %s (escolha na tela MISSÃO)" % [FangameParts.NAME.get(a[0], a[0]), FangameParts.SLOT_NAME.get(a[1], a[1])]
 
 var new_part_msg := ""
 
@@ -453,10 +454,11 @@ func _build_input(e: InputEvent) -> void:
 		else: _arm_change_piece(g, arm_row - 1, d)
 	elif _key(e, KEY_ESCAPE) or _joy(e, JOY_BUTTON_B):
 		build_open = false; arm_launch = false; _sfx("menu_back")
-	elif _key(e, KEY_C) or _key(e, KEY_X) or _key(e, KEY_ENTER) or e.is_action_pressed("jump") \
-			or _joy(e, JOY_BUTTON_X) or _joy(e, JOY_BUTTON_A) or _joy(e, JOY_BUTTON_START):
+	elif _key(e, KEY_X) or _key(e, KEY_ENTER) or e.is_action_pressed("jump") or _joy(e, JOY_BUTTON_A) or _joy(e, JOY_BUTTON_START):
 		build_open = false
-		if arm_launch and not (_key(e, KEY_C) or _joy(e, JOY_BUTTON_X)):   # pronto: começa a fase
+		if arm_launch and Coop.on() and not Coop.is_host():   # co-op, P2: pronto (quem começa a fase é o P1)
+			new_part_msg = "CO-OP: pronto! O P1 escolhe a fase (você vai junto)"
+		elif arm_launch:   # pronto: começa a fase
 			arm_launch = false; _sfx("menu_ok"); get_viewport().set_input_as_handled(); _start(arm_final); return
 		arm_launch = false; _sfx("menu_ok")
 	else: return
@@ -487,7 +489,7 @@ func _draw_build() -> void:   # (o menu é desenhado a cada quadro em _arm_draw;
 	if build_open and not pn_arm.shown(): pn_arm.open(); arm_open_t = t_anim; arm_change_t = t_anim + 0.35
 	elif not build_open and pn_arm.shown(): pn_arm.close()
 
-# ---- menu da armadura (C / □): conjunto (as armaduras do jogo, L2/R2) e, na "montada", peça por peça; holograma
+# ---- tela MISSÃO / menu da armadura: conjunto (as armaduras do jogo, L2/R2) e, na "montada", peça por peça; holograma
 # (boneco genérico de peças geométricas, desenho original) com as cores de cada peça ----
 const ARM_COL := MmxUI.ARM_COL
 const ARM_NAME := {"Ultimate_X4": "Ultimate (X4)", "Ultimate_X5": "Ultimate (X5)", "Ultimate_X6": "Ultimate (X6)"}
@@ -1060,9 +1062,6 @@ func _unhandled_input(e: InputEvent) -> void:
 		_sfx("menu_back")
 		_transicao(func() -> void: jogo_open = true; in_page = false; jogo_sel = page; _refresh())
 		return
-	if (_key(e, KEY_C) or _joy(e, JOY_BUTTON_X)) and not finals_open and (g == "x4" or g == "x5" or g == "x6"):
-		build_open = true; arm_row = 0 if is_zero else arm_row; _sfx("menu_open")
-		get_viewport().set_input_as_handled(); _refresh(); return
 	if _key(e, KEY_BACKSPACE) or _joy(e, JOY_BUTTON_BACK):
 		finals_open = not finals_open; final_sel = 0; _sfx("menu_open" if finals_open else "menu_close")
 		if finals_open: _auto_finals(g)
@@ -1084,12 +1083,8 @@ func _unhandled_input(e: InputEvent) -> void:
 	elif _key(e, KEY_RIGHT) or _joy(e, JOY_BUTTON_DPAD_RIGHT): _move(Vector2i(1, 0))
 	elif _key(e, KEY_UP) or _joy(e, JOY_BUTTON_DPAD_UP): _move(Vector2i(0, -1))
 	elif _key(e, KEY_DOWN) or _joy(e, JOY_BUTTON_DPAD_DOWN): _move(Vector2i(0, 1))
-	elif _key(e, KEY_V) or _joy(e, JOY_BUTTON_Y): char_open = true; char_open_t = t_anim; char_t = -9.0; _sfx("menu_ok")
-	elif _key(e, KEY_Q): _cycle_armor(g, -1); _sfx("menu_equip"); toast_t = t_anim; toast_kind = "armor"
-	elif _key(e, KEY_W): _cycle_armor(g, 1); _sfx("menu_equip"); toast_t = t_anim; toast_kind = "armor"
 	elif e.is_action_pressed("jump") or _key(e, KEY_ENTER) or _joy(e, JOY_BUTTON_START):
-		if Coop.on() and not Coop.is_host():
-			_sfx("menu_error"); new_part_msg = "CO-OP: o P1 escolhe a fase (você vai junto)"; get_viewport().set_input_as_handled(); _refresh(); return
+		# (co-op: o P2 também abre a MISSÃO para escolher personagem e armadura; confirmar só fecha, o P1 começa a fase)
 		_abre_missao(); get_viewport().set_input_as_handled(); _refresh(); return
 	elif _key(e, KEY_4) or _key(e, KEY_5) or _key(e, KEY_6):   # jogo original completo
 		X4Machine.launch = {}
@@ -1115,9 +1110,8 @@ func _process(_dt: float) -> void:
 	for k in 2:
 		if [t, u][k] and not _trig[k] and free:
 			pad_mode = true
-			if build_open: _arm_cycle_preset(g, -1 if k == 0 else 1)
-			else: _cycle_armor(g, -1 if k == 0 else 1); _sfx("menu_equip"); toast_t = t_anim; toast_kind = "armor"
-			_refresh()
+			# (na tela dos chefes não fazem nada: personagem e armadura ficam na tela MISSÃO)
+			if build_open: _arm_cycle_preset(g, -1 if k == 0 else 1); _refresh()
 	_trig = [t, u]
 	bar_cv.queue_redraw(); toast_cv.queue_redraw()
 	if pn_arm.visible: arm_cv.queue_redraw()

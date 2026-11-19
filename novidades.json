@@ -1,4 +1,8 @@
 {
+ "69": [
+  "Hub: na tela dos chefes, △ e □ (e L2/R2) não fazem mais nada; personagem, conjunto e peças ficam só na tela MISSÃO, que abre ao escolher a fase. Na MISSÃO o □ também não faz nada (○ volta).",
+  "Co-op: o P2 também abre a tela MISSÃO para escolher personagem e armadura; confirmar só fecha, quem começa a fase é o P1."
+ ],
  "68": [
   "X5 e X6: o X montado por peças pendurado nos fios (gancho) agora aparece certo; antes ficava todo embaralhado. As poses saem dos próprios jogos: pernas da armadura das pernas e o resto da armadura do braço (peças do X4 usam o desenho da mesma armadura no X5).",
   "X6: com braço Falcon ou Blade, o jogo carrega a armadura do braço. O tiro carregado volta a ser o dela (a lança da Falcon, o plasma da Blade) mesmo com as pernas da outra; antes saía o tiro carregado do X sem armadura. O voo e o dash no ar das pernas continuam iguais.",
