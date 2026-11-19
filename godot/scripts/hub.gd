@@ -667,8 +667,10 @@ func _arm_draw_lista(ci: Control) -> void:
 	var sw := fmod(t_anim, 3.4) / 0.9   # brilho passando
 	if sw < 1.0:
 		var sx := r0.position.x + lerpf(-30.0, r0.size.x + 30.0, sw)
-		ci.draw_colored_polygon(PackedVector2Array([Vector2(maxf(sx, r0.position.x + 9), r0.position.y + 1), Vector2(minf(sx + 14, r0.end.x), r0.position.y + 1),
-			Vector2(clampf(sx + 4, r0.position.x, r0.end.x), r0.end.y - 1), Vector2(clampf(sx - 10, r0.position.x, r0.end.x), r0.end.y - 1)]), Color(1, 1, 1, 0.08 * sin(sw * PI)))
+		var shine := PackedVector2Array([Vector2(maxf(sx, r0.position.x + 9), r0.position.y + 1), Vector2(minf(sx + 14, r0.end.x), r0.position.y + 1),
+			Vector2(clampf(sx + 4, r0.position.x, r0.end.x), r0.end.y - 1), Vector2(clampf(sx - 10, r0.position.x, r0.end.x), r0.end.y - 1)])
+		# nas pontas o brilho achata (pontos repetidos): sem desenhar (o Godot reclamava no log a cada quadro)
+		if not Geometry2D.triangulate_polygon(shine).is_empty(): ci.draw_colored_polygon(shine, Color(1, 1, 1, 0.08 * sin(sw * PI)))
 	MmxUI.frame(ci, r0, MmxUI.C_GOLD if sel0 else MmxUI.C_ACCENT, 9.0, false)
 	if sel0:
 		var pl0 := MmxUI.shape(r0.grow(1.0), 10.0); pl0.append(pl0[0])
