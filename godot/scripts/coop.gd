@@ -3,13 +3,14 @@ extends Node
 ## Co-op online para 2 jogadores (ENet, UDP, porta 7777). Cada PC roda o próprio jogo (os motores do X4/X5/X6 só têm
 ## 1 jogador); este nó, filho da raiz (fica entre as cenas), liga os dois:
 ##  - sala: o anfitrião cria (o jogo tenta abrir a porta do roteador por UPnP) e o convidado entra pelo IP;
-##  - a fase: o anfitrião escolhe no hub e o convidado vai junto, com o personagem e o save dele;
+##  - a fase: o anfitrião escolhe no hub; a tela MISSÃO abre nos dois (cada um escolhe personagem e armadura, com o
+##    save dele) e a fase só começa quando os dois confirmam;
 ##  - na fase: o estado de cada um a cada quadro (posição, quadro do sprite, vida, chefe) e a aparência (X com as peças
 ##    ou Zero com as cores); avisos (saída da fase).
 ## Versões diferentes do fangame não jogam juntas (VER).
 const PORT := 7777
-const VER := 2
-enum { M_HELLO = 1, M_LAUNCH, M_STATE, M_LOOK, M_EVENT, M_BYE }
+const VER := 3   # 3: MISSÃO nos dois antes da fase (M_PICK, M_READY, M_CANCEL)
+enum { M_HELLO = 1, M_LAUNCH, M_STATE, M_LOOK, M_EVENT, M_BYE, M_PICK, M_READY, M_CANCEL }
 
 static var me: Coop
 
@@ -24,7 +25,10 @@ var partner := {}          # o HELLO do parceiro
 var st: Array = []         # último estado do parceiro na fase
 var st_ms := 0             # quando chegou (ms)
 var look := {}             # aparência do parceiro na fase
-var launch_req := {}       # (convidado) fase pedida pelo anfitrião
+var launch_req := {}       # (convidado) fase pedida pelo anfitrião ("rx" = quando chegou, ms deste PC)
+var pick_req := {}         # (convidado) fase escolhida pelo anfitrião: abrir a MISSÃO ({game, stage, final, rx})
+var peer_ready := false    # o parceiro confirmou na MISSÃO
+var cancel_req := false    # (convidado) o anfitrião saiu da MISSÃO
 var events: Array = []     # avisos recebidos (a fase consome)
 var my_name := ""
 var _upnp: UPNP
@@ -167,7 +171,7 @@ func _on_server_gone() -> void:
 func _on_peer_gone(id: int) -> void:
 	if id != peer_id: return
 	log_line("parceiro saiu (%d)" % id)
-	peer_id = 0; partner = {}; st = []; look = {}
+	peer_id = 0; partner = {}; st = []; look = {}; peer_ready = false; pick_req = {}
 	if role == "host": status = "o parceiro saiu: a sala continua aberta"
 
 func _hello() -> Dictionary:
@@ -183,6 +187,9 @@ func send_state(s: Array) -> void: _send(M_STATE, s, false)
 func send_look(d: Dictionary) -> void: _send(M_LOOK, d, true)
 func send_event(d: Dictionary) -> void: _send(M_EVENT, d, true)
 func send_launch(d: Dictionary) -> void: _send(M_LAUNCH, d, true)
+func send_pick(d: Dictionary) -> void: peer_ready = false; _send(M_PICK, d, true)
+func send_ready(r: bool) -> void: _send(M_READY, {"ready": r}, true)
+func send_cancel() -> void: peer_ready = false; _send(M_CANCEL, {}, true)
 
 func _on_packet(id: int, b: PackedByteArray) -> void:
 	if id != peer_id or b.size() < 1: return
@@ -197,7 +204,14 @@ func _on_packet(id: int, b: PackedByteArray) -> void:
 			status = "conectado com %s (%s)" % [str(data.get("name", "?")), "você é o P1: escolha a fase" if role == "host" else "você é o P2: o P1 escolhe a fase"]
 			log_line("conectado com %s" % [data])
 		M_LAUNCH:
-			if typeof(data) == TYPE_DICTIONARY and role == "client": launch_req = data
+			if typeof(data) == TYPE_DICTIONARY and role == "client": launch_req = data; launch_req["rx"] = Time.get_ticks_msec()
+		M_PICK:
+			if typeof(data) == TYPE_DICTIONARY and role == "client":
+				pick_req = data; pick_req["rx"] = Time.get_ticks_msec(); peer_ready = false; cancel_req = false
+		M_READY:
+			if typeof(data) == TYPE_DICTIONARY: peer_ready = bool(data.get("ready", false))
+		M_CANCEL:
+			if role == "client": cancel_req = true; pick_req = {}; peer_ready = false
 		M_STATE:
 			if typeof(data) == TYPE_ARRAY: st = data; st_ms = Time.get_ticks_msec()
 		M_LOOK:

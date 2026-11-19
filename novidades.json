@@ -1,4 +1,9 @@
 {
+ "70": [
+  "Co-op: quando o P1 escolhe a fase, a tela MISSÃO abre para os dois. Cada um escolhe personagem e armadura e confirma (pronto); a fase só começa quando os dois estiverem prontos. ○ desfaz o pronto; se o P1 voltar, a MISSÃO do P2 fecha também.",
+  "Co-op: a linha de baixo da MISSÃO mostra quem já está pronto (P1 / P2).",
+  "Os dois jogadores precisam estar nesta versão para jogar co-op juntos."
+ ],
  "69": [
   "Hub: na tela dos chefes, △ e □ (e L2/R2) não fazem mais nada; personagem, conjunto e peças ficam só na tela MISSÃO, que abre ao escolher a fase. Na MISSÃO o □ também não faz nada (○ volta).",
   "Co-op: o P2 também abre a tela MISSÃO para escolher personagem e armadura; confirmar só fecha, quem começa a fase é o P1."

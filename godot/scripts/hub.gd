@@ -430,6 +430,12 @@ func _build_choices(slot: String) -> Array:   # armaduras liberadas para esta pe
 
 func _build_input(e: InputEvent) -> void:
 	var g: String = GAMES[page]
+	if arm_launch and coop_ready:   # pronto, esperando o parceiro: só ○ (desfaz o pronto)
+		if _key(e, KEY_ESCAPE) or _joy(e, JOY_BUTTON_B):
+			coop_ready = false; if Coop.on(): Coop.me.send_ready(false)
+			_sfx("menu_back"); get_viewport().set_input_as_handled(); _refresh()
+		elif e.is_pressed(): get_viewport().set_input_as_handled()
+		return
 	var nrows := 1 if is_zero and _zero_variant(g) == "zero" else 5
 	if arm_row >= nrows: arm_row = 0
 	var r0 := -1 if arm_launch else 0   # na hora de jogar, a 1ª linha é o personagem
@@ -453,12 +459,16 @@ func _build_input(e: InputEvent) -> void:
 		elif is_zero: zero_half = 1 - zero_half; arm_change_t = t_anim; _sfx("menu_move")   # peça <-> melhoria
 		else: _arm_change_piece(g, arm_row - 1, d)
 	elif _key(e, KEY_ESCAPE) or _joy(e, JOY_BUTTON_B):
+		if arm_launch and Coop.on():   # co-op: o P1 saindo fecha a MISSÃO do P2; o P2 saindo só deixa de estar pronto
+			if Coop.is_host(): Coop.me.send_cancel()
+			else: Coop.me.send_ready(false)
 		build_open = false; arm_launch = false; _sfx("menu_back")
 	elif _key(e, KEY_X) or _key(e, KEY_ENTER) or e.is_action_pressed("jump") or _joy(e, JOY_BUTTON_A) or _joy(e, JOY_BUTTON_START):
+		if arm_launch and Coop.on():   # co-op: pronto; a fase começa quando os dois estiverem prontos
+			coop_ready = true; Coop.me.send_ready(true); _sfx("menu_ok")
+			get_viewport().set_input_as_handled(); _coop_try_start(); _refresh(); return
 		build_open = false
-		if arm_launch and Coop.on() and not Coop.is_host():   # co-op, P2: pronto (quem começa a fase é o P1)
-			new_part_msg = "CO-OP: pronto! O P1 escolhe a fase (você vai junto)"
-		elif arm_launch:   # pronto: começa a fase
+		if arm_launch:   # pronto: começa a fase
 			arm_launch = false; _sfx("menu_ok"); get_viewport().set_input_as_handled(); _start(arm_final); return
 		arm_launch = false; _sfx("menu_ok")
 	else: return
@@ -466,9 +476,22 @@ func _build_input(e: InputEvent) -> void:
 	_refresh()
 
 ## abre o menu da armadura para jogar a fase escolhida (personagem, conjunto e peças; confirmar começa)
+## Co-op: o P1 escolhe a fase e a MISSÃO abre nos dois; cada um confirma (pronto) e a fase só começa com os dois
+## prontos (o P1 manda começar). ○ desfaz o pronto; ○ de novo sai (o P1 saindo fecha a MISSÃO do P2 também).
+var coop_ready := false        # eu confirmei na MISSÃO e espero o parceiro
+var coop_pick := {}            # (P2) a fase que o P1 escolheu
 func _abre_missao(final_stage := -1) -> void:
-	build_open = true; arm_launch = true; arm_final = final_stage; arm_row = -1
+	build_open = true; arm_launch = true; arm_final = final_stage; arm_row = -1; coop_ready = false
+	if Coop.on() and Coop.is_host():
+		var g: String = GAMES[page]
+		Coop.me.send_pick({"game": g, "stage": POS_STAGE[g][cursor[g]] if final_stage < 0 else final_stage, "final": final_stage >= 0})
 	_sfx("menu_open")
+
+## (P1) os dois prontos: começa (o _start manda o P2 junto)
+func _coop_try_start() -> void:
+	if not (build_open and arm_launch and coop_ready and Coop.on() and Coop.is_host() and Coop.me.peer_ready): return
+	build_open = false; arm_launch = false; coop_ready = false; Coop.me.peer_ready = false
+	_sfx("menu_ok"); _start(arm_final)
 
 # ---- escolha do personagem (△ / V): o aviso PERSONAGEM fica aberto, ←→ troca X / Zero ----
 func _char_input(e: InputEvent) -> void:
@@ -553,6 +576,15 @@ func _arm_change_piece(g: String, i: int, d: int) -> void:
 
 func _arm_draw(ci: Control) -> void:
 	_arm_draw_lista(ci)
+	# co-op: quem já está pronto aparece na linha de baixo (_coop_status_draw); pronto = escolha travada (○ desfaz)
+	if arm_launch and Coop.on() and coop_ready:
+		ci.draw_rect(Rect2(Vector2.ZERO, ci.size), Color(0, 0.01, 0.04, 0.45))   # escurece a tela travada
+		var b := Rect2(54, 82, 200, 40)
+		ci.draw_colored_polygon(MmxUI.shape(b, 6.0), Color(0, 0.02, 0.08, 1.0))
+		MmxUI.frame(ci, b, MmxUI.C_GOLD, 6.0, false)
+		MmxUI.text(ci, b.position + Vector2(0, 16), "PRONTO!", MmxUI.C_GOLD, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_CENTER, b.size.x)
+		var dots := ".".repeat(1 + int(t_anim * 2.0) % 3)
+		MmxUI.text(ci, b.position + Vector2(0, 30), "esperando o %s%s" % [Coop.tag(not Coop.is_host()), dots], MmxUI.C_TEXT, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_CENTER, b.size.x)
 
 func _zero_variant(g: String) -> String:   # "zero", "bz" (Black Zero) ou "nz" (Nightmare Zero)
 	var a := _armor(g)
@@ -1074,7 +1106,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		elif e.is_action_pressed("jump") or _key(e, KEY_ENTER) or _joy(e, JOY_BUTTON_START):
 			if _bosses_done(g) < 8: _sfx("menu_error")
 			elif Coop.on() and not Coop.is_host():
-				_sfx("menu_error"); new_part_msg = "CO-OP: o P1 escolhe a fase (você vai junto)"; get_viewport().set_input_as_handled(); _refresh(); return
+				_sfx("menu_error"); new_part_msg = "CO-OP: o P1 escolhe a fase (a tela MISSÃO abre para você também)"; get_viewport().set_input_as_handled(); _refresh(); return
 			else: _abre_missao(int(FINALS[g][clampi(final_sel, 0, FINALS[g].size() - 1)][0]))
 		else: return
 		get_viewport().set_input_as_handled(); _refresh(); return
@@ -1084,7 +1116,11 @@ func _unhandled_input(e: InputEvent) -> void:
 	elif _key(e, KEY_UP) or _joy(e, JOY_BUTTON_DPAD_UP): _move(Vector2i(0, -1))
 	elif _key(e, KEY_DOWN) or _joy(e, JOY_BUTTON_DPAD_DOWN): _move(Vector2i(0, 1))
 	elif e.is_action_pressed("jump") or _key(e, KEY_ENTER) or _joy(e, JOY_BUTTON_START):
-		# (co-op: o P2 também abre a MISSÃO para escolher personagem e armadura; confirmar só fecha, o P1 começa a fase)
+		if Coop.on() and not Coop.is_host():   # co-op, P2: a MISSÃO abre quando o P1 escolhe a fase
+			if coop_pick.is_empty():
+				_sfx("menu_error"); new_part_msg = "CO-OP: o P1 escolhe a fase (a tela MISSÃO abre para você também)"
+				get_viewport().set_input_as_handled(); _refresh(); return
+			_coop_abre_pick(); get_viewport().set_input_as_handled(); _refresh(); return
 		_abre_missao(); get_viewport().set_input_as_handled(); _refresh(); return
 	elif _key(e, KEY_4) or _key(e, KEY_5) or _key(e, KEY_6):   # jogo original completo
 		X4Machine.launch = {}
@@ -1155,6 +1191,7 @@ func _build_launch(final_stage := -1) -> Dictionary:
 	return l
 
 func _start(final_stage := -1) -> void:
+	coop_ready = false; coop_pick = {}
 	var l := _build_launch(final_stage)
 	if Coop.on() and Coop.is_host(): Coop.me.send_launch({"game": l.game, "stage": int(l.stage), "ms": Time.get_unix_time_from_system()})
 	X4Machine.handoff = {}
@@ -1463,17 +1500,41 @@ func _coop_join(t: String) -> void:
 	coop_sel = 0
 	_coop_panel()
 
+## (P2) abre a MISSÃO da fase que o P1 escolheu, na página do jogo dela
+func _coop_abre_pick() -> void:
+	var g := str(coop_pick.get("game", ""))
+	if not g in GAMES: return
+	slot_open = false; status_open = false; finals_open = false; coop_open = false; jogo_open = false; char_open = false
+	page = GAMES.find(g); in_page = true
+	var stg := int(coop_pick.get("stage", 1))
+	if not bool(coop_pick.get("final", false)) and POS_STAGE[g].has(stg): cursor[g] = POS_STAGE[g].find(stg)
+	_abre_missao(stg)
+
 func _coop_hub_step() -> void:
 	var c := Coop.me
 	if c and c.role == "client" and c.peer_id != 0 and not c.launch_req.is_empty():   # o P1 começou uma fase: vai junto
 		var r: Dictionary = c.launch_req; c.launch_req = {}
 		var g := str(r.get("game", ""))
-		if g in GAMES and Time.get_unix_time_from_system() - float(r.get("ms", 0.0)) < 20.0:
-			slot_open = false; build_open = false; status_open = false; finals_open = false; coop_open = false; jogo_open = false
+		if g in GAMES and Time.get_ticks_msec() - int(r.get("rx", 0)) < 20000:
+			slot_open = false; build_open = false; arm_launch = false; status_open = false; finals_open = false; coop_open = false; jogo_open = false
+			coop_ready = false; coop_pick = {}
 			page = GAMES.find(g); in_page = true
 			print("co-op: o P1 começou %s fase %d" % [g, int(r.get("stage", 1))])
 			_start(int(r.get("stage", 1)))
 			return
+	if c and c.role == "client" and c.peer_id != 0 and not c.pick_req.is_empty():   # o P1 escolheu a fase: MISSÃO aqui também
+		var pk: Dictionary = c.pick_req; c.pick_req = {}
+		if Time.get_ticks_msec() - int(pk.get("rx", 0)) < 60000 and str(pk.get("game", "")) in GAMES:
+			coop_pick = pk; new_part_msg = ""; _coop_abre_pick(); _refresh()
+	if c and c.cancel_req:   # o P1 saiu da MISSÃO
+		c.cancel_req = false; coop_pick = {}
+		if build_open and arm_launch:
+			build_open = false; arm_launch = false; coop_ready = false
+			new_part_msg = "CO-OP: o P1 voltou para a escolha da fase"; _sfx("menu_back"); _refresh()
+	if c and c.role == "host": _coop_try_start()
+	if not Coop.on() and (coop_ready or not coop_pick.is_empty()):   # o parceiro saiu no meio da escolha
+		coop_ready = false; coop_pick = {}
+		if build_open and arm_launch: new_part_msg = "CO-OP: o parceiro saiu"; _refresh()
 	if coop_open:
 		var key := "%s|%s|%s|%d|%s" % [c.status if c else "", c.role if c else "", c.ext_ip if c else "", c.peer_id if c else 0, coop_sel]
 		if key != coop_last: _coop_panel()
@@ -1531,9 +1592,13 @@ func _bar_draw(ci: Control) -> void:
 	else:
 		var lw := MmxUI.text_width(bar_info)
 		MmxUI.text(ci, Vector2(4, y0 + 10), bar_info, MmxUI.C_GOLD)
-		MmxUI.text(ci, Vector2(0, y0 + 10), MmxUI.fit(bar_info_r, 308 - lw - 10), MmxUI.C_TEXT, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, 316)
+		if build_open and arm_launch and Coop.on(): _coop_status_draw(ci, Vector2(316, y0 + 10))
+		else: MmxUI.text(ci, Vector2(0, y0 + 10), MmxUI.fit(bar_info_r, 308 - lw - 10), MmxUI.C_TEXT, MmxUI.SIZE, HORIZONTAL_ALIGNMENT_RIGHT, 316)
 	var hs: Array
 	if jogo_open: hs = [["←→", "←→", "jogo"], ["✕", "Z", "entrar"], ["○", "Esc", "saves"], ["R3", "Tab", "status"], ["L1", "O", "co-op"]]
+	elif build_open and arm_launch and Coop.on():   # co-op: cada um confirma; mostra se o parceiro já está pronto
+		if coop_ready: hs = [["", "", "PRONTO! esperando o %s" % Coop.tag(not Coop.is_host())], ["○", "Esc", "desfazer"]]
+		else: hs = [["↑↓", "↑↓", "escolher"], ["←→", "←→", "trocar"], ["✕", "Z", "pronto"], ["○", "Esc", "voltar"]]
 	elif build_open and arm_launch: hs = [["↑↓", "↑↓", "escolher"], ["←→", "←→", "trocar"], ["✕", "Z", "jogar"], ["○", "Esc", "voltar"]]
 	elif build_open: hs = [["↑↓", "↑↓", "escolher"], ["←→", "←→", "trocar"], ["L2 R2", "Q W", "conjunto"], ["✕", "Z", "pronto"]]
 	elif status_open: hs = [["←→", "←→", "armadura"], ["R3", "Tab", "fechar"]]
@@ -1548,6 +1613,18 @@ func _bar_draw(ci: Control) -> void:
 		var k := str(h[0] if pad_mode else h[1])
 		MmxUI.text(ci, Vector2(x, y0 + 20), k, MmxUI.C_SEL); x += MmxUI.text_width(k) + 2.0
 		MmxUI.text(ci, Vector2(x, y0 + 20), str(h[2]), MmxUI.C_TEXT); x += MmxUI.text_width(str(h[2])) + 8.0
+
+## co-op na MISSÃO: "P1 pronto ✓   P2 escolhendo..." alinhado à direita (pos.x = borda direita)
+func _coop_status_draw(ci: Control, pos: Vector2) -> void:
+	var host := Coop.is_host()
+	var p1: bool = coop_ready if host else Coop.me.peer_ready
+	var p2: bool = Coop.me.peer_ready if host else coop_ready
+	var x := pos.x
+	for it in [["P2", p2], ["P1", p1]]:
+		var s := "%s %s" % [it[0], "pronto ✓" if it[1] else "escolhendo..."]
+		x -= MmxUI.text_width(s)
+		MmxUI.text(ci, Vector2(x, pos.y), s, MmxUI.C_GOOD if it[1] else MmxUI.C_DIM)
+		x -= 10.0
 
 # ---- aviso que desliza ao trocar a armadura (L2/R2) ou o personagem (△) na tela dos chefes ----
 func _toast_draw(ci: Control) -> void:
