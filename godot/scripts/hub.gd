@@ -1147,7 +1147,7 @@ func _build_launch(final_stage := -1) -> Dictionary:
 	var l := {"game": g, "stage": stage, "char": 1 if is_zero else 0, "armor": armor, "secret": secret, "skin": skin}
 	if skin == "*":   # armadura montada (save)
 		l.skin = ""; l["parts"] = FangameSave.cur().parts.duplicate()
-		if g == "x6":   # o X6 carrega uma armadura dele (a das pernas; braço Shadow/Ultimate manda); cada peça ganha a habilidade dela
+		if g == "x6":   # o X6 carrega uma armadura dele (a do braço do X6, senão a das pernas; FangameParts.x6_native); cada peça ganha a habilidade dela
 			armor = FangameParts.x6_native(l.parts); l["armor"] = armor
 		elif g == "x5":   # o X5 também: a armadura do X5 das pernas (senão braço, corpo, capacete)
 			armor = FangameParts.x5_native(l.parts); l["armor"] = armor

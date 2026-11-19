@@ -1858,17 +1858,20 @@ var mix6_fly_fx: SpriteAtlas = null   # jato do voo da Falcon do X5 (assets/x/pa
 var mix6_fly_jet := -1
 var mix6_f5_snd := -1
 var mix6_look: Array = ["", "", "", ""]   # o que aparece em cada modo (0 peças, 1 X do jogo, 2 e 3 golpe das pernas)
-# golpe de sabre do X6 (botão especial sem arma: ação 0x2D no chão, 0x2E no ar). O jogo troca a tabela de quadros do X
-# (+0x3C) e os quadros 47-61 são os da tabela do sabre, não os das peças. Desenho: modo 5 = X sem armadura + pernas da
-# armadura das pernas + resto (corpo, braços, capacete) da armadura do braço, tirados do próprio X6
-# (assets/x/parts/sabre_x6/<armadura>/base|pernas|resto, quadro = k - 47). Peça do X4/X5 sem esse desenho (a Falcon do X5
-# usa o da Falcon do X6 com as cores dela) ou atlas faltando (antes do PREPARAR): o X do jogo (modo 1).
-const SABRE_ARM := ["Falcon_X6", "Blade_X6", "Shadow_X6", "Ultimate_X6", "Falcon_X5"]
-const SABRE_ACT := [0x2D, 0x2E]
-var mix6_sab_ok := false
-var mix6_sab_base: SpriteAtlas = null; var mix6_sab_resto: SpriteAtlas = null; var mix6_sab_pernas: SpriteAtlas = null
-var mix6_bank0 := 0   # tabela de quadros normal do X (vista andando/parado)
-var mix6_sab_f := -1  # quadro do sabre na tela (-1 = nenhum)
+# 2ª tabela de quadros do X (grupo 18 do pacote do X; o X5/X6 trocam o +0x3C para ela): pendurado no fio (quadros
+# 0-46, X5 e X6) e golpe de sabre do X6 (47-61; botão especial sem arma). As peças desenhavam ali os quadros normais
+# de mesmo número (poses erradas). Desenho tirado dos jogos (assets/x/parts/alt/<armadura>/base|pernas|resto, modo 5):
+# X sem armadura + pernas da armadura das pernas + resto (corpo, braços, capacete) da armadura do braço. Peças do X4
+# usam o desenho da mesma armadura no X5. Quadro que a armadura não tem (sabre com peça do X4/X5, menos a Falcon do X5,
+# que usa o da Falcon do X6 com as cores dela) ou atlas faltando (antes do PREPARAR): o X do jogo (modo 1).
+const ALT_ARM := {"Falcon_X6": "Falcon_X6", "Blade_X6": "Blade_X6", "Shadow_X6": "Shadow_X6", "Ultimate_X6": "Ultimate_X6",
+	"Fourth_X5": "Fourth_X5", "Falcon_X5": "Falcon_X5", "Gaea_X5": "Gaea_X5", "Ultimate_X5": "Ultimate_X5",
+	"Fourth_X4": "Fourth_X5", "Ultimate_X4": "Ultimate_X5"}
+const ALT_ACT_NORMAL := [2, 3, 4, 6, 7, 8]   # parado, andando, pulando, caindo, pousando: tabela normal (grupo 0)
+var mix6_alt_base: SpriteAtlas = null; var mix6_alt_resto: SpriteAtlas = null; var mix6_alt_pernas: SpriteAtlas = null
+var mix6_bank0 := 0    # tabela de quadros normal do X (vista parado/andando)
+var mix6_bank18 := 0   # a 2ª tabela (grupo 18 do mesmo pacote na RAM)
+var mix6_alt_f := -1   # quadro da 2ª tabela na tela (-1 = nenhum)
 var mix6_shot_atl: SpriteAtlas = null   # tiros da Gaea do X5 no X6 (assets/x/parts/Gaea_X5/shot)
 var mix6_shot_node: Node2D
 var mix6_shots: Array = []   # [posição na tela, quadro, direita] (o que está na tela: 2 quadros atrás)
@@ -1917,26 +1920,38 @@ func _x6s_body(mod: Color, y0: float, y1: float) -> void:
 	if a == null or not a.has_frame(x6s_f): return
 	# (o dash da Blade foi capturado do X6 olhando para a direita; os outros olham para a esquerda como as peças)
 	a.draw_clip(mix6_node, x6s_f, mix6_pos, mix6_flip != (x6s_kind == 2), mod, mix6_variant if mod == Color.WHITE else 0, y0, y1)
-func _mix6_sabre_init(pp: Dictionary, x5: bool) -> void:
-	mix6_sab_ok = false; mix6_sab_base = null; mix6_sab_resto = null; mix6_sab_pernas = null; mix6_bank0 = 0
-	if x5: return
+func _mix6_alt_init(pp: Dictionary, x5: bool) -> void:
+	mix6_alt_base = null; mix6_alt_resto = null; mix6_alt_pernas = null; mix6_bank0 = 0; mix6_bank18 = 0
 	var up := ""
 	for p in ["arms", "body", "helmet"]:
 		var a := FangameParts.asset(str(pp.get(p, "")))
 		if a == "": continue
-		if not a in SABRE_ARM: return   # peça sem o desenho do sabre: o X do jogo
-		if up == "": up = a
+		if not ALT_ARM.has(a): return   # (não deve acontecer) o X do jogo
+		if up == "": up = ALT_ARM[a]
 	var lg := FangameParts.asset(str(pp.get("legs", "")))
-	if lg != "" and not lg in SABRE_ARM: return
-	var bs := up if up != "" else (lg if lg != "" else "Falcon_X6")   # X sem armadura: o da armadura de cima
-	mix6_sab_base = _atl("sabre_x6", bs + "/base")
-	if up != "": mix6_sab_resto = _atl("sabre_x6", up + "/resto")
-	if lg != "": mix6_sab_pernas = _atl("sabre_x6", lg + "/pernas")
-	mix6_sab_ok = mix6_sab_base != null and (up == "" or mix6_sab_resto != null) and (lg == "" or mix6_sab_pernas != null)
-	print("X6: sabre das peças ", "resto=%s pernas=%s" % [up, lg] if mix6_sab_ok else "(X do jogo)")
+	if lg != "" and not ALT_ARM.has(lg): return
+	lg = str(ALT_ARM.get(lg, ""))
+	var bs := up if up != "" else (lg if lg != "" else ("Fourth_X5" if x5 else "Falcon_X6"))   # X sem armadura
+	mix6_alt_base = _atl("alt", bs + "/base")
+	if up != "": mix6_alt_resto = _atl("alt", up + "/resto")
+	if lg != "": mix6_alt_pernas = _atl("alt", lg + "/pernas")
+	print(game.to_upper(), ": 2ª tabela do X (fio/sabre): resto=%s pernas=%s base=%s" % [up, lg, mix6_alt_base != null])
+
+# a 2ª tabela: o pacote do X na RAM começa com a lista de onde fica cada grupo (o 1º número é o tamanho da lista);
+# a tabela normal é o grupo 0 e a 2ª o grupo 18
+func _mix6_bank18(b0: int) -> int:
+	for d in range(0x40, 0x400, 4):
+		if int(ClassDB.class_call_static(core, "mem", b0 - d, 0, 4)) == d:
+			var g18 := int(ClassDB.class_call_static(core, "mem", b0 - d + 18 * 4, 0, 4))
+			return b0 - d + g18 if g18 > d and g18 < 0x40000 else 0
+	return 0
+
+func _mix6_alt_ok(f: int) -> bool:
+	return mix6_alt_base != null and mix6_alt_base.has_frame(f) and (mix6_alt_resto == null or mix6_alt_resto.has_frame(f)) \
+		and (mix6_alt_pernas == null or mix6_alt_pernas.has_frame(f))
 
 func _mix6_look_of(e: Array) -> String:
-	if e[4] == 5: return str(mix6_look[0])   # sabre desenhado com as peças: mesma aparência
+	if e[4] == 5: return str(mix6_look[0])   # 2ª tabela desenhada com as peças: mesma aparência
 	if e[4] == 4: return str(X6S_LOOK.get(e[11][0], "?"))
 	return str(mix6_look[e[4]]) if e[4] < mix6_look.size() else "?"
 func _s32(v: int) -> int:
@@ -2013,7 +2028,7 @@ func _mix6_init() -> void:
 		for p in SKIN_PARTS:
 			var a := _atl(legs, p)
 			if a: mix6_hover_atl[p] = a
-	_mix6_sabre_init(pp, x5)
+	_mix6_alt_init(pp, x5)
 	var nat := int(L.get("armor", 0))
 	# X6 com a Shadow carregada (pernas Shadow): pulo alto e pendurado no teto (ação 0x1F) é golpe da armadura carregada,
 	# o X vira a Shadow inteira e o próprio jogo desenha (como no X4; com as peças misturadas a animação saía errada)
@@ -2125,11 +2140,12 @@ func _mix6_step() -> void:
 	var mode := 0
 	var ff := -1
 	var fj := -1
-	var sab := -1
-	if game == "x6":
-		var bank: int = m.call(P + 0x3C, 4)
-		if act in [2, 3, 4, 6, 7, 8]: mix6_bank0 = bank   # parado / andando / pulando / caindo: tabela normal
-		elif act in SABRE_ACT and k >= 47 and k <= 61 and mix6_bank0 != 0 and bank != mix6_bank0: sab = k - 47
+	var alt := -1
+	var bank: int = m.call(P + 0x3C, 4)
+	if act in ALT_ACT_NORMAL and bank != mix6_bank0 and bank != mix6_bank18:
+		var b18 := _mix6_bank18(bank)
+		if b18 != 0: mix6_bank0 = bank; mix6_bank18 = b18
+	if mix6_bank18 != 0 and bank == mix6_bank18: alt = k
 	var gf := int(m.call(0x1F900003, 4)) if mix6_giga_atl else -1
 	var giga := gf >= 0 and mix6_giga_atl.has_frame(gf)
 	if giga:
@@ -2146,9 +2162,11 @@ func _mix6_step() -> void:
 		if ff < 0: mode = 0   # dash acabou parado no chão (o jogo ainda está no estado do dash): volta às peças
 	elif act == 0x21 and not mix6_hover_atl.is_empty() and c >= 0:
 		mode = 3   # flutuar: a Fourth inteira desenhada pelo fangame
-	elif sab >= 0:
-		mode = 5 if mix6_sab_ok and mix6_sab_base.has_frame(sab) else 1   # golpe de sabre do X6
-	elif act in mix6_special or c < 0:
+	elif act in mix6_special:
+		mode = 1
+	elif alt >= 0:
+		mode = 5 if _mix6_alt_ok(alt) else 1   # 2ª tabela do X (pendurado no fio, sabre do X6)
+	elif c < 0:
 		mode = 1
 	var x6k := 0; var x6f := -1; var x6fx := -1
 	if x6s_on:   # golpe das peças da Blade/Shadow do X6 no X5: desenho especial (tem prioridade)
@@ -2223,7 +2241,7 @@ func _mix6_step() -> void:
 	if x6s_on:
 		for i in mini(_s32(m.call(0x1F900080, 4)), 24):
 			xo.append([_s32(m.call(0x1F900081 + i * 4, 4)), _s32(m.call(0x1F900082 + i * 4, 4)), _s32(m.call(0x1F900083 + i * 4, 4)), _s32(m.call(0x1F900084 + i * 4, 4))])
-	mix6_hist.append([c, world, m.call(P + 0x15, 1) != 0, cam, mode, ff, fj, sh, [fv, cfx, rel], gx, hab, [x6k, x6f, x6fx], xo, sab])   # +0x15 != 0: virado para a esquerda
+	mix6_hist.append([c, world, m.call(P + 0x15, 1) != 0, cam, mode, ff, fj, sh, [fv, cfx, rel], gx, hab, [x6k, x6f, x6fx], xo, alt])   # +0x15 != 0: virado para a esquerda
 	if mix6_hist.size() > 24: mix6_hist.pop_front()
 	# sprites do X desenhados no quadro anterior = o que está na tela agora (0: o X piscou/sumiu)
 	var hits_now := int(ClassDB.class_call_static(core, "hidden_hits"))
@@ -2266,8 +2284,8 @@ func _mix6_step() -> void:
 		mix6_cfx = e[8][1]; mix6_relf = e[8][2]
 		mix6_shot_node.queue_redraw()
 	mix6_f = e[0] if e[0] >= 0 else mix6_last_c
-	mix6_sab_f = e[13] if e[4] == 5 else -1
-	if (e[4] == 0 or e[4] == 3 or e[4] == 5) and not shown and mix6_wipe <= 0: mix6_f = -1; mix6_sab_f = -1   # o X piscou/sumiu no jogo (dano)
+	mix6_alt_f = e[13] if e[4] == 5 else -1
+	if (e[4] == 0 or e[4] == 3 or e[4] == 5) and not shown and mix6_wipe <= 0: mix6_f = -1; mix6_alt_f = -1   # o X piscou/sumiu no jogo (dano)
 	# escudo (Fourth X4) em volta do X e alvo da Marca da presa no inimigo (mesmo atraso de 2 quadros da tela)
 	var hb2: Array = e[10]
 	var mk := Vector2(-99999, -99999) if hb2[2] < -50000 else Vector2(hb2[2], hb2[3]) - (e[3] as Vector2)
@@ -2384,18 +2402,18 @@ func _mix6_draw() -> void:
 		elif x6s_kind == 3 and x6s_fx and x6s_fxf >= 0 and x6s_fx.has_frame(x6s_fxf):
 			x6s_fx.draw(mix6_node, x6s_fxf, mix6_pos, mix6_flip)   # lua/arco do Engetsurin por cima do X
 	elif mode == 5:
-		if mix6_sab_f < 0: return
-		_mix6_body_sabre(Color.WHITE, -big, edge)
-		if wiping: _mix6_body_sabre(Color(6, 6, 7), edge, big)
+		if mix6_alt_f < 0: return
+		_mix6_body_alt(Color.WHITE, -big, edge)
+		if wiping: _mix6_body_alt(Color(6, 6, 7), edge, big)
 	else:
 		if mix6_f < 0: return
 		_mix6_body_parts(Color.WHITE, -big, edge)
 		if wiping: _mix6_body_parts(Color(6, 6, 7), edge, big)
 	if wiping and r.size.y > 0: _mix6_wipe_band(r, edge)
 
-func _mix6_body_sabre(mod: Color, y0: float, y1: float) -> void:
-	for a: SpriteAtlas in [mix6_sab_base, mix6_sab_pernas, mix6_sab_resto]:
-		if a != null and a.has_frame(mix6_sab_f): a.draw_clip(mix6_node, mix6_sab_f, mix6_pos, mix6_flip, mod, 0, y0, y1)
+func _mix6_body_alt(mod: Color, y0: float, y1: float) -> void:
+	for a: SpriteAtlas in [mix6_alt_base, mix6_alt_pernas, mix6_alt_resto]:
+		if a != null and a.has_frame(mix6_alt_f): a.draw_clip(mix6_node, mix6_alt_f, mix6_pos, mix6_flip, mod, 0, y0, y1)
 
 # flutuar com pernas Fourth: o X sem armadura + as 4 peças da Fourth das pernas (elas têm os quadros do flutuar de verdade)
 var mix6_hover_atl := {}
@@ -2439,7 +2457,7 @@ func _mix6_rect(mode: int) -> Rect2:
 	var i := mix6_fly_f if mode == 2 else mix6_f
 	var flip := (mix6_flip != (mix6_fly_flipinv and not mix6_giga_on)) if mode == 2 else mix6_flip
 	if mode == 4: atl = x6s_atl.get(x6s_kind); i = x6s_f; flip = mix6_flip != (x6s_kind == 2)
-	if mode == 5: atl = mix6_sab_base; i = mix6_sab_f; flip = mix6_flip
+	if mode == 5: atl = mix6_alt_base; i = mix6_alt_f; flip = mix6_flip
 	if atl == null or not atl.has_frame(i): return Rect2()
 	var fr: Dictionary = atl.frames[i]
 	var x0 := mix6_pos.x - float(fr["ox"]) if not flip else mix6_pos.x + float(fr["ox"]) - float(fr["w"])

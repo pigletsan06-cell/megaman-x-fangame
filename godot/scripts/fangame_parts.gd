@@ -73,12 +73,17 @@ static func full_set(parts: Dictionary) -> String:
 # X6 montado: qual armadura do próprio X6 o jogo carrega (pernas, senão corpo, braço, capacete; 0 = nenhuma)
 const X6_CODE := {"Falcon_X6": 1, "Shadow_X6": 2, "Blade_X6": 3, "Ultimate_X6": 4}
 # o X6 carrega a armadura de UMA peça (desenhos, animações e velocidades dos golpes dela).
-# Pernas primeiro: o voo e o dash no ar só andam na velocidade certa com a armadura das pernas carregada.
-# Exceção: braço Shadow ou Ultimate. O tiro carregado deles sem a armadura carregada enche a tela de lixo
-# (testado: braço Blade/Falcon funcionam com qualquer armadura carregada).
+# Braço Shadow ou Ultimate: a armadura do braço (o tiro carregado deles sem ela carregada enche a tela de lixo).
+# Braço Falcon/Blade: também a do braço, senão a lança / a onda do sabre viram o tiro carregado do X sem armadura
+# (a recompilação troca, os desenhos deles só estão na VRAM com a armadura deles). Pernas Falcon/Blade de outra
+# armadura andam igual (voo e dash no ar medidos quadro a quadro com as duas carregadas) e o fangame desenha o golpe;
+# pernas Shadow/Ultimate continuam carregadas (pulo alto, teto e flutuar são do desenho delas).
+# Fora isso, pernas primeiro.
 static func x6_native(parts: Dictionary) -> int:
 	var arms := str(parts.get("arms", ""))
 	if arms == "Shadow_X6" or arms == "Ultimate_X6": return X6_CODE[arms]
+	var lg := str(parts.get("legs", ""))
+	if (arms == "Falcon_X6" or arms == "Blade_X6") and lg != "Shadow_X6" and lg != "Ultimate_X6": return X6_CODE[arms]
 	# braço Falcon do X5 (lança) com pernas de fora do X6: a lança só aparece com a Falcon do X6 carregada (com a Falcon
 	# do X5 inteira o X6 ficava sem armadura e soltava o tiro normal; testado: lança e voo do X5 funcionam com ela)
 	if arms == "Falcon_X5" and not X6_CODE.has(str(parts.get("legs", ""))): return 1
